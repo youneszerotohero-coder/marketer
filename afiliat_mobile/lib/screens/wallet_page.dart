@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
+import '../l10n/app_translations.dart';
 
 class WalletPage extends StatelessWidget {
   const WalletPage({super.key});
@@ -48,7 +49,7 @@ class WalletPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Available balance',
+            'Available balance'.tr,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -73,14 +74,14 @@ class WalletPage extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.trending_up, size: 12, color: Colors.white),
-                  SizedBox(width: 4),
+                  const Icon(Icons.trending_up, size: 12, color: Colors.white),
+                  const SizedBox(width: 4),
                   Text(
-                    '+12% this week',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+                    '+12% this week'.tr,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ],
               ),
@@ -109,9 +110,9 @@ class WalletPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Request withdrawal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+          Text('Request withdrawal'.tr, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
           const SizedBox(height: 20),
-          Text('Amount to withdraw', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+          Text('Amount to withdraw'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
@@ -129,7 +130,7 @@ class WalletPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Payment method', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+          Text('Payment method'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -146,7 +147,7 @@ class WalletPage extends StatelessWidget {
                     children: [
                       Icon(Icons.account_balance, color: theme.colorScheme.primary, size: 16),
                       const SizedBox(width: 8),
-                      Text('Bank\ntransfer', textAlign: TextAlign.center, style: TextStyle(color: theme.colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1)),
+                      Text('Bank\ntransfer'.tr, textAlign: TextAlign.center, style: TextStyle(color: theme.colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1)),
                     ],
                   ),
                 ),
@@ -164,7 +165,7 @@ class WalletPage extends StatelessWidget {
                     children: [
                       Icon(Icons.flash_on, color: theme.colorScheme.onSurfaceVariant, size: 16),
                       const SizedBox(width: 8),
-                      Text('Flexi', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text('Flexi'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -172,7 +173,7 @@ class WalletPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Text('Account details', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+          Text('Account details'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
@@ -182,7 +183,7 @@ class WalletPage extends StatelessWidget {
             ),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'IBAN or Account Number',
+                hintText: 'IBAN or Account Number'.tr,
                 hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6), fontSize: 13),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -203,8 +204,8 @@ class WalletPage extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text('Request withdrawal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                children: [
+                  Text('Request withdrawal'.tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   SizedBox(width: 8),
                   Icon(Icons.arrow_forward, size: 18),
                 ],
@@ -222,8 +223,8 @@ class WalletPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Transactions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
-            const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF97316))),
+            Text('Transactions'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+            Text('View All'.tr, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF97316))),
           ],
         ),
         const SizedBox(height: 16),
@@ -232,11 +233,11 @@ class WalletPage extends StatelessWidget {
           icon: Icons.trending_up,
           iconBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
           iconColor: theme.colorScheme.tertiary,
-          title: 'Sales Income',
+          title: 'Sales Income'.tr,
           date: 'Oct 24, 2023 • 02:30 PM',
           amount: '+\$840.00',
           amountColor: theme.colorScheme.tertiary,
-          status: 'COMPLETED',
+          status: 'COMPLETED'.tr,
           statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
           statusTextColor: theme.colorScheme.tertiary,
         ),
@@ -246,11 +247,11 @@ class WalletPage extends StatelessWidget {
           icon: Icons.local_shipping_outlined,
           iconBgColor: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
           iconColor: theme.colorScheme.error,
-          title: 'Shipping Fees',
+          title: 'Shipping Fees'.tr,
           date: 'Oct 23, 2023 • 11:15 AM',
           amount: '-\$24.50',
           amountColor: theme.colorScheme.error,
-          status: 'DEDUCTED',
+          status: 'DEDUCTED'.tr,
           statusBgColor: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
           statusTextColor: theme.colorScheme.error,
         ),
@@ -260,11 +261,11 @@ class WalletPage extends StatelessWidget {
           icon: Icons.account_balance_wallet_outlined,
           iconBgColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
           iconColor: theme.colorScheme.primary,
-          title: 'Bank Withdrawal',
+          title: 'Bank Withdrawal'.tr,
           date: 'Oct 21, 2023 • 09:00 AM',
           amount: '-\$2,000.00',
           amountColor: theme.colorScheme.onSurface,
-          status: 'PENDING',
+          status: 'PENDING'.tr,
           statusBgColor: theme.colorScheme.surfaceContainerHighest,
           statusTextColor: theme.colorScheme.onSurfaceVariant,
         ),
@@ -274,11 +275,11 @@ class WalletPage extends StatelessWidget {
           icon: Icons.card_giftcard,
           iconBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
           iconColor: theme.colorScheme.tertiary,
-          title: 'Performance Bonus',
+          title: 'Performance Bonus'.tr,
           date: 'Oct 20, 2023 • 05:45 PM',
           amount: '+\$150.00',
           amountColor: theme.colorScheme.tertiary,
-          status: 'REWARD',
+          status: 'REWARD'.tr,
           statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
           statusTextColor: theme.colorScheme.tertiary,
         ),

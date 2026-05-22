@@ -4,16 +4,15 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import 'main_shell.dart';
 import '../l10n/app_translations.dart';
-import 'signup_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignupPage> createState() => _SignupPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
 
   @override
@@ -58,14 +57,14 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
-                          Icons.trending_up_rounded,
+                          Icons.person_add_rounded,
                           color: Colors.white,
                           size: 32,
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        'Welcome Back'.tr,
+                        'Create Account'.tr,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -75,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to continue to your dashboard'.tr,
+                        'Sign up to get started'.tr,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 16,
@@ -89,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             
-            // Login Form Card
+            // Signup Form Card
             Transform.translate(
               offset: const Offset(0, -40),
               child: Padding(
@@ -111,6 +110,13 @@ class _LoginPageState extends State<LoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       CustomTextField(
+                        label: 'Full Name'.tr,
+                        hint: 'Enter your name'.tr,
+                        keyboardType: TextInputType.name,
+                        prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
                         label: 'Email Address'.tr,
                         hint: 'Enter your email'.tr,
                         keyboardType: TextInputType.emailAddress,
@@ -119,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 20),
                       CustomTextField(
                         label: 'Password'.tr,
-                        hint: 'Enter your password'.tr,
+                        hint: 'Create a password'.tr,
                         obscureText: _obscurePassword,
                         prefixIcon: Icon(Icons.lock_outline, color: theme.colorScheme.onSurfaceVariant),
                         suffixIcon: IconButton(
@@ -134,31 +140,13 @@ class _LoginPageState extends State<LoginPage> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 0),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Forgot Password?'.tr,
-                            style: TextStyle(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 32),
                       PrimaryButton(
-                        text: 'Sign In'.tr,
+                        text: 'Sign Up'.tr,
                         onPressed: () {
-                          Navigator.of(context).pushReplacement(
+                          Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(builder: (_) => const MainShell()),
+                            (route) => false,
                           );
                         },
                       ),
@@ -168,14 +156,14 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             
-            // Sign Up Link
+            // Login Link
             Transform.translate(
               offset: const Offset(0, -20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+               mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Don't have an account?".tr,
+                    "Already have an account?".tr,
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: 14,
@@ -184,12 +172,10 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SignupPage()),
-                      );
+                      Navigator.of(context).pop();
                     },
                     child: Text(
-                      'Sign Up'.tr,
+                      'Sign In'.tr,
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         fontSize: 14,

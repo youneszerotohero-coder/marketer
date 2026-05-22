@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
+import '../l10n/app_translations.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -10,7 +11,7 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   int _selectedFilterIndex = 0;
-  final List<String> _filters = ['All', 'Pending', 'Confirmed', 'Shipping', 'Delivered', 'Cancelled'];
+  List<String> get _filters => ['All'.tr, 'Pending'.tr, 'Confirmed'.tr, 'Shipping Status'.tr, 'Delivered'.tr, 'Cancelled'.tr];
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   _buildOrderCard(
                     theme: theme,
                     orderId: 'ORDER #MP-82931',
-                    status: 'Delivered',
+                    status: 'Delivered'.tr,
                     statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
                     statusTextColor: theme.colorScheme.tertiary,
                     name: 'Amine Rahmani',
@@ -47,7 +48,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   _buildOrderCard(
                     theme: theme,
                     orderId: 'ORDER #MP-82945',
-                    status: 'Pending',
+                    status: 'Pending'.tr,
                     statusBgColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                     statusTextColor: theme.colorScheme.primary,
                     name: 'Sarah Kaci',
@@ -61,7 +62,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   _buildOrderCard(
                     theme: theme,
                     orderId: 'ORDER #MP-82912',
-                    status: 'Confirmed',
+                    status: 'Confirmed'.tr,
                     statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
                     statusTextColor: theme.colorScheme.tertiary,
                     name: 'Yacine B.',
@@ -75,7 +76,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   _buildOrderCard(
                     theme: theme,
                     orderId: 'ORDER #MP-82890',
-                    status: 'Cancelled',
+                    status: 'Cancelled'.tr,
                     statusBgColor: theme.colorScheme.surfaceContainerHighest,
                     statusTextColor: theme.colorScheme.onSurfaceVariant,
                     name: 'Fatima Zohra',
@@ -211,7 +212,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'AMOUNT',
+                        'AMOUNT'.tr,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -243,7 +244,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'PROFIT',
+                        'PROFIT'.tr,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -287,7 +288,7 @@ class _OrdersPageState extends State<OrdersPage> {
                 child: OutlinedButton.icon(
                   onPressed: () {},
                   icon: Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSurface),
-                  label: Text('Details', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                  label: Text('Details'.tr, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -302,7 +303,7 @@ class _OrdersPageState extends State<OrdersPage> {
                 child: ElevatedButton.icon(
                   onPressed: () {},
                   icon: Icon(Icons.chat_bubble_outline, size: 16, color: theme.colorScheme.onPrimary),
-                  label: Text('Contact client', style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold)),
+                  label: Text('Contact client'.tr, style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isActive ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
                     elevation: 0,

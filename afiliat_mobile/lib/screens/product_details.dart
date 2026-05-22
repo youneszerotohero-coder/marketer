@@ -145,7 +145,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                           child: GestureDetector(
                             onTap: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text('Downloading all images...'.tr),
                                   behavior: SnackBarBehavior.floating,
                                 ),

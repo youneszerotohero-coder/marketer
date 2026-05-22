@@ -257,15 +257,9 @@ class ProfilePage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildProfileMenuItem(context, theme, Icons.person_outline, 'Personal Information'.tr, true),
-          _buildDivider(theme),
-          _buildProfileMenuItem(context, theme, Icons.account_balance_outlined, 'Bank Details'.tr, true),
-          _buildDivider(theme),
           _buildThemeToggleMenuItem(context, theme),
           _buildDivider(theme),
-          _buildProfileMenuItem(context, theme, Icons.security_outlined, 'Security'.tr, true),
-          _buildDivider(theme),
-          _buildProfileMenuItem(context, theme, Icons.help_outline, 'Help & Support'.tr, false),
+          _buildLanguageToggleMenuItem(context, theme),
         ],
       ),
     );
@@ -309,25 +303,44 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider(ThemeData theme) {
-    return Divider(height: 1, thickness: 1, color: theme.colorScheme.surfaceContainerHighest, indent: 60, endIndent: 20);
+  Widget _buildLanguageToggleMenuItem(BuildContext context, ThemeData theme) {
+    return ValueListenableBuilder<Locale>(
+      valueListenable: localeNotifier,
+      builder: (context, currentLocale, _) {
+        final isArabic = currentLocale.languageCode == 'ar';
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.language, 
+              color: theme.colorScheme.onSurface, 
+              size: 20
+            ),
+          ),
+          title: Text(
+            'العربية'.tr, 
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onSurface)
+          ),
+          trailing: Switch(
+            value: isArabic,
+            activeColor: theme.colorScheme.primary,
+            onChanged: (value) {
+              localeNotifier.value = value ? const Locale('ar') : const Locale('en');
+            },
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildProfileMenuItem(BuildContext context, ThemeData theme, IconData icon, String title, bool hasBorder) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: theme.colorScheme.onSurface, size: 20),
-      ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onSurface)),
-      trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
-      onTap: () {},
-    );
+  Widget _buildDivider(ThemeData theme) {
+    return Divider(height: 1, thickness: 1, color: theme.colorScheme.surfaceContainerHighest, indent: 60, endIndent: 20);
   }
 
   Widget _buildLogoutButton(BuildContext context) {
