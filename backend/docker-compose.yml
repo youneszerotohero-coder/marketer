@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: marketer-backend
+    working_dir: /var/www/html
+    ports:
+      - "8005:8000"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - postgres
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: marketer
+      DB_USERNAME: marketer
+      DB_PASSWORD: secret
+    command: sh -c "composer install && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: marketer-postgress
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: marketer
+      POSTGRES_USER: marketer
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - marketer_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketer -d marketer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  marketer_postgres_data:

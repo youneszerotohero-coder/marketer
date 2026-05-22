@@ -1,0 +1,74 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Marketer API",
+        "description": "Laravel 11 API for auth, products, orders, wallet, admin, confirmatrice workflow, and mock delivery integration.",
+        "version": "0.1.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "Local Docker API"
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "List active products",
+                "operationId": "913370c69658671c54f75f70e9a1e608",
+                "responses": {
+                    "200": {
+                        "description": "Paginated products list"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login and receive access and refresh tokens",
+                "operationId": "2f404916a9c3133050aac848b675ce50",
+                "responses": {
+                    "200": {
+                        "description": "Authenticated"
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Products",
+            "description": "Products"
+        },
+        {
+            "name": "Auth",
+            "description": "Auth"
+        }
+    ]
+}
