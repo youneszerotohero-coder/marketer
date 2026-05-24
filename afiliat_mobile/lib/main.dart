@@ -8,6 +8,8 @@ import 'theme/app_theme.dart';
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
 final ValueNotifier<Locale> localeNotifier = ValueNotifier<Locale>(const Locale('ar'));
 
+final GlobalKey<NavigatorState> mainNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   runApp(const MyApp());
 }
@@ -24,6 +26,7 @@ class MyApp extends StatelessWidget {
           valueListenable: themeModeNotifier,
           builder: (context, currentThemeMode, _) {
             return MaterialApp(
+              navigatorKey: mainNavigatorKey,
               title: 'Afiliat',
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,

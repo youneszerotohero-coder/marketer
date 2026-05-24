@@ -2,6 +2,10 @@ import React from 'react';
 import { Search, Bell, Menu } from 'lucide-react';
 
 export const Header: React.FC = () => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : { name: 'Admin User', role: 'admin' };
+  const initials = user.name ? user.name.substring(0, 2).toUpperCase() : 'AD';
+
   return (
     <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 glass">
       <div className="flex items-center gap-4">
@@ -26,11 +30,11 @@ export const Header: React.FC = () => {
         
         <div className="flex items-center gap-3 pl-4 border-l border-border">
           <div className="hidden md:block text-right">
-            <p className="text-sm font-semibold text-text">Admin User</p>
-            <p className="text-xs text-text-muted">Superadmin</p>
+            <p className="text-sm font-semibold text-text">{user.name}</p>
+            <p className="text-xs text-text-muted capitalize">{user.role}</p>
           </div>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-sm">
-            <span className="text-white text-sm font-bold">AD</span>
+            <span className="text-white text-sm font-bold">{initials}</span>
           </div>
         </div>
       </div>

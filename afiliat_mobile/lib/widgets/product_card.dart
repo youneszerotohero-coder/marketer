@@ -126,15 +126,16 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Favorite Button
+                    // Add to Cart Button
                     Positioned(
                       top: 6,
                       left: 6,
                       child: IconButton(
-                        icon: const Icon(Icons.favorite_border, color: Colors.white, size: 20),
-                        onPressed: () {},
+                        icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 20),
+                        tooltip: 'Add to Cart'.tr,
+                        onPressed: onAddToCart,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.2),
+                          backgroundColor: Colors.black.withValues(alpha: 0.3),
                           padding: const EdgeInsets.all(8),
                         ),
                       ),

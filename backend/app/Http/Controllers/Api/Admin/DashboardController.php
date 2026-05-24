@@ -11,29 +11,108 @@ use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(\Illuminate\Http\Request $request): JsonResponse
     {
+        $user = $request->user();
+        
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        $orderQuery = Order::query()
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate));
+
+        $walletQuery = WalletTransaction::query()
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate));
+
+        $userQuery = User::query()
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate));
+
+        $productQuery = Product::query()
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate));
+
+        $ordersStats = [
+            'total' => (clone $orderQuery)->count(),
+            'pending' => (clone $orderQuery)->where('status', 'pending')->count(),
+            'confirmed' => (clone $orderQuery)->where('status', 'confirmed')->count(),
+            'shipped' => (clone $orderQuery)->where('status', 'shipped')->count(),
+            'delivered' => (clone $orderQuery)->where('status', 'delivered')->count(),
+            'failed' => (clone $orderQuery)->where('status', 'failed')->count(),
+            'cancelled' => (clone $orderQuery)->where('status', 'cancelled')->count(),
+        ];
+
+        // Generate Chart Data
+        $chartStartDate = $startDate ?: now()->subDays(30)->format('Y-m-d');
+        $chartEndDate = $endDate ?: now()->format('Y-m-d');
+        
+        $chartOrders = Order::query()
+            ->whereDate('created_at', '>=', $chartStartDate)
+            ->whereDate('created_at', '<=', $chartEndDate)
+            ->select('status', 'created_at')
+            ->get();
+            
+        $chartData = $chartOrders->groupBy(function($order) {
+            return $order->created_at->format('Y-m-d');
+        })->map(function($dayOrders, $date) {
+            return [
+                'name' => \Carbon\Carbon::parse($date)->format('M d'),
+                'total' => $dayOrders->count(),
+                'delivered' => $dayOrders->where('status', 'delivered')->count(),
+                'failed' => $dayOrders->whereIn('status', ['failed', 'cancelled'])->count(),
+            ];
+        })->values()->sortBy('name')->values();
+
+        if ($user->role === 'confirmatrice') {
+            return response()->json([
+                'orders' => $ordersStats,
+                'chart_data' => $chartData,
+            ]);
+        }
+
         return response()->json([
-            'orders' => [
-                'total' => Order::count(),
-                'pending' => Order::where('status', 'pending')->count(),
-                'delivered' => Order::where('status', 'delivered')->count(),
-                'failed' => Order::where('status', 'failed')->count(),
-            ],
+            'orders' => $ordersStats,
+            'chart_data' => $chartData,
             'sales' => [
-                'revenue' => (float) Order::where('status', 'delivered')->sum('total'),
-                'commissions' => (float) WalletTransaction::where('type', 'commission')->where('status', 'approved')->sum('amount'),
+                'revenue' => (float) (clone $orderQuery)->where('status', 'delivered')->sum('subtotal'),
+                'commissions' => (float) (clone $walletQuery)
+                    ->whereHas('order', fn($q) => $q->where('status', 'delivered'))
+                    ->where('type', 'commission')->where('status', 'approved')->sum('amount'),
+                'net_profit' => (float) (clone $orderQuery)->where('status', 'delivered')->sum('subtotal')
+                    - (float) (clone $walletQuery)
+                        ->whereHas('order', fn($q) => $q->where('status', 'delivered'))
+                        ->where('type', 'commission')->where('status', 'approved')->sum('amount'),
             ],
             'users' => [
                 'marketers' => User::where('role', 'marketer')->count(),
                 'confirmatrices' => User::where('role', 'confirmatrice')->count(),
             ],
-            'products' => Product::count(),
+            'products' => Product::where('status', 'active')->count(),
+            'pending_payouts' => (clone $walletQuery)->where('type', 'withdrawal')->where('status', 'pending')->count(),
             'top_marketers' => User::where('role', 'marketer')
-                ->withCount(['marketerOrders as delivered_orders_count' => fn ($q) => $q->where('status', 'delivered')])
-                ->orderByDesc('delivered_orders_count')
-                ->limit(5)
-                ->get(),
+                ->withCount(['marketerOrders as delivered_orders_count' => fn ($q) => $q->where('status', 'delivered')
+                    ->when($startDate, fn($sq) => $sq->whereDate('created_at', '>=', $startDate))
+                    ->when($endDate, fn($sq) => $sq->whereDate('created_at', '<=', $endDate))
+                ])
+                ->withSum(['walletTransactions as total_commission' => fn ($q) => $q->where('type', 'commission')->where('status', 'approved')
+                    ->when($startDate, fn($sq) => $sq->whereDate('created_at', '>=', $startDate))
+                    ->when($endDate, fn($sq) => $sq->whereDate('created_at', '<=', $endDate))
+                ], 'amount')
+                ->withSum(['walletTransactions as total_return_fees' => fn ($q) => $q->where('type', 'return_fee')->where('status', 'approved')
+                    ->when($startDate, fn($sq) => $sq->whereDate('created_at', '>=', $startDate))
+                    ->when($endDate, fn($sq) => $sq->whereDate('created_at', '<=', $endDate))
+                ], 'amount')
+                ->get(['id', 'name', 'email', 'tier'])
+                ->map(function ($user) {
+                    $user->net_balance = (float)$user->total_commission - (float)$user->total_return_fees;
+                    return $user;
+                })
+                ->sortByDesc('net_balance')
+                ->take(5)
+                ->values(),
         ]);
     }
+
 }

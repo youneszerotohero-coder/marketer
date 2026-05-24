@@ -38,6 +38,7 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', 'unique:users,email,' . $user->id],
             'phone' => ['sometimes', 'nullable', 'string', 'max:40'],
             'role' => ['sometimes', 'in:admin,marketer,confirmatrice'],
             'tier' => ['sometimes', 'string', 'max:80'],
@@ -55,5 +56,52 @@ class UserController extends Controller
         $user->update($data);
 
         return response()->json($user);
+    }
+
+    public function stats(Request $request, User $user, \App\Services\Wallet\WalletService $wallet): JsonResponse
+    {
+        if ($user->role !== 'marketer') {
+            abort(404, 'User is not a marketer');
+        }
+
+        $totalOrders = $user->marketerOrders()->count();
+        $deliveredOrders = $user->marketerOrders()->where('status', 'delivered')->count();
+        
+        $topProducts = \App\Models\OrderItem::query()
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.marketer_id', $user->id)
+            ->select('product_name', \Illuminate\Support\Facades\DB::raw('SUM(order_items.quantity) as sales'))
+            ->groupBy('product_name')
+            ->orderByDesc('sales')
+            ->limit(5)
+            ->get();
+
+        $balance = $wallet->balanceFor($user);
+        $recentEarnings = $user->walletTransactions()
+            ->whereIn('type', ['commission', 'return_fee'])
+            ->where('status', 'approved')
+            ->with('order:id,reference')
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'performance' => [
+                'total_orders' => $totalOrders,
+                'delivered_orders' => $deliveredOrders,
+                'conversion_rate' => $totalOrders > 0 ? round(($deliveredOrders / $totalOrders) * 100, 2) : 0,
+                'top_products' => $topProducts,
+            ],
+            'commissions' => [
+                'unpaid_balance' => $balance['available'],
+                'recent_earnings' => $recentEarnings->map(fn($t) => [
+                    'id' => $t->id,
+                    'type' => $t->type,
+                    'order_reference' => $t->order->reference ?? 'Unknown',
+                    'amount' => $t->type === 'return_fee' ? -((float)$t->amount) : (float)$t->amount,
+                    'date' => clone $t->created_at, // Map to string later in frontend
+                ]),
+            ]
+        ]);
     }
 }

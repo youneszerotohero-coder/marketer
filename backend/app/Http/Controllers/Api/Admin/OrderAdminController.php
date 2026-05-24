@@ -13,21 +13,21 @@ use Illuminate\Http\Request;
 
 class OrderAdminController extends Controller
 {
-    private const TRANSITIONS = [
-        'pending' => ['confirmed', 'cancelled'],
-        'confirmed' => ['shipped', 'cancelled'],
-        'shipped' => ['delivered', 'failed', 'cancelled'],
-        'delivered' => [],
-        'failed' => [],
-        'cancelled' => [],
-    ];
-
+    // Validations removed to allow arbitrary status transitions by admin/confirmatrice
     public function index(Request $request): JsonResponse
     {
         return response()->json(
             Order::with(['items', 'marketer', 'confirmatrice'])
                 ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
                 ->when($request->query('confirmatrice_id'), fn ($q, $id) => $q->where('confirmatrice_id', $id))
+                ->when($request->query('search'), function ($q, $search) {
+                    $q->where(function($sq) use ($search) {
+                        $sq->where('reference', 'like', "%{$search}%")
+                           ->orWhere('client_name', 'like', "%{$search}%")
+                           ->orWhere('client_phone', 'like', "%{$search}%")
+                           ->orWhereHas('marketer', fn($mq) => $mq->where('name', 'like', "%{$search}%"));
+                    });
+                })
                 ->latest()
                 ->paginate((int) $request->query('per_page', 20))
         );
@@ -41,10 +41,7 @@ class OrderAdminController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        if (!in_array($data['status'], self::TRANSITIONS[$order->status] ?? [], true) && $data['status'] !== $order->status) {
-            return response()->json(['message' => 'Invalid status transition'], 422);
-        }
-
+        // Transition validation removed
         $timestamps = match ($data['status']) {
             'confirmed' => ['confirmed_at' => now()],
             'shipped' => ['shipped_at' => now()],
@@ -67,6 +64,14 @@ class OrderAdminController extends Controller
 
         if ($order->status === Order::STATUS_DELIVERED) {
             $wallet->createCommission($order);
+        } else {
+            $wallet->cancelCommission($order);
+        }
+
+        if (in_array($order->status, [Order::STATUS_FAILED])) {
+            $wallet->createReturnFee($order);
+        } else {
+            $wallet->cancelReturnFee($order);
         }
 
         return response()->json($order->load(['items', 'commissionTransaction']));

@@ -1,9 +1,101 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
 import '../l10n/app_translations.dart';
+import '../services/api_service.dart';
 
-class WalletPage extends StatelessWidget {
+class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
+
+  @override
+  State<WalletPage> createState() => _WalletPageState();
+}
+
+class _WalletPageState extends State<WalletPage> {
+  Map<String, dynamic>? _balance;
+  List<dynamic> _transactions = [];
+  bool _loading = true;
+  String _error = '';
+
+  // Withdrawal form
+  final _amountController = TextEditingController();
+  final _methodController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _methodController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() { _loading = true; _error = ''; });
+    try {
+      final results = await Future.wait([
+        ApiService.instance.get('/wallet'),
+        ApiService.instance.get('/wallet/transactions', query: {'per_page': '20'}),
+      ]);
+      if (mounted) {
+        setState(() {
+          _balance = results[0] as Map<String, dynamic>;
+          final txData = results[1] as Map<String, dynamic>;
+          _transactions = txData['data'] ?? [];
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _error = e.message; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _error = 'Failed to load wallet data.'; _loading = false; });
+    }
+  }
+
+  Future<void> _requestWithdrawal(BuildContext context) async {
+    final amount = double.tryParse(_amountController.text.trim());
+    final method = _methodController.text.trim();
+
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Enter a valid amount.'.tr)));
+      return;
+    }
+    if (method.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Enter a payment method.'.tr)));
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      await ApiService.instance.post('/wallet/withdraw', body: {
+        'amount': amount,
+        'payment_method': method,
+        'payout_details': {'method': method},
+      });
+      _amountController.clear();
+      _methodController.clear();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Withdrawal request submitted!'.tr), backgroundColor: Colors.green),
+        );
+      }
+      await _loadData();
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message), backgroundColor: Colors.red));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request failed.'.tr), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,205 +103,135 @@ class WalletPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CustomHeader(),
-              const SizedBox(height: 24),
-              _buildBalanceCard(),
-              const SizedBox(height: 24),
-              _buildWithdrawalForm(theme),
-              const SizedBox(height: 32),
-              _buildTransactionsSection(theme),
-              const SizedBox(height: 80), // Padding for bottom nav
-            ],
-          ),
-        ),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error.isNotEmpty
+                ? Center(child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 16),
+                      TextButton(onPressed: _loadData, child: const Text('Retry')),
+                    ],
+                  ))
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const CustomHeader(),
+                          const SizedBox(height: 24),
+                          _buildBalanceCard(),
+                          const SizedBox(height: 24),
+                          _buildWithdrawalForm(context, theme),
+                          const SizedBox(height: 32),
+                          _buildTransactionsSection(theme),
+                          const SizedBox(height: 80),
+                        ],
+                      ),
+                    ),
+                  ),
       ),
     );
   }
 
   Widget _buildBalanceCard() {
+    final available = _balance?['available'] ?? 0;
+    final earned = _balance?['earned'] ?? 0;
+    final pending = _balance?['pending_withdrawals'] ?? 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF97316), // Orange
+        color: const Color(0xFFF97316),
         borderRadius: BorderRadius.circular(16),
-        image: const DecorationImage(
-          image: NetworkImage('https://cdn-icons-png.flaticon.com/512/855/855281.png'),
-          alignment: Alignment.centerRight,
-          opacity: 0.1,
-          scale: 3,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Available balance'.tr,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
+          Text('Available balance'.tr, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.8))),
           const SizedBox(height: 8),
-          const Text(
-            '\$12,450.80',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          Text(
+            'DZD ${available.toStringAsFixed(2)}',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Total Earned'.tr, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
+                    Text('DZD $earned', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.trending_up, size: 12, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(
-                    '+12% this week'.tr,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pending'.tr, style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.7))),
+                    Text('DZD $pending', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWithdrawalForm(ThemeData theme) {
+  Widget _buildWithdrawalForm(BuildContext context, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Request withdrawal'.tr, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
-          const SizedBox(height: 20),
-          Text('Amount to withdraw'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: '\$ 0.00',
-                hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              keyboardType: TextInputType.number,
+          Text('Request Withdrawal'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Amount (DZD)'.tr,
+              prefixIcon: const Icon(Icons.monetization_on_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          const SizedBox(height: 20),
-          Text('Payment method'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.colorScheme.primary),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.account_balance, color: theme.colorScheme.primary, size: 16),
-                      const SizedBox(width: 8),
-                      Text('Bank\ntransfer'.tr, textAlign: TextAlign.center, style: TextStyle(color: theme.colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.flash_on, color: theme.colorScheme.onSurfaceVariant, size: 16),
-                      const SizedBox(width: 8),
-                      Text('Flexi'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text('Account details'.tr, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'IBAN or Account Number'.tr,
-                hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6), fontSize: 13),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _methodController,
+            decoration: InputDecoration(
+              labelText: 'Payment Method (e.g. BaridiMob, CCP)'.tr,
+              prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _submitting ? null : () => _requestWithdrawal(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF97316),
-                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Request withdrawal'.tr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
+              child: _submitting
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Submit Request'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -219,130 +241,78 @@ class WalletPage extends StatelessWidget {
 
   Widget _buildTransactionsSection(ThemeData theme) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Transactions'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
-            Text('View All'.tr, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF97316))),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildTransactionItem(
-          theme: theme,
-          icon: Icons.trending_up,
-          iconBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-          iconColor: theme.colorScheme.tertiary,
-          title: 'Sales Income'.tr,
-          date: 'Oct 24, 2023 • 02:30 PM',
-          amount: '+\$840.00',
-          amountColor: theme.colorScheme.tertiary,
-          status: 'COMPLETED'.tr,
-          statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-          statusTextColor: theme.colorScheme.tertiary,
-        ),
+        Text('Transaction History'.tr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
         const SizedBox(height: 12),
-        _buildTransactionItem(
-          theme: theme,
-          icon: Icons.local_shipping_outlined,
-          iconBgColor: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-          iconColor: theme.colorScheme.error,
-          title: 'Shipping Fees'.tr,
-          date: 'Oct 23, 2023 • 11:15 AM',
-          amount: '-\$24.50',
-          amountColor: theme.colorScheme.error,
-          status: 'DEDUCTED'.tr,
-          statusBgColor: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-          statusTextColor: theme.colorScheme.error,
-        ),
-        const SizedBox(height: 12),
-        _buildTransactionItem(
-          theme: theme,
-          icon: Icons.account_balance_wallet_outlined,
-          iconBgColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-          iconColor: theme.colorScheme.primary,
-          title: 'Bank Withdrawal'.tr,
-          date: 'Oct 21, 2023 • 09:00 AM',
-          amount: '-\$2,000.00',
-          amountColor: theme.colorScheme.onSurface,
-          status: 'PENDING'.tr,
-          statusBgColor: theme.colorScheme.surfaceContainerHighest,
-          statusTextColor: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 12),
-        _buildTransactionItem(
-          theme: theme,
-          icon: Icons.card_giftcard,
-          iconBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-          iconColor: theme.colorScheme.tertiary,
-          title: 'Performance Bonus'.tr,
-          date: 'Oct 20, 2023 • 05:45 PM',
-          amount: '+\$150.00',
-          amountColor: theme.colorScheme.tertiary,
-          status: 'REWARD'.tr,
-          statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-          statusTextColor: theme.colorScheme.tertiary,
-        ),
+        if (_transactions.isEmpty)
+          Center(child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text('No transactions yet.'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+          ))
+        else
+          ..._transactions.map((tx) => _buildTransactionCard(theme, tx)),
       ],
     );
   }
 
-  Widget _buildTransactionItem({
-    required ThemeData theme,
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required String title,
-    required String date,
-    required String amount,
-    required Color amountColor,
-    required String status,
-    required Color statusBgColor,
-    required Color statusTextColor,
-  }) {
+  Widget _buildTransactionCard(ThemeData theme, Map<String, dynamic> tx) {
+    final type = tx['type'] as String? ?? 'commission';
+    final status = tx['status'] as String? ?? 'pending';
+    final amount = tx['amount'] ?? 0;
+    final isCommission = type == 'commission';
+    final statusColor = status == 'approved'
+        ? theme.colorScheme.tertiary
+        : status == 'rejected'
+            ? const Color(0xFFBA1A1A)
+            : theme.colorScheme.primary;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconBgColor,
+              color: isCommission ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4) : theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: Icon(
+              isCommission ? Icons.arrow_downward : Icons.arrow_upward,
+              size: 18,
+              color: isCommission ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface)),
-                const SizedBox(height: 4),
-                Text(date, style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 11)),
+                Text(isCommission ? 'Commission'.tr : 'Withdrawal'.tr, style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+                Text(
+                  tx['created_at'] != null ? DateTime.parse(tx['created_at']).toLocal().toString().split(' ').first : '',
+                  style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(amount, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: amountColor)),
-              const SizedBox(height: 6),
+              Text(
+                '${isCommission ? '+' : '-'}DZD $amount',
+                style: TextStyle(fontWeight: FontWeight.bold, color: isCommission ? theme.colorScheme.tertiary : const Color(0xFFBA1A1A)),
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(color: statusTextColor, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text(status, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold)),
               ),
             ],
           ),

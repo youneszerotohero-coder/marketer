@@ -179,7 +179,7 @@ class AppDrawer extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         value: isDarkMode,
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
                         },
@@ -202,7 +202,7 @@ class AppDrawer extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         value: isArabic,
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           localeNotifier.value = value ? const Locale('ar') : const Locale('en');
                         },

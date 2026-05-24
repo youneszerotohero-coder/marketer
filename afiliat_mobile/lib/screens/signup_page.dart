@@ -4,6 +4,8 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import 'main_shell.dart';
 import '../l10n/app_translations.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -14,6 +16,51 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
+  bool _loading = false;
+  String _error = '';
+
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Please fill in all fields.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _error = 'Password must be at least 8 characters.');
+      return;
+    }
+
+    setState(() { _loading = true; _error = ''; });
+    try {
+      await AuthService.instance.register(name, email, password);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'Connection error. Is the backend running?');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,9 +156,17 @@ class _SignupPageState extends State<SignupPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (_error.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                          child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                        ),
                       CustomTextField(
                         label: 'Full Name'.tr,
                         hint: 'Enter your name'.tr,
+                        controller: _nameController,
                         keyboardType: TextInputType.name,
                         prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.onSurfaceVariant),
                       ),
@@ -119,6 +174,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         label: 'Email Address'.tr,
                         hint: 'Enter your email'.tr,
+                        controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.onSurfaceVariant),
                       ),
@@ -126,6 +182,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         label: 'Password'.tr,
                         hint: 'Create a password'.tr,
+                        controller: _passwordController,
                         obscureText: _obscurePassword,
                         prefixIcon: Icon(Icons.lock_outline, color: theme.colorScheme.onSurfaceVariant),
                         suffixIcon: IconButton(
@@ -133,22 +190,14 @@ class _SignupPageState extends State<SignupPage> {
                             _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                       const SizedBox(height: 32),
                       PrimaryButton(
-                        text: 'Sign Up'.tr,
-                        onPressed: () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const MainShell()),
-                            (route) => false,
-                          );
-                        },
+                        text: _loading ? 'Signing up...' : 'Sign Up'.tr,
+                        onPressed: _register,
+                        isLoading: _loading,
                       ),
                     ],
                   ),

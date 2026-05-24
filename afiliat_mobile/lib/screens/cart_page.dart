@@ -3,25 +3,8 @@ import '../widgets/custom_header.dart';
 import 'order_creation_form.dart';
 import '../l10n/app_translations.dart';
 
-class CartItemModel {
-  final String id;
-  final String brand;
-  final String title;
-  final double price;
-  final double commission;
-  final String imageUrl;
-  int quantity;
-
-  CartItemModel({
-    required this.id,
-    required this.brand,
-    required this.title,
-    required this.price,
-    required this.commission,
-    required this.imageUrl,
-    this.quantity = 1,
-  });
-}
+import '../models/cart_item_model.dart';
+import '../services/cart_service.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -31,50 +14,6 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final List<CartItemModel> _cartItems = [
-    CartItemModel(
-      id: '1',
-      brand: 'SONY',
-      title: 'WH-1000XM4 Wireless Headphones',
-      price: 4500.0,
-      commission: 450.0,
-      imageUrl: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=300&q=80',
-      quantity: 1,
-    ),
-    CartItemModel(
-      id: '2',
-      brand: 'NIKE',
-      title: 'Air Max Pro Running Gear',
-      price: 6200.0,
-      commission: 250.0,
-      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80',
-      quantity: 2,
-    ),
-  ];
-
-  double get subtotal => _cartItems.fold(0, (total, item) => total + (item.price * item.quantity));
-  double get shippingCost => _cartItems.isEmpty ? 0 : 500.0;
-  double get total => subtotal + shippingCost;
-
-  void _incrementQuantity(int index) {
-    setState(() {
-      _cartItems[index].quantity++;
-    });
-  }
-
-  void _decrementQuantity(int index) {
-    setState(() {
-      if (_cartItems[index].quantity > 1) {
-        _cartItems[index].quantity--;
-      }
-    });
-  }
-
-  void _removeItem(int index) {
-    setState(() {
-      _cartItems.removeAt(index);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,17 +21,34 @@ class _CartPageState extends State<CartPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CustomHeader(showBackButton: true),
-            ),
-            Expanded(
-              child: _cartItems.isEmpty ? _buildEmptyState(theme) : _buildCartList(theme),
-            ),
-            if (_cartItems.isNotEmpty) _buildSummarySection(theme),
-          ],
+        child: ValueListenableBuilder<List<CartItemModel>>(
+          valueListenable: CartService.instance.cartNotifier,
+          builder: (context, cartItems, child) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Expanded(child: CustomHeader(showBackButton: true)),
+                      if (cartItems.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+                          tooltip: 'Clear Cart'.tr,
+                          onPressed: () {
+                            CartService.instance.clearCart();
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: cartItems.isEmpty ? _buildEmptyState(theme) : _buildCartList(theme, cartItems),
+                ),
+                if (cartItems.isNotEmpty) _buildSummarySection(theme, cartItems),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -159,33 +115,17 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _buildCartList(ThemeData theme) {
+  Widget _buildCartList(ThemeData theme, List<CartItemModel> cartItems) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      itemCount: _cartItems.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      itemCount: cartItems.length,
       itemBuilder: (context, index) {
-        final item = _cartItems[index];
+        final item = cartItems[index];
         return Dismissible(
           key: Key(item.id),
           direction: DismissDirection.endToStart,
           onDismissed: (direction) {
-            _removeItem(index);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${item.title} ${'removed from cart'.tr}'),
-                action: SnackBarAction(
-                  label: 'Undo'.tr,
-                  textColor: const Color(0xFFF97316),
-                  onPressed: () {
-                    setState(() {
-                      _cartItems.insert(index, item);
-                    });
-                  },
-                ),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
+            CartService.instance.removeItem(index);
           },
           background: Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -213,7 +153,6 @@ class _CartPageState extends State<CartPage> {
             ),
             child: Row(
               children: [
-                // Product Image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
@@ -224,65 +163,86 @@ class _CartPageState extends State<CartPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Product Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.brand,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item.brand, style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                Text(item.title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: theme.colorScheme.error, size: 20),
+                            onPressed: () => CartService.instance.removeItem(index),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                          height: 1.2,
+                      if (item.availableVariants != null && item.availableVariants!.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => _showVariantSelector(context, index, item),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    item.variantSku.isNotEmpty ? 'Option: ${item.variantSku}' : 'Select Option'.tr,
+                                    style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.keyboard_arrow_down, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'DZD ${item.price.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          // Quantity Controls
+                          Text('DZD ${item.price.toStringAsFixed(0)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
                           Container(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainer, borderRadius: BorderRadius.circular(8)),
                             child: Row(
                               children: [
-                                _buildQtyButton(theme, Icons.remove, () => _decrementQuantity(index)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text(
-                                    '${item.quantity}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => CartService.instance.decrementQuantity(index),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(padding: const EdgeInsets.all(6.0), child: Icon(Icons.remove, size: 16, color: theme.colorScheme.onSurface)),
                                   ),
                                 ),
-                                _buildQtyButton(theme, Icons.add, () => _incrementQuantity(index)),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('${item.quantity}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.colorScheme.onSurface)),
+                                ),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => CartService.instance.incrementQuantity(index),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(padding: const EdgeInsets.all(6.0), child: Icon(Icons.add, size: 16, color: theme.colorScheme.onSurface)),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -299,23 +259,75 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _buildQtyButton(ThemeData theme, IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(6.0),
-          child: Icon(icon, size: 16, color: theme.colorScheme.onSurface),
-        ),
-      ),
+  void _showVariantSelector(BuildContext context, int index, CartItemModel item) {
+    if (item.availableVariants == null || item.availableVariants!.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Select Option'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: item.availableVariants!.map((v) {
+                  final isSelected = v['id'].toString() == item.id;
+                  final stock = int.tryParse(v['stock'].toString()) ?? 0;
+                  final isAvailable = stock > 0 && v['status'] == 'active';
+
+                  return InkWell(
+                    onTap: isAvailable ? () {
+                      final updatedItem = CartItemModel(
+                        id: v['id'].toString(),
+                        brand: item.brand,
+                        title: item.title,
+                        variantSku: v['sku'] ?? '',
+                        price: double.tryParse(v['sale_price'].toString()) ?? item.price,
+                        commission: double.tryParse(v['commission_value'].toString()) ?? item.commission,
+                        imageUrl: item.imageUrl,
+                        quantity: item.quantity > stock ? stock : item.quantity,
+                        availableVariants: item.availableVariants,
+                      );
+                      CartService.instance.updateItem(index, updatedItem);
+                      Navigator.pop(ctx);
+                    } : null,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : (isAvailable ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.grey.withValues(alpha: 0.1)),
+                        border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        v['sku']?.toString() ?? 'Option',
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Theme.of(context).colorScheme.primary : (isAvailable ? Theme.of(context).colorScheme.onSurface : Colors.grey),
+                          decoration: isAvailable ? null : TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSummarySection(ThemeData theme) {
+  Widget _buildSummarySection(ThemeData theme, List<CartItemModel> cartItems) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -330,17 +342,12 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-
-          
-          // Cost Breakdown
-          _buildSummaryRow(theme, 'Subtotal'.tr, 'DZD ${subtotal.toStringAsFixed(0)}'),
+          _buildSummaryRow(theme, 'Subtotal'.tr, 'DZD ${CartService.instance.subtotal.toStringAsFixed(0)}'),
           const SizedBox(height: 12),
-          _buildSummaryRow(theme, 'Shipping'.tr, 'DZD ${shippingCost.toStringAsFixed(0)}'),
+          _buildSummaryRow(theme, 'Shipping'.tr, 'DZD ${CartService.instance.shippingCost.toStringAsFixed(0)}'),
           const SizedBox(height: 12),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
-          
-          // Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -349,7 +356,7 @@ class _CartPageState extends State<CartPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
               ),
               Text(
-                'DZD ${total.toStringAsFixed(0)}',
+                'DZD ${CartService.instance.total.toStringAsFixed(0)}',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: theme.colorScheme.primary),
               ),
             ],
@@ -365,8 +372,8 @@ class _CartPageState extends State<CartPage> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => OrderCreationForm(
-                      cartItems: _cartItems,
-                      shippingCost: shippingCost,
+                      cartItems: cartItems,
+                      shippingCost: CartService.instance.shippingCost,
                     ),
                   ),
                 );

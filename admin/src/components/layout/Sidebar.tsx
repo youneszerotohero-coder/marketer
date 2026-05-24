@@ -17,15 +17,18 @@ export function cn(...inputs: (string | undefined | null | false)[]) {
 }
 
 const navItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Marketers', path: '/marketers', icon: Users },
-  { name: 'Products', path: '/products', icon: Package },
-  { name: 'Orders', path: '/orders', icon: ShoppingCart },
-  { name: 'Wallet', path: '/wallet', icon: Wallet },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'confirmatrice'] },
+  { name: 'Marketers', path: '/marketers', icon: Users, roles: ['admin'] },
+  { name: 'Products', path: '/products', icon: Package, roles: ['admin'] },
+  { name: 'Orders', path: '/orders', icon: ShoppingCart, roles: ['admin', 'confirmatrice'] },
+  { name: 'Wallet', path: '/wallet', icon: Wallet, roles: ['admin'] },
 ];
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const userRole = user?.role || 'admin';
 
   return (
     <aside className="w-64 bg-surface border-r border-border h-screen sticky top-0 flex flex-col justify-between hidden md:flex">
@@ -39,7 +42,7 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
         <nav className="p-4 space-y-1">
-          {navItems.map((item) => {
+          {navItems.filter(item => item.roles.includes(userRole)).map((item) => {
             const isActive = location.pathname === item.path || 
                              (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
@@ -62,19 +65,35 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="p-4 border-t border-border">
-        <NavLink 
-          to="/settings"
-          className={({ isActive }) => cn(
-            "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
-            isActive 
-              ? "bg-primary text-white shadow-md shadow-primary/20" 
-              : "text-text-muted hover:bg-background hover:text-text"
-          )}
+        {userRole === 'admin' && (
+          <NavLink 
+            to="/settings"
+            className={({ isActive }) => cn(
+              "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
+              isActive 
+                ? "bg-primary text-white shadow-md shadow-primary/20" 
+                : "text-text-muted hover:bg-background hover:text-text"
+            )}
+          >
+            <Settings className="w-5 h-5" />
+            Settings
+          </NavLink>
+        )}
+        <button 
+          onClick={async () => {
+            try {
+              const { authApi } = await import('../../services/api');
+              await authApi.logout();
+            } catch (e) {
+              console.error('Logout error', e);
+            } finally {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('user');
+              window.location.href = '/login';
+            }
+          }}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-danger hover:bg-danger/10 mt-1"
         >
-          <Settings className="w-5 h-5" />
-          Settings
-        </NavLink>
-        <button className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-danger hover:bg-danger/10 mt-1">
           <LogOut className="w-5 h-5" />
           Logout
         </button>

@@ -2,18 +2,36 @@ import 'package:flutter/material.dart';
 import '../l10n/app_translations.dart';
 
 class FilterBottomSheet extends StatefulWidget {
-  const FilterBottomSheet({super.key});
+  final RangeValues initialPriceRange;
+  final String initialSort;
+  final Set<int> initialCategories;
+  final List<dynamic> availableCategories;
+
+  const FilterBottomSheet({
+    super.key,
+    required this.initialPriceRange,
+    required this.initialSort,
+    required this.initialCategories,
+    required this.availableCategories,
+  });
 
   @override
   State<FilterBottomSheet> createState() => _FilterBottomSheetState();
 }
 
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
-  RangeValues _priceRange = const RangeValues(1000, 20000);
-  String _selectedSort = 'Popular';
+  late RangeValues _priceRange;
+  late String _selectedSort;
   final List<String> _sortOptions = ['Popular', 'Newest', 'Price: Low to High', 'Price: High to Low'];
-  final List<String> _brands = ['Sony', 'Garmin', 'Nike', 'Heritage', 'Apple', 'Samsung'];
-  final Set<String> _selectedBrands = {'Sony', 'Nike'};
+  late Set<int> _selectedCategoryIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _priceRange = widget.initialPriceRange;
+    _selectedSort = widget.initialSort;
+    _selectedCategoryIds = Set.from(widget.initialCategories);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,9 +74,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _priceRange = const RangeValues(1000, 20000);
+                    _priceRange = const RangeValues(0, 50000);
                     _selectedSort = 'Popular';
-                    _selectedBrands.clear();
+                    _selectedCategoryIds.clear();
                   });
                 },
                 child: Text(
@@ -154,9 +172,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
           const SizedBox(height: 24),
 
-          // Brands
+          // Categories
           Text(
-            'Brands'.tr,
+            'Categories'.tr,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -167,17 +185,18 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: _brands.map((brand) {
-              final isSelected = _selectedBrands.contains(brand);
+            children: widget.availableCategories.map((cat) {
+              final catId = int.tryParse(cat['id'].toString()) ?? 0;
+              final isSelected = _selectedCategoryIds.contains(catId);
               return FilterChip(
-                label: Text(brand),
+                label: Text(cat['name']?.toString() ?? ''),
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
-                      _selectedBrands.add(brand);
+                      _selectedCategoryIds.add(catId);
                     } else {
-                      _selectedBrands.remove(brand);
+                      _selectedCategoryIds.remove(catId);
                     }
                   });
                 },
@@ -205,7 +224,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             height: 56,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context, {
+                  'priceRange': _priceRange,
+                  'sort': _selectedSort,
+                  'categories': _selectedCategoryIds,
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF97316),

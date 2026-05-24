@@ -6,7 +6,7 @@ use App\Models\Order;
 
 interface DeliveryGateway
 {
-    public function calculateCost(string $wilaya, string $commune): float;
+    public function calculateCost(string $wilaya, string $commune, string $deliveryType = 'home'): float;
 
     public function createShipment(Order $order): array;
 

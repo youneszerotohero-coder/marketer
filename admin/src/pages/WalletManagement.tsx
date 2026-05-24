@@ -1,62 +1,77 @@
-import React, { useState } from 'react';
-import { CreditCard, History, Edit3 } from 'lucide-react';
-import { Modal } from '../components/ui/Modal';
+import React, { useState, useEffect } from 'react';
+import { CreditCard, History, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { walletApi } from '../services/api';
 
-const mockRequests = [
-  { id: 'WR-001', marketer: 'Ahmed User', amount: '$450.00', method: 'BaridiMob', date: '2026-05-17', status: 'Pending' },
-  { id: 'WR-002', marketer: 'Sara Smith', amount: '$120.00', method: 'Bank Transfer', date: '2026-05-16', status: 'Pending' },
-  { id: 'WR-003', marketer: 'Fatima Zohra', amount: '$850.00', method: 'BaridiMob', date: '2026-05-15', status: 'Approved' },
-];
+const fmt = (n: number | string) =>
+  'DZD ' + new Intl.NumberFormat('fr-DZ').format(Math.round(Number(n)));
 
-const WalletStatusSelect = ({ status }: { status: string }) => {
-  const [currentStatus, setCurrentStatus] = useState(status);
-  
-  const styles: any = {
-    'Pending': 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-    'Approved': 'bg-success/10 text-success border-success/20',
-    'Rejected': 'bg-danger/10 text-danger border-danger/20',
-  };
-  
-  return (
-    <select 
-      value={currentStatus}
-      onChange={(e) => setCurrentStatus(e.target.value)}
-      className={`appearance-none outline-none pl-3 pr-8 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${styles[currentStatus]}`}
-      style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
-    >
-      <option value="Pending">Pending</option>
-      <option value="Approved">Approved</option>
-      <option value="Rejected">Rejected</option>
-    </select>
-  );
+const statusStyle: Record<string, string> = {
+  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  approved: 'bg-success/10 text-success border-success/20',
+  rejected: 'bg-danger/10 text-danger border-danger/20',
 };
 
 export const WalletManagement: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [limit, setLimit] = useState(20);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<any>(null);
 
-  const requestsList = Array.from({ length: 25 }, (_, i) => ({
-    ...mockRequests[i % mockRequests.length],
-    id: `WR-${String(i + 1).padStart(3, '0')}`,
-    marketer: `${mockRequests[i % mockRequests.length].marketer} ${i + 1}`
-  }));
+  const loadData = (p = 1, status = statusFilter) => {
+    setLoading(true);
+    const params: any = { page: p, per_page: 20 };
+    if (status) params.status = status;
+    walletApi
+      .listWithdrawals(params)
+      .then(({ data }) => {
+        setWithdrawals(data.data ?? data);
+        setMeta(data.meta ?? null);
+        setPage(p);
+      })
+      .catch(() => setError('Failed to load withdrawal requests.'))
+      .finally(() => setLoading(false));
+  };
 
-  const visibleRequests = requestsList.slice(0, limit);
+  useEffect(() => { loadData(); }, []);
+
+  const handleApprove = async (id: number) => {
+    setActionLoading(id);
+    try {
+      await walletApi.approve(id);
+      loadData(page);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to approve.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    const reason = prompt('Reason for rejection (optional):');
+    if (reason === null) return;
+    setActionLoading(id);
+    try {
+      await walletApi.reject(id, reason || undefined);
+      loadData(page);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to reject.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const pendingCount = withdrawals.filter((w) => w.status === 'pending').length;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Wallet Management</h1>
-          <p className="text-sm text-text-muted mt-1">Manage withdrawal requests and manual adjustments.</p>
+          <p className="text-sm text-text-muted mt-1">Review and process marketer withdrawal requests.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors"
-        >
-          <Edit3 className="w-4 h-4" />
-          Manual Adjustment
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -67,7 +82,9 @@ export const WalletManagement: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-text-muted">Pending Requests</p>
-              <h3 className="text-2xl font-bold text-text">2 requests</h3>
+              <h3 className="text-2xl font-bold text-text">
+                {loading ? '...' : `${pendingCount} request${pendingCount !== 1 ? 's' : ''}`}
+              </h3>
             </div>
           </div>
         </div>
@@ -77,99 +94,104 @@ export const WalletManagement: React.FC = () => {
               <CreditCard className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-text-muted">Total Paid Out (This Month)</p>
-              <h3 className="text-2xl font-bold text-text">$12,450.00</h3>
+              <p className="text-sm font-medium text-text-muted">Total Approved Amount</p>
+              <h3 className="text-2xl font-bold text-text">
+                {loading ? '...' : fmt(withdrawals.filter((w) => w.status === 'approved').reduce((s, w) => s + Number(w.amount), 0))}
+              </h3>
             </div>
           </div>
         </div>
       </div>
 
       <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border bg-background/50">
+        <div className="p-4 border-b border-border bg-background/50 flex items-center justify-between">
           <h2 className="text-lg font-bold text-text">Withdrawal Requests</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-text-muted text-xs uppercase tracking-wider">
-                <th className="p-4 font-medium">Request ID</th>
-                <th className="p-4 font-medium">Marketer</th>
-                <th className="p-4 font-medium">Amount</th>
-                <th className="p-4 font-medium">Method</th>
-                <th className="p-4 font-medium">Date</th>
-                <th className="p-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {visibleRequests.map((req, index) => (
-                <tr key={index} className="hover:bg-background/50 transition-colors group">
-                  <td className="p-4 text-sm font-mono text-text-muted">{req.id}</td>
-                  <td className="p-4 text-sm font-semibold text-text">{req.marketer}</td>
-                  <td className="p-4 text-sm font-bold text-primary">{req.amount}</td>
-                  <td className="p-4 text-sm text-text-muted">{req.method}</td>
-                  <td className="p-4 text-sm text-text-muted">{req.date}</td>
-                  <td className="p-4">
-                    <WalletStatusSelect status={req.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); loadData(1, e.target.value); }}
+            className="bg-surface border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
 
-        {limit < requestsList.length && (
-          <div className="p-4 border-t border-border flex justify-center bg-background/20">
-            <button 
-              onClick={() => setLimit(prev => prev + 20)}
-              className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102"
-            >
-              Load More
-            </button>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="p-6 text-sm text-danger">{error}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-text-muted text-xs uppercase tracking-wider bg-background/50">
+                  <th className="p-4 font-medium">ID</th>
+                  <th className="p-4 font-medium">Marketer</th>
+                  <th className="p-4 font-medium">Amount</th>
+                  <th className="p-4 font-medium">Method</th>
+                  <th className="p-4 font-medium">Date</th>
+                  <th className="p-4 font-medium">Status</th>
+                  <th className="p-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {withdrawals.length === 0 ? (
+                  <tr><td colSpan={7} className="p-8 text-center text-sm text-text-muted">No withdrawal requests found.</td></tr>
+                ) : withdrawals.map((w) => (
+                  <tr key={w.id} className="hover:bg-background/50 transition-colors">
+                    <td className="p-4 text-sm font-mono text-text-muted">#{w.id}</td>
+                    <td className="p-4 text-sm font-semibold text-text">{w.marketer?.name ?? '—'}</td>
+                    <td className="p-4 text-sm font-bold text-primary">{fmt(w.amount)}</td>
+                    <td className="p-4 text-sm text-text-muted">{w.payment_method ?? '—'}</td>
+                    <td className="p-4 text-sm text-text-muted">{new Date(w.created_at).toLocaleDateString()}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusStyle[w.status] ?? ''}`}>
+                        {w.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      {w.status === 'pending' && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleApprove(w.id)}
+                            disabled={actionLoading === w.id}
+                            className="p-1.5 text-success hover:bg-success/10 rounded-md transition-colors"
+                            title="Approve"
+                          >
+                            {actionLoading === w.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleReject(w.id)}
+                            disabled={actionLoading === w.id}
+                            className="p-1.5 text-danger hover:bg-danger/10 rounded-md transition-colors"
+                            title="Reject"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {meta && meta.last_page > 1 && (
+          <div className="p-4 border-t border-border flex items-center justify-between bg-background/20">
+            <p className="text-xs text-text-muted">Page {meta.current_page} of {meta.last_page}</p>
+            <div className="flex gap-2">
+              <button disabled={meta.current_page <= 1} onClick={() => loadData(page - 1)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Prev</button>
+              <button disabled={meta.current_page >= meta.last_page} onClick={() => loadData(page + 1)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Next</button>
+            </div>
           </div>
         )}
       </div>
-
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Manual Wallet Adjustment">
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text mb-1">Select Marketer</label>
-            <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-              <option>Ahmed User</option>
-              <option>Sara Smith</option>
-              <option>Fatima Zohra</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-1">Adjustment Type</label>
-              <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-                <option>Credit (+)</option>
-                <option>Debit (-)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text mb-1">Amount</label>
-              <input type="text" className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="$0.00" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text mb-1">Reason for Adjustment</label>
-            <textarea 
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary resize-none" 
-              rows={3}
-              placeholder="e.g. Compensation for lost package"
-            ></textarea>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors">
-              Cancel
-            </button>
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
-              Confirm Adjustment
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

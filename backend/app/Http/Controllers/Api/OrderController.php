@@ -16,8 +16,15 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $orders = $request->user()->marketerOrders()
-            ->with('items')
+            ->with(['items', 'returnFeeTransaction'])
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
+            ->when($request->query('search'), function ($q, $search) {
+                $q->where(function($sq) use ($search) {
+                    $sq->where('reference', 'like', "%{$search}%")
+                       ->orWhere('client_name', 'like', "%{$search}%")
+                       ->orWhere('client_phone', 'like', "%{$search}%");
+                });
+            })
             ->latest()
             ->paginate((int) $request->query('per_page', 20));
 
@@ -28,10 +35,11 @@ class OrderController extends Controller
     {
         $data = $request->validate([
             'client_name' => ['required', 'string', 'max:255'],
-            'client_phone' => ['required', 'string', 'max:40'],
-            'wilaya' => ['required', 'string', 'max:120'],
+            'client_phone' => ['required', 'string', 'max:20'],
+            'wilaya' => ['required', 'string', 'max:80'],
             'commune' => ['required', 'string', 'max:120'],
             'address' => ['nullable', 'string'],
+            'delivery_type' => ['required', 'in:home,desk'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variant_id' => ['required', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -67,7 +75,7 @@ class OrderController extends Controller
                 ];
             }
 
-            $shippingFee = $delivery->calculateCost($data['wilaya'], $data['commune']);
+            $shippingFee = $delivery->calculateCost($data['wilaya'], $data['commune'], $data['delivery_type']);
             $duplicate = Order::where('client_phone', $data['client_phone'])
                 ->whereIn('status', [Order::STATUS_PENDING, Order::STATUS_CONFIRMED, Order::STATUS_SHIPPED])
                 ->exists();
@@ -80,6 +88,7 @@ class OrderController extends Controller
                 'wilaya' => $data['wilaya'],
                 'commune' => $data['commune'],
                 'address' => $data['address'] ?? null,
+                'delivery_type' => $data['delivery_type'],
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
                 'total' => $subtotal + $shippingFee,
@@ -94,7 +103,7 @@ class OrderController extends Controller
             return $order;
         });
 
-        return response()->json($order->load('items'), 201);
+        return response()->json(['message' => 'Order created successfully', 'order' => $order], 201);
     }
 
     public function show(Request $request, Order $order): JsonResponse
@@ -102,5 +111,20 @@ class OrderController extends Controller
         abort_unless($order->marketer_id === $request->user()->id, 403);
 
         return response()->json($order->load('items'));
+    }
+
+    public function cancel(Request $request, Order $order): JsonResponse
+    {
+        if ($order->marketer_id !== $request->user()->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($order->status !== Order::STATUS_PENDING) {
+            return response()->json(['message' => 'Only pending orders can be cancelled.'], 422);
+        }
+
+        $order->update(['status' => Order::STATUS_CANCELLED]);
+
+        return response()->json(['message' => 'Order cancelled successfully', 'order' => $order]);
     }
 }

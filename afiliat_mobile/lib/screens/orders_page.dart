@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
 import '../l10n/app_translations.dart';
+import '../services/api_service.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -11,7 +13,96 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   int _selectedFilterIndex = 0;
-  List<String> get _filters => ['All'.tr, 'Pending'.tr, 'Confirmed'.tr, 'Shipping Status'.tr, 'Delivered'.tr, 'Cancelled'.tr];
+  List<String> get _filters => [
+        'All'.tr,
+        'Pending'.tr,
+        'Confirmed'.tr,
+        'Shipped'.tr,
+        'Delivered'.tr,
+        'Failed'.tr,
+        'Cancelled'.tr,
+      ];
+
+  final List<String?> _statusKeys = [null, 'pending', 'confirmed', 'shipped', 'delivered', 'failed', 'cancelled'];
+
+  String _searchQuery = '';
+  Timer? _debounce;
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() => _searchQuery = query);
+      _loadOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  List<dynamic> _orders = [];
+  bool _loading = true;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() { _loading = true; _error = ''; });
+    try {
+      final params = <String, dynamic>{'per_page': '50'};
+      final statusKey = _statusKeys[_selectedFilterIndex];
+      if (statusKey != null) params['status'] = statusKey;
+      if (_searchQuery.isNotEmpty) params['search'] = _searchQuery;
+      final data = await ApiService.instance.get('/orders', query: params);
+      if (mounted) {
+        setState(() {
+          _orders = data['data'] ?? data;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _error = e.message; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _error = 'Failed to load orders.'; _loading = false; });
+    }
+  }
+
+  Future<void> _cancelOrder(int orderId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Cancel Order'.tr),
+        content: Text('Are you sure you want to cancel this order?'.tr),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('No'.tr)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Yes'.tr, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await ApiService.instance.post('/orders/$orderId/cancel');
+      _loadOrders();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order cancelled successfully'.tr)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error cancelling order'.tr)));
+    }
+  }
+
+  void _selectFilter(int index) {
+    setState(() => _selectedFilterIndex = index);
+    _loadOrders();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,71 +116,37 @@ class _OrdersPageState extends State<OrdersPage> {
               padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
               child: CustomHeader(),
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: TextField(
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: 'Search orders...'.tr,
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
+              ),
+            ),
             _buildFilters(theme),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                children: [
-                  _buildOrderCard(
-                    theme: theme,
-                    orderId: 'ORDER #MP-82931',
-                    status: 'Delivered'.tr,
-                    statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    statusTextColor: theme.colorScheme.tertiary,
-                    name: 'Amine Rahmani',
-                    amount: '12,400 DZD',
-                    profit: '+1,200 DZD',
-                    profitColor: theme.colorScheme.tertiary,
-                    profitBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    date: 'Oct 24, 2023',
-                    isActive: true,
-                  ),
-                  _buildOrderCard(
-                    theme: theme,
-                    orderId: 'ORDER #MP-82945',
-                    status: 'Pending'.tr,
-                    statusBgColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                    statusTextColor: theme.colorScheme.primary,
-                    name: 'Sarah Kaci',
-                    amount: '8,200 DZD',
-                    profit: '+850 DZD',
-                    profitColor: theme.colorScheme.tertiary,
-                    profitBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    date: 'Oct 26, 2023',
-                    isActive: true,
-                  ),
-                  _buildOrderCard(
-                    theme: theme,
-                    orderId: 'ORDER #MP-82912',
-                    status: 'Confirmed'.tr,
-                    statusBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    statusTextColor: theme.colorScheme.tertiary,
-                    name: 'Yacine B.',
-                    amount: '15,000 DZD',
-                    profit: '+2,100 DZD',
-                    profitColor: theme.colorScheme.tertiary,
-                    profitBgColor: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    date: 'Oct 22, 2023',
-                    isActive: true,
-                  ),
-                  _buildOrderCard(
-                    theme: theme,
-                    orderId: 'ORDER #MP-82890',
-                    status: 'Cancelled'.tr,
-                    statusBgColor: theme.colorScheme.surfaceContainerHighest,
-                    statusTextColor: theme.colorScheme.onSurfaceVariant,
-                    name: 'Fatima Zohra',
-                    amount: '5,500 DZD',
-                    profit: '0 DZD',
-                    profitColor: theme.colorScheme.onSurfaceVariant,
-                    profitBgColor: theme.colorScheme.surfaceContainerHighest,
-                    date: 'Oct 20, 2023',
-                    isActive: false,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error.isNotEmpty
+                      ? Center(child: Text(_error, style: const TextStyle(color: Colors.red)))
+                      : _orders.isEmpty
+                          ? Center(child: Text('No orders found.'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)))
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: _orders.length,
+                              itemBuilder: (context, i) => _buildOrderCard(theme, _orders[i]),
+                            ),
             ),
           ],
         ),
@@ -99,33 +156,29 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Widget _buildFilters(ThemeData theme) {
     return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      height: 38,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         itemCount: _filters.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final isSelected = _selectedFilterIndex == index;
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedFilterIndex = index;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            onTap: () => _selectFilter(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
-              alignment: Alignment.center,
               child: Text(
                 _filters[index],
                 style: TextStyle(
-                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
                 ),
               ),
             ),
@@ -135,27 +188,33 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
-  Widget _buildOrderCard({
-    required ThemeData theme,
-    required String orderId,
-    required String status,
-    required Color statusBgColor,
-    required Color statusTextColor,
-    required String name,
-    required String amount,
-    required String profit,
-    required Color profitColor,
-    required Color profitBgColor,
-    required String date,
-    required bool isActive,
-  }) {
+  Widget _buildOrderCard(ThemeData theme, Map<String, dynamic> order) {
+    final status = order['status'] as String? ?? 'pending';
+    final statusColors = {
+      'pending': [theme.colorScheme.primaryContainer, theme.colorScheme.primary],
+      'confirmed': [const Color(0xFFDCFCE7), const Color(0xFF16A34A)],
+      'shipped': [const Color(0xFFEDE9FE), const Color(0xFF7C3AED)],
+      'delivered': [theme.colorScheme.tertiaryContainer, theme.colorScheme.tertiary],
+      'failed': [const Color(0xFFFFE4E4), const Color(0xFFBA1A1A)],
+      'cancelled': [theme.colorScheme.surfaceContainerHighest, theme.colorScheme.onSurfaceVariant],
+    };
+    final colors = statusColors[status] ?? statusColors['pending']!;
+    final items = order['items'] as List? ?? [];
+    final commission = order['marketer_commission'];
+    final total = order['total'];
+    
+    final returnFeeTx = order['return_fee_transaction'];
+    final returnFee = returnFeeTx != null ? returnFeeTx['amount'] : null;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,158 +223,97 @@ class _OrdersPageState extends State<OrdersPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                orderId,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  letterSpacing: 0.5,
-                ),
+                order['reference'] ?? '#${order['id']}',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusTextColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: colors[0], borderRadius: BorderRadius.circular(12)),
+                child: Text(status, style: TextStyle(color: colors[1], fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(10)),
+                child: Icon(Icons.shopping_bag_outlined, size: 20, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order['client_name'] ?? '—',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                    ),
+                    Text(
+                      items.isNotEmpty ? '${items.length} item(s)' : 'No items',
+                      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DZD ${total ?? 0}',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+              ),
+              if (status == 'failed')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4E4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '-DZD ${returnFee ?? 400}',
+                    style: const TextStyle(color: Color(0xFFBA1A1A), fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                )
+              else if (commission != null && double.tryParse(commission.toString())! > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '+DZD $commission',
+                    style: TextStyle(color: theme.colorScheme.tertiary, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            name,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
+            order['created_at'] != null
+                ? DateTime.tryParse(order['created_at'])?.toLocal().toString().split(' ').first ?? ''
+                : '',
+            style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+          ),
+          if (status == 'pending') ...[
+            const SizedBox(height: 8),
+            Divider(height: 1, color: theme.colorScheme.outlineVariant),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _cancelOrder(order['id']),
+                  icon: const Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
+                  label: Text('Cancel Order'.tr, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AMOUNT'.tr,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        amount,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: profitBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PROFIT'.tr,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        profit,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: profitColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.calendar_today_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(
-                date,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSurface),
-                  label: Text('Details'.tr, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: Icon(Icons.chat_bubble_outline, size: 16, color: theme.colorScheme.onPrimary),
-                  label: Text('Contact client'.tr, style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isActive ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          ],
         ],
       ),
     );

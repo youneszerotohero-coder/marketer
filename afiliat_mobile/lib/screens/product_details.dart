@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_translations.dart';
+import '../services/api_service.dart';
+import '../models/cart_item_model.dart';
+import '../services/cart_service.dart';
 
 class ProductDetails extends StatefulWidget {
-  final String imageUrl;
-  final String title;
-  final String price;
-  final String commission;
+  final int? productId;
 
   const ProductDetails({
     super.key,
-    required this.imageUrl,
-    required this.title,
-    required this.price,
-    required this.commission,
+    this.productId,
   });
 
   @override
@@ -23,43 +20,152 @@ class _ProductDetailsState extends State<ProductDetails> {
   int quantity = 1;
   int currentImageIndex = 0;
 
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  bool _submitting = false;
+
   String? selectedWilaya = '16 - Algiers';
   String? selectedCommune = 'Hydra';
 
   final List<String> wilayas = ['16 - Algiers', '09 - Blida', '31 - Oran'];
   final List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
+  String _deliveryType = 'home';
 
-  late final List<String> sliderImages = [
-    widget.imageUrl,
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80',
-    'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&w=400&q=80',
-    'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=400&q=80',
-  ];
+  bool _loading = true;
+  String _error = '';
+  Map<String, dynamic>? _product;
+  Map<String, dynamic>? _defaultVariant;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.productId != null) {
+      _loadProductDetails();
+    } else {
+      _loading = false;
+      _error = 'No product ID provided.';
+    }
+  }
+
+  Future<void> _loadProductDetails() async {
+    setState(() { _loading = true; _error = ''; });
+    try {
+      final data = await ApiService.instance.get('/products/${widget.productId}');
+      if (mounted) {
+        setState(() {
+          _product = data['data'] ?? data;
+          final variants = _product!['variants'] as List? ?? [];
+          if (variants.isNotEmpty) {
+            _defaultVariant = variants.first;
+          }
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  List<String> get sliderImages {
+    final images = <String>[];
+    if (_product != null) {
+      if (_product!['main_image_path'] != null) {
+        images.add(ApiService.getImageUrl(_product!['main_image_path']));
+      }
+      final extraImages = _product!['images'] as List?;
+      if (extraImages != null) {
+        for (final img in extraImages) {
+          if (img['path'] != null) {
+            images.add(ApiService.getImageUrl(img['path']));
+          }
+        }
+      }
+    }
+    if (images.isNotEmpty) {
+      return images.toSet().toList();
+    }
+    return ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80'];
+  }
+
+  Future<void> _submitOrder() async {
+    if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill all required fields.'.tr)));
+      return;
+    }
+
+    setState(() => _submitting = true);
+
+    try {
+      final items = [
+        {
+          'product_variant_id': _defaultVariant?['id'] ?? widget.productId,
+          'quantity': quantity,
+          'price': _priceNum,
+        }
+      ];
+
+      await ApiService.instance.post('/orders', body: {
+        'client_name': _nameController.text.trim(),
+        'client_phone': _phoneController.text.trim(),
+        'wilaya': selectedWilaya,
+        'commune': selectedCommune,
+        'delivery_type': _deliveryType,
+        'items': items,
+        'status': 'pending',
+        'shipping_fee': 600,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully!'.tr)));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to submit order: $e'.tr)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+  }
+
+  String get _title => _product?['name'] ?? 'Loading...';
+  String get _description => _product?['description'] ?? 'No description available.';
+  double get _priceNum => _defaultVariant != null ? double.parse(_defaultVariant!['sale_price'].toString()) : 0.0;
+  double get _commissionNum => _defaultVariant != null ? double.parse(_defaultVariant!['commission_value'].toString()) : 0.0;
+  int get _stock => _defaultVariant != null ? int.tryParse(_defaultVariant!['stock'].toString()) ?? 0 : 0;
 
   String get _productTotalPrice {
-    final cleanStr = widget.price.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanStr.isNotEmpty) {
-      final priceNum = double.tryParse(cleanStr) ?? 0;
-      final total = priceNum * quantity;
-      return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
-    }
-    return widget.price;
+    final total = _priceNum * quantity;
+    return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 
   String get _finalTotalPrice {
-    final cleanStr = widget.price.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanStr.isNotEmpty) {
-      final priceNum = double.tryParse(cleanStr) ?? 0;
-      final total = (priceNum * quantity) + 600;
-      return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
-    }
-    return widget.price;
+    final total = (_priceNum * quantity) + 600; // Assuming 600 shipping
+    return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
+
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error.isNotEmpty) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+        body: Center(child: Text(_error)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -98,7 +204,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                             },
                             itemCount: sliderImages.length,
                             itemBuilder: (context, index) {
-                              final image = Container(
+                               return Container(
                                 width: double.infinity,
                                 decoration: BoxDecoration(
                                   image: DecorationImage(
@@ -107,10 +213,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                                   ),
                                 ),
                               );
-                              if (index == 0) {
-                                return Hero(tag: widget.imageUrl, child: image);
-                              }
-                              return image;
                             },
                           ),
                         ),
@@ -138,53 +240,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                             ),
                           ),
                         ),
-                        // Download All Button
-                        Positioned(
-                          right: 12,
-                          bottom: 10,
-                          child: GestureDetector(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Downloading all images...'.tr),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.download_rounded,
-                                    size: 16,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Save All'.tr,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -199,7 +254,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.title,
+                                _title,
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -232,7 +287,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                                         Icon(Icons.monetization_on_rounded, size: 14, color: primaryColor),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${widget.commission} (x$quantity)',
+                                          '+ DZD $_commissionNum (x$quantity)',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -247,12 +302,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.star, size: 18, color: Color(0xFFFFB74D)),
-                                  const SizedBox(width: 4),
                                   Text(
-                                    '3.5 (1055 ${'Reviews'.tr})',
+                                    _stock > 0 ? 'In Stock ($_stock available)'.tr : 'Out of Stock'.tr,
                                     style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                      color: _stock > 0 ? Colors.green : Colors.red,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -281,7 +334,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                                     padding: const EdgeInsets.symmetric(horizontal: 10.0),
                                     child: Text('$quantity', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
                                   ),
-                                  _buildQtyButton(theme, Icons.add, () => setState(() => quantity++)),
+                                  _buildQtyButton(theme, Icons.add, () {
+                                    if (quantity < _stock) setState(() => quantity++);
+                                  }),
                                 ],
                               ),
                             ),
@@ -291,6 +346,73 @@ class _ProductDetailsState extends State<ProductDetails> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Variants Selection
+                    if (_product != null && _product!['variants'] != null && (_product!['variants'] as List).length > 1) ...[
+                      Text(
+                        'Select Option'.tr,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: (_product!['variants'] as List).map((variant) {
+                          final isSelected = _defaultVariant?['id'] == variant['id'];
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _defaultVariant = variant;
+                                if (quantity > variant['stock']) {
+                                  quantity = variant['stock'] > 0 ? variant['stock'] : 1;
+                                }
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? primaryColor.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHighest,
+                                border: Border.all(
+                                  color: isSelected ? primaryColor : Colors.transparent,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Radio<int>(
+                                    value: variant['id'],
+                                    groupValue: _defaultVariant?['id'],
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _defaultVariant = variant;
+                                        if (quantity > variant['stock']) {
+                                          quantity = variant['stock'] > 0 ? variant['stock'] : 1;
+                                        }
+                                      });
+                                    },
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    activeColor: primaryColor,
+                                    visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    variant['sku']?.toString() ?? 'Option',
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? primaryColor : theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
                     // 4. Description
                     Text(
                       'Description'.tr,
@@ -298,7 +420,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Classic white Jordans featuring sleek leather iconic silhouette, and premium.',
+                      _description,
                       style: TextStyle(
                         fontSize: 14,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -307,7 +429,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                     ),
                     const SizedBox(height: 32),
 
-                    // 5. Client Information Form
+                    // 5. Client Information Form (Optional here since cart also asks for it, but kept to follow instruction)
                     _buildClientInformationCard(theme),
 
                     const SizedBox(height: 40),
@@ -336,66 +458,24 @@ class _ProductDetailsState extends State<ProductDetails> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Product Price'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        _productTotalPrice,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+                      Text('Product Price'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text(_productTotalPrice, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Shipping Cost'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'DZD 600',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+                      Text('Shipping Cost'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text('DZD 600', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Total Price'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        _finalTotalPrice,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+                      Text('Total Price'.tr, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text(_finalTotalPrice, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -403,45 +483,46 @@ class _ProductDetailsState extends State<ProductDetails> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: _stock > 0 ? () {
+                            if (_defaultVariant == null) return;
+                            final item = CartItemModel(
+                              id: _defaultVariant!['id'].toString(),
+                              brand: _product!['brand']?['name'] ?? '',
+                              title: _product!['name'] ?? '',
+                              variantSku: _defaultVariant!['sku'] ?? '',
+                              price: double.tryParse(_defaultVariant!['sale_price'].toString()) ?? 0.0,
+                              commission: double.tryParse(_defaultVariant!['commission_value'].toString()) ?? 0.0,
+                              imageUrl: _product!['main_image_path'] != null ? ApiService.getImageUrl(_product!['main_image_path']) : 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb',
+                              quantity: quantity,
+                              availableVariants: _product!['variants'] as List?,
+                            );
+                            CartService.instance.addToCart(item);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Added to cart'.tr)));
+                          } : null,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: primaryColor,
                             side: BorderSide(color: primaryColor, width: 2),
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text(
-                            'Add to Cart'.tr,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: Text('Add to Cart'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: _stock > 0 && !_submitting ? _submitOrder : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 8,
                             shadowColor: primaryColor.withValues(alpha: 0.4),
                           ),
-                          child: Text(
-                            'Buy Now'.tr,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: _submitting 
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text('Buy Now'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -521,7 +602,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           
           _buildInputField(
             label: 'FULL NAME'.tr,
-            child: _buildTextField(hint: 'e.g. Ahmed Benali'.tr),
+            child: _buildTextField(hint: 'e.g. Ahmed Benali'.tr, controller: _nameController),
           ),
           
           const SizedBox(height: 20),
@@ -544,6 +625,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 Expanded(
                   child: _buildTextField(
                     hint: '0550 00 00 00',
+                    controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
                   ),
@@ -578,6 +660,35 @@ class _ProductDetailsState extends State<ProductDetails> {
               ),
             ],
           ),
+          
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'DELIVERY TYPE'.tr,
+            child: Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
+                    value: 'home',
+                    groupValue: _deliveryType,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => setState(() => _deliveryType = val!),
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
+                    value: 'desk',
+                    groupValue: _deliveryType,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => setState(() => _deliveryType = val!),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -604,11 +715,13 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   Widget _buildTextField({
     required String hint,
+    TextEditingController? controller,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     BorderRadius? borderRadius,
   }) {
     return TextField(
+      controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
       style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
@@ -641,7 +754,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
-      value: value,
+      initialValue: value,
       icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
       style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
@@ -662,7 +775,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         ),
       ),
       items: items.map((String item) {
-        return DropdownMenuItem(
+        return DropdownMenuItem<String>(
           value: item,
           child: Text(item),
         );

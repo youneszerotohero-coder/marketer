@@ -19,6 +19,14 @@ class OrderWorkflowController extends Controller
                         ->orWhere('confirmatrice_id', $request->user()->id);
                 })
                 ->whereIn('status', ['pending', 'confirmed'])
+                ->when($request->query('search'), function ($q, $search) {
+                    $q->where(function($sq) use ($search) {
+                        $sq->where('reference', 'like', "%{$search}%")
+                           ->orWhere('client_name', 'like', "%{$search}%")
+                           ->orWhere('client_phone', 'like', "%{$search}%")
+                           ->orWhereHas('marketer', fn($mq) => $mq->where('name', 'like', "%{$search}%"));
+                    });
+                })
                 ->latest()
                 ->paginate((int) $request->query('per_page', 20))
         );

@@ -22,7 +22,8 @@ class CustomHeader extends StatelessWidget {
         ],
         const CircleAvatar(
           radius: 20,
-          backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+          backgroundColor: Color(0xFFF97316),
+          child: Icon(Icons.person, color: Colors.white, size: 24),
         ),
         const SizedBox(width: 12),
         Text(

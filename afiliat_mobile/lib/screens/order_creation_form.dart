@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
-import 'cart_page.dart';
+import '../models/cart_item_model.dart';
+import '../services/cart_service.dart';
 import '../l10n/app_translations.dart';
+import '../services/api_service.dart';
 
 class OrderCreationForm extends StatefulWidget {
   final List<CartItemModel> cartItems;
@@ -18,15 +20,66 @@ class OrderCreationForm extends StatefulWidget {
 }
 
 class _OrderCreationFormState extends State<OrderCreationForm> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  
   String? selectedWilaya = '16 - Algiers';
   String? selectedCommune = 'Hydra';
+  bool _isLoading = false;
 
   final List<String> wilayas = ['16 - Algiers', '09 - Blida', '31 - Oran'];
   final List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
+  String _deliveryType = 'home';
 
-  double get subtotal => widget.cartItems.fold(0, (total, item) => total + (item.price * item.quantity));
-  double get totalCommission => widget.cartItems.fold(0, (total, item) => total + (item.commission * item.quantity));
+  late List<CartItemModel> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List.from(widget.cartItems);
+  }
+
+  double get subtotal => _items.fold(0, (total, item) => total + (item.price * item.quantity));
+  double get totalCommission => _items.fold(0, (total, item) => total + (item.commission * item.quantity));
   double get total => subtotal + widget.shippingCost;
+
+  Future<void> _submitOrder() async {
+    if (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill all required fields.'.tr)));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final items = _items.map((item) => {
+        'product_variant_id': item.id,
+        'quantity': item.quantity,
+        'price': item.price,
+      }).toList();
+
+      await ApiService.instance.post('/orders', body: {
+        'client_name': _nameController.text.trim(),
+        'client_phone': _phoneController.text.trim(),
+        'wilaya': selectedWilaya,
+        'commune': selectedCommune,
+        'delivery_type': _deliveryType,
+        'items': items,
+        'status': 'pending',
+        'shipping_fee': widget.shippingCost,
+      });
+
+      _showSuccessDialog();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to submit order: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   void _showSuccessDialog() {
     showDialog(
@@ -140,7 +193,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _showSuccessDialog,
+                        onPressed: _isLoading ? null : _submitOrder,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF97316),
                           foregroundColor: Colors.white,
@@ -150,7 +203,9 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                           elevation: 4,
                           shadowColor: const Color(0xFFF97316).withValues(alpha: 0.4),
                         ),
-                        child: Text(
+                        child: _isLoading 
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
                           'Confirm Order'.tr,
                           style: const TextStyle(
                             fontSize: 16,
@@ -208,7 +263,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           
           _buildInputField(
             label: 'FULL NAME'.tr,
-            child: _buildTextField(hint: 'e.g. Ahmed Benali'.tr),
+            child: _buildTextField(hint: 'e.g. Ahmed Benali'.tr, controller: _nameController),
           ),
           
           const SizedBox(height: 20),
@@ -233,6 +288,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                     hint: '0550 00 00 00',
                     keyboardType: TextInputType.phone,
                     borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+                    controller: _phoneController,
                   ),
                 ),
               ],
@@ -264,6 +320,35 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                 ),
               ),
             ],
+          ),
+          
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'DELIVERY TYPE'.tr,
+            child: Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
+                    value: 'home',
+                    groupValue: _deliveryType,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => setState(() => _deliveryType = val!),
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
+                    value: 'desk',
+                    groupValue: _deliveryType,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => setState(() => _deliveryType = val!),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -306,7 +391,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           const SizedBox(height: 16),
           
           // Product List
-          ...widget.cartItems.map((item) => _buildProductItemRow(item)).toList(),
+          ..._items.asMap().entries.map((entry) => _buildProductItemRow(entry.value, entry.key)),
           
           const SizedBox(height: 8),
           Divider(color: theme.colorScheme.outlineVariant),
@@ -383,7 +468,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     );
   }
 
-  Widget _buildProductItemRow(CartItemModel item) {
+  Widget _buildProductItemRow(CartItemModel item, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -399,7 +484,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           // Product Details
           Expanded(
             child: Column(
@@ -407,55 +492,80 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
               children: [
                 Text(
                   item.title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.2,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                if (item.availableVariants != null && item.availableVariants!.isNotEmpty)
+                  GestureDetector(
+                    onTap: () => _showVariantSelector(context, index, item),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.variantSku.isNotEmpty ? 'Option: ${item.variantSku}' : 'Select Option'.tr,
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.keyboard_arrow_down, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${'Qty'.tr}: ${item.quantity}',
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                      'DZD ${item.price.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
-                      'DZD ${(item.price * item.quantity).toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
+                      'x${item.quantity}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                // Item Commission Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.2), // Light green
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_upward_rounded, size: 10, color: Theme.of(context).colorScheme.onTertiaryContainer),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${'Earn DZD'.tr} ${(item.commission * item.quantity).toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onTertiaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            onPressed: () {
+              try {
+                // Remove from CartService if exists
+                final globalItems = CartService.instance.items;
+                final globalIndex = globalItems.indexWhere((i) => i.id == item.id && i.variantSku == item.variantSku);
+                if (globalIndex != -1) {
+                  CartService.instance.removeItem(globalIndex);
+                }
+              } catch (_) {}
+
+              setState(() {
+                _items.removeAt(index);
+              });
+
+              if (_items.isEmpty) {
+                Navigator.pop(context);
+              }
+            },
           ),
         ],
       ),
@@ -502,8 +612,10 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     BorderRadius? borderRadius,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
       style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
@@ -535,7 +647,8 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     required void Function(String?) onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      isExpanded: true,
+      initialValue: value,
       icon: Icon(Icons.keyboard_arrow_down_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
       style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
@@ -556,12 +669,90 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
         ),
       ),
       items: items.map((String item) {
-        return DropdownMenuItem(
+        return DropdownMenuItem<String>(
           value: item,
           child: Text(item),
         );
       }).toList(),
       onChanged: onChanged,
+    );
+  }
+
+  void _showVariantSelector(BuildContext context, int index, CartItemModel item) {
+    if (item.availableVariants == null || item.availableVariants!.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Select Option'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: item.availableVariants!.map((v) {
+                  final isSelected = v['id'].toString() == item.id;
+                  final stock = int.tryParse(v['stock'].toString()) ?? 0;
+                  final isAvailable = stock > 0 && v['status'] == 'active';
+
+                  return InkWell(
+                    onTap: isAvailable ? () {
+                      final updatedItem = CartItemModel(
+                        id: v['id'].toString(),
+                        brand: item.brand,
+                        title: item.title,
+                        variantSku: v['sku'] ?? '',
+                        price: double.tryParse(v['sale_price'].toString()) ?? item.price,
+                        commission: double.tryParse(v['commission_value'].toString()) ?? item.commission,
+                        imageUrl: item.imageUrl,
+                        quantity: item.quantity > stock ? stock : item.quantity,
+                        availableVariants: item.availableVariants,
+                      );
+                      
+                      try {
+                        final globalItems = CartService.instance.items;
+                        final globalIndex = globalItems.indexWhere((i) => i.id == item.id && i.variantSku == item.variantSku);
+                        if (globalIndex != -1) {
+                          CartService.instance.updateItem(globalIndex, updatedItem);
+                        }
+                      } catch (_) {}
+
+                      setState(() {
+                        _items[index] = updatedItem;
+                      });
+                      
+                      Navigator.pop(ctx);
+                    } : null,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : (isAvailable ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.grey.withValues(alpha: 0.1)),
+                        border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        v['sku']?.toString() ?? 'Option',
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Theme.of(context).colorScheme.primary : (isAvailable ? Theme.of(context).colorScheme.onSurface : Colors.grey),
+                          decoration: isAvailable ? null : TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

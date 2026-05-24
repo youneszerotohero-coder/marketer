@@ -2,15 +2,65 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import 'login_page.dart';
 import '../l10n/app_translations.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? _user;
+  Map<String, dynamic>? _stats;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final api = ApiService.instance;
+      final results = await Future.wait([
+        api.get('/me'),
+        api.get('/marketer/stats'),
+      ]);
+      if (mounted) {
+        setState(() {
+          _user = results[0] as Map<String, dynamic>;
+          _stats = results[1] as Map<String, dynamic>;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    await AuthService.instance.logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
-    
+
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -84,21 +134,14 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'John Doe',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          Text(
+            _user?['name'] ?? '—',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 4),
           Text(
-            'john.doe@example.com',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
+            _user?['email'] ?? '',
+            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
           ),
           const SizedBox(height: 16),
           Container(
@@ -108,12 +151,8 @@ class ProfilePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Pro Affiliate'.tr,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
+              _user?['tier'] ?? 'Marketer',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
         ],
@@ -134,6 +173,13 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildAnalyticsGrid(ThemeData theme) {
+    final totalSales = _stats?['total_sales']?.toString() ?? '0';
+    final pending = _stats?['pending_orders']?.toString() ?? '0';
+    final delivered = _stats?['delivered_orders']?.toString() ?? '0';
+    final failed = _stats?['failed_orders']?.toString() ?? '0';
+    final cancelled = _stats?['cancelled_orders']?.toString() ?? '0';
+    final rate = '${_stats?['delivery_rate'] ?? 0}%';
+
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
@@ -143,10 +189,11 @@ class ProfilePage extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.5,
       children: [
-        _buildAnalyticsCard(theme, 'Total Sales'.tr, '142', '+8%', true),
-        _buildAnalyticsCard(theme, 'Pending Orders'.tr, '12', 'In Progress'.tr, null),
-        _buildAnalyticsCard(theme, 'Delivered'.tr, '98', '82% Rate'.replaceAll('Rate', 'Rate'.tr), true, color: const Color(0xFF006D36)),
-        _buildAnalyticsCard(theme, 'Failed'.tr, '05', '-2%', false, color: const Color(0xFFBA1A1A)),
+        _buildAnalyticsCard(theme, 'Total Sales'.tr, totalSales, '', null),
+        _buildAnalyticsCard(theme, 'Pending Orders'.tr, pending, 'In Progress'.tr, null),
+        _buildAnalyticsCard(theme, 'Delivered'.tr, delivered, rate, true, color: const Color(0xFF006D36)),
+        _buildAnalyticsCard(theme, 'Failed'.tr, failed, '', false, color: const Color(0xFFBA1A1A)),
+        _buildAnalyticsCard(theme, 'Cancelled'.tr, cancelled, '', false, color: Colors.grey.shade600),
       ],
     );
   }
@@ -226,7 +273,7 @@ class ProfilePage extends StatelessWidget {
             children: [
               Text('Commission Earned'.tr, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              Text('DZD 45,800', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor)),
+              Text('DZD ${_stats?['wallet']?['earned'] ?? '0'}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor)),
             ],
           ),
           Container(
@@ -293,7 +340,7 @@ class ProfilePage extends StatelessWidget {
           ),
           trailing: Switch(
             value: isDark,
-            activeColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.primary,
             onChanged: (value) {
               themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
             },
@@ -329,7 +376,7 @@ class ProfilePage extends StatelessWidget {
           ),
           trailing: Switch(
             value: isArabic,
-            activeColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.primary,
             onChanged: (value) {
               localeNotifier.value = value ? const Locale('ar') : const Locale('en');
             },
@@ -347,28 +394,19 @@ class ProfilePage extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: () {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-          );
-        },
+        onPressed: () => _logout(context),
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFFBA1A1A),
           side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.logout, size: 20),
             const SizedBox(width: 8),
-            Text(
-              'Log Out'.tr,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text('Log Out'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

@@ -31,6 +31,7 @@ class Order extends Model
         'total',
         'marketer_commission',
         'status',
+        'delivery_type',
         'delivery_status',
         'tracking_number',
         'is_duplicate',
@@ -72,5 +73,44 @@ class Order extends Model
     public function commissionTransaction(): HasOne
     {
         return $this->hasOne(WalletTransaction::class)->where('type', 'commission');
+    }
+
+    public function returnFeeTransaction(): HasOne
+    {
+        return $this->hasOne(WalletTransaction::class)->where('type', 'return_fee');
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    protected static function booted()
+    {
+        static::updated(function (Order $order) {
+            $inactiveStatuses = [self::STATUS_CANCELLED, self::STATUS_FAILED];
+            
+            if ($order->isDirty('status')) {
+                $oldStatus = $order->getOriginal('status');
+                $newStatus = $order->status;
+                
+                $wasInactive = in_array($oldStatus, $inactiveStatuses);
+                $isInactive = in_array($newStatus, $inactiveStatuses);
+                
+                if (!$wasInactive && $isInactive) {
+                    foreach ($order->items as $item) {
+                        if ($item->variant) {
+                            $item->variant->increment('stock', $item->quantity);
+                        }
+                    }
+                } elseif ($wasInactive && !$isInactive) {
+                    foreach ($order->items as $item) {
+                        if ($item->variant) {
+                            $item->variant->decrement('stock', $item->quantity);
+                        }
+                    }
+                }
+            }
+        });
     }
 }
