@@ -67,6 +67,15 @@ class ApiService {
     return _parse(res);
   }
 
+  Future<dynamic> put(String path, {Map<String, dynamic>? body}) async {
+    final res = await http.put(
+      _uri(path),
+      headers: await _headers(),
+      body: body != null ? jsonEncode(body) : null,
+    );
+    return _parse(res);
+  }
+
   dynamic _parse(http.Response res) {
     if (res.statusCode == 401) {
       SharedPreferences.getInstance().then((prefs) {

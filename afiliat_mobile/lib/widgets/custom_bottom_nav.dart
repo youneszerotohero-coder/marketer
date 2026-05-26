@@ -16,7 +16,13 @@ class CustomBottomNav extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
+      type: BottomNavigationBarType.fixed,
       items: [
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.dashboard_outlined),
+          activeIcon: const Icon(Icons.dashboard),
+          label: 'Dashboard'.tr,
+        ),
         BottomNavigationBarItem(
           icon: const Icon(Icons.storefront_outlined),
           activeIcon: const Icon(Icons.storefront),

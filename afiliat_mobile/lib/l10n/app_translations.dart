@@ -15,6 +15,7 @@ class AppTranslations {
       'SETTINGS': 'SETTINGS',
       'Dark Mode': 'Dark Mode',
       'العربية': 'Arabic (العربية)',
+      'Dashboard': 'Dashboard',
 
       // Login Page
       'Welcome Back': 'Welcome Back',
@@ -46,6 +47,53 @@ class AppTranslations {
       'Help & Support': 'Help & Support',
       'Log Out': 'Log Out',
       'Pro Affiliate': 'Pro Affiliate',
+      
+      // Personal Info Edits
+      'PERSONAL INFORMATION': 'PERSONAL INFORMATION',
+      'Name': 'Name',
+      'Name is required.': 'Name is required.',
+      'Bank Account Number': 'Bank Account Number',
+      'New Password (Optional)': 'New Password (Optional)',
+      'Leave blank to keep current password': 'Leave blank to keep current password',
+      'Save Changes': 'Save Changes',
+      'Profile updated successfully!': 'Profile updated successfully!',
+      'Failed to update profile.': 'Failed to update profile.',
+      'Password must be at least 8 characters.': 'Password must be at least 8 characters.',
+
+      // Dashboard
+      'FINANCIAL SUMMARY': 'FINANCIAL SUMMARY',
+      'SALES & ORDERS': 'SALES & ORDERS',
+      'Delivery Rate': 'Delivery Rate',
+      'Failed to load dashboard data.': 'Failed to load dashboard data.',
+
+      // Withdrawal UX
+      'Select Payment Method': 'Select Payment Method',
+      'Select Operator': 'Select Operator',
+      'Flexy Phone Number': 'Flexy Phone Number',
+      'Bank Account Number / CCP / RIP': 'Bank Account Number / CCP / RIP',
+      'Bank Transfer': 'Bank Transfer',
+      'Enter bank account number.': 'Enter bank account number.',
+      'approved': 'Approved',
+      'rejected': 'Rejected',
+      'pending': 'Pending',
+      'confirmed': 'Confirmed',
+      'shipped': 'Shipped',
+      'delivered': 'Delivered',
+      'failed': 'Failed',
+      'cancelled': 'Cancelled',
+      
+      // Order Details UI
+      'Order Details': 'Order Details',
+      'Address & Delivery': 'Address & Delivery',
+      'Customer Name': 'Customer Name',
+      'Items Ordered': 'Items Ordered',
+      'Payment Summary': 'Payment Summary',
+      'Expected Profit': 'Expected Profit',
+      'Other Info': 'Other Info',
+      'Close': 'Close',
+      'Wilaya': 'Wilaya',
+      'Commune': 'Commune',
+      'Address': 'Address',
 
       // Header
       'Marketer Pulse': 'Marketer Pulse',
@@ -158,6 +206,7 @@ class AppTranslations {
       'SETTINGS': 'الإعدادات',
       'Dark Mode': 'الوضع الليلي',
       'العربية': 'الإنجليزية (English)',
+      'Dashboard': 'لوحة التحكم',
 
       // Login Page
       'Welcome Back': 'مرحباً بعودتك',
@@ -188,6 +237,54 @@ class AppTranslations {
       'Security': 'الأمان',
       'Help & Support': 'المساعدة والدعم',
       'Log Out': 'تسجيل الخروج',
+      'Pro Affiliate': 'مسوق محترف',
+
+      // Personal Info Edits
+      'PERSONAL INFORMATION': 'المعلومات الشخصية',
+      'Name': 'الاسم',
+      'Name is required.': 'الاسم مطلوب.',
+      'Bank Account Number': 'رقم الحساب البنكي',
+      'New Password (Optional)': 'كلمة مرور جديدة (اختياري)',
+      'Leave blank to keep current password': 'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية',
+      'Save Changes': 'حفظ التغييرات',
+      'Profile updated successfully!': 'تم تحديث الملف الشخصي بنجاح!',
+      'Failed to update profile.': 'فشل تحديث الملف الشخصي.',
+      'Password must be at least 8 characters.': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+
+      // Dashboard
+      'FINANCIAL SUMMARY': 'الملخص المالي',
+      'SALES & ORDERS': 'المبيعات والطلبات',
+      'Delivery Rate': 'نسبة التوصيل',
+      'Failed to load dashboard data.': 'فشل تحميل بيانات لوحة التحكم.',
+
+      // Withdrawal UX
+      'Select Payment Method': 'اختر طريقة الدفع',
+      'Select Operator': 'اختر المتعامل',
+      'Flexy Phone Number': 'رقم هاتف فليكسي',
+      'Bank Account Number / CCP / RIP': 'رقم الحساب البنكي / CCP / RIP',
+      'Bank Transfer': 'تحويل بنكي',
+      'Enter bank account number.': 'أدخل رقم الحساب البنكي.',
+      'approved': 'مقبول',
+      'rejected': 'مرفوض',
+      'pending': 'قيد الانتظار',
+      'confirmed': 'مؤكد',
+      'shipped': 'تم الشحن',
+      'delivered': 'تم التوصيل',
+      'failed': 'فشل التوصيل',
+      'cancelled': 'ملغى',
+      
+      // Order Details UI
+      'Order Details': 'تفاصيل الطلب',
+      'Address & Delivery': 'العنوان والتوصيل',
+      'Customer Name': 'اسم العميل',
+      'Items Ordered': 'المنتجات المطلوبة',
+      'Payment Summary': 'ملخص الدفع',
+      'Expected Profit': 'الربح المتوقع',
+      'Other Info': 'معلومات أخرى',
+      'Close': 'إغلاق',
+      'Wilaya': 'الولاية',
+      'Commune': 'البلدية',
+      'Address': 'العنوان',
       'Pro Affiliate': 'مسوق محترف',
 
       // Header

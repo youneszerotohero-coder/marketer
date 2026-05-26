@@ -74,6 +74,33 @@ class AuthController extends Controller
         return response()->json($request->user());
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:40'],
+            'bank_number' => ['nullable', 'string', 'max:255'],
+            'password' => ['nullable', 'string', 'min:8'],
+        ]);
+
+        $user->name = $data['name'];
+        $user->phone = $data['phone'] ?? null;
+        
+        $profile = $user->profile ?? [];
+        $profile['bank_number'] = $data['bank_number'] ?? null;
+        $user->profile = $profile;
+
+        if (!empty($data['password'])) {
+            $user->password = $data['password'];
+        }
+
+        $user->save();
+
+        return response()->json($user);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         JWTAuth::invalidate(JWTAuth::getToken());

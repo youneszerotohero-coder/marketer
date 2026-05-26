@@ -77,8 +77,8 @@ class AppDrawer extends StatelessWidget {
                   _buildNavItem(
                     context,
                     theme,
-                    icon: Icons.storefront_outlined,
-                    label: 'Shop'.tr,
+                    icon: Icons.dashboard_outlined,
+                    label: 'Dashboard'.tr,
                     isSelected: currentTab == 0,
                     onTap: () {
                       Navigator.pop(context);
@@ -88,8 +88,8 @@ class AppDrawer extends StatelessWidget {
                   _buildNavItem(
                     context,
                     theme,
-                    icon: Icons.shopping_bag_outlined,
-                    label: 'Orders'.tr,
+                    icon: Icons.storefront_outlined,
+                    label: 'Shop'.tr,
                     isSelected: currentTab == 1,
                     onTap: () {
                       Navigator.pop(context);
@@ -99,8 +99,8 @@ class AppDrawer extends StatelessWidget {
                   _buildNavItem(
                     context,
                     theme,
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Wallet'.tr,
+                    icon: Icons.shopping_bag_outlined,
+                    label: 'Orders'.tr,
                     isSelected: currentTab == 2,
                     onTap: () {
                       Navigator.pop(context);
@@ -110,12 +110,23 @@ class AppDrawer extends StatelessWidget {
                   _buildNavItem(
                     context,
                     theme,
-                    icon: Icons.person_outline,
-                    label: 'Profile'.tr,
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Wallet'.tr,
                     isSelected: currentTab == 3,
                     onTap: () {
                       Navigator.pop(context);
                       onNavigateTab(3);
+                    },
+                  ),
+                  _buildNavItem(
+                    context,
+                    theme,
+                    icon: Icons.person_outline,
+                    label: 'Profile'.tr,
+                    isSelected: currentTab == 4,
+                    onTap: () {
+                      Navigator.pop(context);
+                      onNavigateTab(4);
                     },
                   ),
                   

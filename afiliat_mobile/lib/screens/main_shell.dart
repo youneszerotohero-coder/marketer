@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/app_drawer.dart';
 import '../widgets/custom_bottom_nav.dart';
+import 'dashboard_page.dart';
 import 'orders_page.dart';
 import 'profile_page.dart';
 import 'shop_page.dart';
@@ -20,6 +21,7 @@ class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
+    const DashboardPage(),
     const ShopPage(),
     const OrdersPage(),
     const WalletPage(),

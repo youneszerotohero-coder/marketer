@@ -14,8 +14,13 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _user;
-  Map<String, dynamic>? _stats;
   bool _loading = true;
+  bool _saving = false;
+
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _bankController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -23,22 +28,82 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _bankController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     try {
-      final api = ApiService.instance;
-      final results = await Future.wait([
-        api.get('/me'),
-        api.get('/marketer/stats'),
-      ]);
+      final user = await ApiService.instance.get('/me');
       if (mounted) {
         setState(() {
-          _user = results[0] as Map<String, dynamic>;
-          _stats = results[1] as Map<String, dynamic>;
+          _user = user as Map<String, dynamic>;
+          _nameController.text = _user?['name'] ?? '';
+          _phoneController.text = _user?['phone'] ?? '';
+          
+          final profile = _user?['profile'];
+          _bankController.text = (profile is Map ? profile['bank_number'] : null) ?? '';
           _loading = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final bankNumber = _bankController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Name is required.'.tr)));
+      return;
+    }
+    if (password.isNotEmpty && password.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password must be at least 8 characters.'.tr)));
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final updatedUser = await ApiService.instance.put('/me', body: {
+        'name': name,
+        'phone': phone,
+        'bank_number': bankNumber,
+        if (password.isNotEmpty) 'password': password,
+      });
+
+      if (mounted) {
+        setState(() {
+          _user = updatedUser as Map<String, dynamic>;
+          _passwordController.clear();
+          _saving = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully!'.tr), backgroundColor: Colors.green),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update profile.'.tr), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -73,11 +138,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  _buildSectionTitle('ANALYTICS OVERVIEW'.tr, theme),
+                  _buildSectionTitle('PERSONAL INFORMATION'.tr, theme),
                   const SizedBox(height: 16),
-                  _buildAnalyticsGrid(theme),
-                  const SizedBox(height: 12),
-                  _buildCommissionCard(theme, primaryColor),
+                  _buildPersonalInfoForm(theme, primaryColor),
                   const SizedBox(height: 32),
                   _buildSectionTitle('ACCOUNT SETTINGS'.tr, theme),
                   const SizedBox(height: 16),
@@ -172,86 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAnalyticsGrid(ThemeData theme) {
-    final totalSales = _stats?['total_sales']?.toString() ?? '0';
-    final pending = _stats?['pending_orders']?.toString() ?? '0';
-    final delivered = _stats?['delivered_orders']?.toString() ?? '0';
-    final failed = _stats?['failed_orders']?.toString() ?? '0';
-    final cancelled = _stats?['cancelled_orders']?.toString() ?? '0';
-    final rate = '${_stats?['delivery_rate'] ?? 0}%';
-
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
-      children: [
-        _buildAnalyticsCard(theme, 'Total Sales'.tr, totalSales, '', null),
-        _buildAnalyticsCard(theme, 'Pending Orders'.tr, pending, 'In Progress'.tr, null),
-        _buildAnalyticsCard(theme, 'Delivered'.tr, delivered, rate, true, color: const Color(0xFF006D36)),
-        _buildAnalyticsCard(theme, 'Failed'.tr, failed, '', false, color: const Color(0xFFBA1A1A)),
-        _buildAnalyticsCard(theme, 'Cancelled'.tr, cancelled, '', false, color: Colors.grey.shade600),
-      ],
-    );
-  }
-
-  Widget _buildAnalyticsCard(ThemeData theme, String title, String value, String trendText, bool? isPositive, {Color? color}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-          Text(
-            value,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color ?? const Color(0xFFF97316)),
-          ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isPositive != null)
-                  Icon(
-                    isPositive ? Icons.trending_up : Icons.trending_down,
-                    size: 14,
-                    color: isPositive ? const Color(0xFF006D36) : const Color(0xFFBA1A1A),
-                  ),
-                const SizedBox(width: 4),
-                Text(
-                  trendText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isPositive == null 
-                        ? theme.colorScheme.onSurfaceVariant
-                        : (isPositive ? const Color(0xFF006D36) : const Color(0xFFBA1A1A)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCommissionCard(ThemeData theme, Color primaryColor) {
+  Widget _buildPersonalInfoForm(ThemeData theme, Color primaryColor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -265,24 +249,66 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Commission Earned'.tr, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Text('DZD ${_stats?['wallet']?['earned'] ?? '0'}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor)),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Name'.tr,
+              prefixIcon: const Icon(Icons.person_outline),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Icon(Icons.monetization_on_outlined, color: primaryColor, size: 28),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Phone Number'.tr,
+              prefixIcon: const Icon(Icons.phone_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _bankController,
+            decoration: InputDecoration(
+              labelText: 'Bank Account Number'.tr,
+              prefixIcon: const Icon(Icons.account_balance_outlined),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'New Password (Optional)'.tr,
+              prefixIcon: const Icon(Icons.lock_outline),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              helperText: 'Leave blank to keep current password'.tr,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _saving ? null : _saveProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text('Save Changes'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),

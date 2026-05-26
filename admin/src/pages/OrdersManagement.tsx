@@ -42,7 +42,16 @@ export const OrdersManagement: React.FC = () => {
     if (status) params.status = status;
     if (s) params.search = s;
     ordersApi.list(params)
-      .then(({ data }) => { setOrders(data.data ?? data); setMeta(data.meta ?? null); setPage(p); })
+      .then(({ data }) => {
+        const savedMethods = JSON.parse(localStorage.getItem('admin_shipping_methods') || '{}');
+        const ordersWithMethods = (data.data ?? data).map((o: any) => ({
+          ...o,
+          shipping_method: savedMethods[o.id] || 'delivery_company'
+        }));
+        setOrders(ordersWithMethods);
+        setMeta(data.meta ?? null);
+        setPage(p);
+      })
       .catch(() => setError('Failed to load orders.'))
       .finally(() => setLoading(false));
   }, []);
@@ -74,6 +83,16 @@ export const OrdersManagement: React.FC = () => {
     } catch (e: any) {
       alert(e.response?.data?.message || 'Status update failed.');
     }
+  };
+
+  const handleShippingMethodChange = (order: any, method: string) => {
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, shipping_method: method } : o));
+    if (selectedOrder?.id === order.id) {
+      setSelectedOrder({ ...selectedOrder, shipping_method: method });
+    }
+    const savedMethods = JSON.parse(localStorage.getItem('admin_shipping_methods') || '{}');
+    savedMethods[order.id] = method;
+    localStorage.setItem('admin_shipping_methods', JSON.stringify(savedMethods));
   };
 
   const handleAssign = async () => {
@@ -133,12 +152,13 @@ export const OrdersManagement: React.FC = () => {
                   <th className="p-4 font-medium">Customer</th>
                   <th className="p-4 font-medium">Marketer</th>
                   <th className="p-4 font-medium">Total</th>
+                  <th className="p-4 font-medium">Shipping Method</th>
                   <th className="p-4 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.length === 0 ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
                 ) : orders.map((order) => (
                   <tr key={order.id} onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
                     <td className="p-4 text-sm font-bold text-text">{order.reference}</td>
@@ -146,6 +166,17 @@ export const OrdersManagement: React.FC = () => {
                     <td className="p-4 text-sm font-medium text-text">{order.client_name}</td>
                     <td className="p-4 text-sm text-text-muted">{order.marketer?.name ?? '—'}</td>
                     <td className="p-4 text-sm font-bold text-text">{fmt(order.total)}</td>
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <select
+                        value={order.shipping_method || 'delivery_company'}
+                        onChange={(e) => handleShippingMethodChange(order, e.target.value)}
+                        className="appearance-none outline-none pl-3 pr-7 py-1 rounded-lg text-xs font-semibold bg-surface border border-border cursor-pointer focus:border-primary"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
+                      >
+                        <option value="delivery_company">Delivery Company</option>
+                        <option value="self_shipping">Self Shipping</option>
+                      </select>
+                    </td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={order.status}
@@ -186,6 +217,7 @@ export const OrdersManagement: React.FC = () => {
             <div><p className="text-xs text-text-muted mb-1">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1">Shipping Method</p><p className="text-sm font-semibold text-text">{selectedOrder?.shipping_method === 'self_shipping' ? 'Self Shipping' : 'Delivery Company'}</p></div>
           </div>
 
           <div>

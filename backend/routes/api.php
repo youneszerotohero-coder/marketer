@@ -36,6 +36,7 @@ Route::get('image', function (\Illuminate\Http\Request $request) {
 // ─── Public resources (require auth but open to all roles) ───────────────────
 Route::middleware('auth:api')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
+    Route::put('me', [AuthController::class, 'updateProfile']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
 
     // Public product & category catalog
