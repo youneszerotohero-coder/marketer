@@ -16,7 +16,7 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $orders = $request->user()->marketerOrders()
-            ->with(['items', 'returnFeeTransaction'])
+            ->with(['items', 'returnFeeTransaction', 'deliveryShipment'])
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
             ->when($request->query('search'), function ($q, $search) {
                 $q->where(function($sq) use ($search) {
@@ -110,7 +110,7 @@ class OrderController extends Controller
     {
         abort_unless($order->marketer_id === $request->user()->id, 403);
 
-        return response()->json($order->load('items'));
+        return response()->json($order->load(['items', 'deliveryShipment']));
     }
 
     public function cancel(Request $request, Order $order): JsonResponse

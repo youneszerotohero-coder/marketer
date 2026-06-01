@@ -83,7 +83,10 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     const { start_date, end_date } = getDates(selectedPeriod, customRange);
-    dashboardApi.getStats({ start_date, end_date })
+    const params: Record<string, string> = {};
+    if (start_date) params.start_date = start_date;
+    if (end_date) params.end_date = end_date;
+    dashboardApi.getStats(params)
       .then(({ data }) => setStats(data))
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false));

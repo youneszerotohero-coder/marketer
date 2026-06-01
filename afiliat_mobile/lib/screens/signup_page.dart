@@ -45,7 +45,10 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    setState(() { _loading = true; _error = ''; });
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
     try {
       await AuthService.instance.register(name, email, password);
       if (!mounted) return;
@@ -92,7 +95,10 @@ class _SignupPageState extends State<SignupPage> {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 20.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -134,7 +140,7 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
             ),
-            
+
             // Signup Form Card
             Transform.translate(
               offset: const Offset(0, -40),
@@ -147,7 +153,9 @@ class _SignupPageState extends State<SignupPage> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
+                        color: theme.shadowColor.withValues(
+                          alpha: isDark ? 0.3 : 0.05,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -160,15 +168,27 @@ class _SignupPageState extends State<SignupPage> {
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
-                          child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _error.tr,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                       CustomTextField(
                         label: 'Full Name'.tr,
                         hint: 'Enter your name'.tr,
                         controller: _nameController,
                         keyboardType: TextInputType.name,
-                        prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(
+                          Icons.person_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
@@ -176,7 +196,10 @@ class _SignupPageState extends State<SignupPage> {
                         hint: 'Enter your email'.tr,
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
@@ -184,18 +207,25 @@ class _SignupPageState extends State<SignupPage> {
                         hint: 'Create a password'.tr,
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        prefixIcon: Icon(Icons.lock_outline, color: theme.colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
                       PrimaryButton(
-                        text: _loading ? 'Signing up...' : 'Sign Up'.tr,
+                        text: _loading ? 'Signing up...'.tr : 'Sign Up'.tr,
                         onPressed: _register,
                         isLoading: _loading,
                       ),
@@ -204,12 +234,12 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
             ),
-            
+
             // Login Link
             Transform.translate(
               offset: const Offset(0, -20),
               child: Row(
-               mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     "Already have an account?".tr,

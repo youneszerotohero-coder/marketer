@@ -19,17 +19,36 @@ class AppTranslations {
 
       // Login Page
       'Welcome Back': 'Welcome Back',
-      'Sign in to continue to your dashboard': 'Sign in to continue to your dashboard',
+      'Sign in to continue to your dashboard':
+          'Sign in to continue to your dashboard',
       'Email Address': 'Email Address',
       'Enter your email': 'Enter your email',
       'Password': 'Password',
       'Enter your password': 'Enter your password',
       'Forgot Password?': 'Forgot Password?',
       'Sign In': 'Sign In',
+      'Create Account': 'Create Account',
+      'Sign up to get started': 'Sign up to get started',
+      'Full Name': 'Full Name',
+      'Enter your name': 'Enter your name',
+      'Create a password': 'Create a password',
+      'Already have an account?': 'Already have an account?',
       'Or continue with': 'Or continue with',
       'Sign in with Google': 'Sign in with Google',
       "Don't have an account?": "Don't have an account?",
       'Sign Up': 'Sign Up',
+      'Signing in...': 'Signing in...',
+      'Signing up...': 'Signing up...',
+      'Please fill in all fields.': 'Please fill in all fields.',
+      'Connection error. Is the backend running?':
+          'Connection error. Is the backend running?',
+      'Please sign in with a marketer account.':
+          'Please sign in with a marketer account.',
+      'Session expired. Please login again.':
+          'Session expired. Please login again.',
+      'Invalid credentials': 'Invalid credentials',
+      'Forbidden': 'Forbidden',
+      'Unauthenticated.': 'Unauthenticated.',
 
       // Profile Page
       'ANALYTICS OVERVIEW': 'ANALYTICS OVERVIEW',
@@ -47,32 +66,50 @@ class AppTranslations {
       'Help & Support': 'Help & Support',
       'Log Out': 'Log Out',
       'Pro Affiliate': 'Pro Affiliate',
-      
+
       // Personal Info Edits
       'PERSONAL INFORMATION': 'PERSONAL INFORMATION',
       'Name': 'Name',
       'Name is required.': 'Name is required.',
       'Bank Account Number': 'Bank Account Number',
+      'Phone Number': 'Phone Number',
       'New Password (Optional)': 'New Password (Optional)',
-      'Leave blank to keep current password': 'Leave blank to keep current password',
+      'Leave blank to keep current password':
+          'Leave blank to keep current password',
       'Save Changes': 'Save Changes',
       'Profile updated successfully!': 'Profile updated successfully!',
       'Failed to update profile.': 'Failed to update profile.',
-      'Password must be at least 8 characters.': 'Password must be at least 8 characters.',
+      'Password must be at least 8 characters.':
+          'Password must be at least 8 characters.',
+      'Retry': 'Retry',
 
       // Dashboard
       'FINANCIAL SUMMARY': 'FINANCIAL SUMMARY',
       'SALES & ORDERS': 'SALES & ORDERS',
       'Delivery Rate': 'Delivery Rate',
       'Failed to load dashboard data.': 'Failed to load dashboard data.',
+      'Total Earned': 'Total Earned',
 
       // Withdrawal UX
+      'Request Withdrawal': 'Request Withdrawal',
       'Select Payment Method': 'Select Payment Method',
       'Select Operator': 'Select Operator',
+      'Amount (DZD)': 'Amount (DZD)',
       'Flexy Phone Number': 'Flexy Phone Number',
       'Bank Account Number / CCP / RIP': 'Bank Account Number / CCP / RIP',
       'Bank Transfer': 'Bank Transfer',
+      'Flexy': 'Flexy',
+      'Submit Request': 'Submit Request',
+      'Transaction History': 'Transaction History',
+      'Commission': 'Commission',
+      'Withdrawal': 'Withdrawal',
       'Enter bank account number.': 'Enter bank account number.',
+      'Enter a valid amount.': 'Enter a valid amount.',
+      'Enter a valid phone number.': 'Enter a valid phone number.',
+      'Withdrawal request submitted!': 'Withdrawal request submitted!',
+      'Request failed.': 'Request failed.',
+      'Failed to load wallet data.': 'Failed to load wallet data.',
+      'No transactions yet.': 'No transactions yet.',
       'approved': 'Approved',
       'rejected': 'Rejected',
       'pending': 'Pending',
@@ -81,7 +118,15 @@ class AppTranslations {
       'delivered': 'Delivered',
       'failed': 'Failed',
       'cancelled': 'Cancelled',
-      
+      'APPROVED': 'APPROVED',
+      'REJECTED': 'REJECTED',
+      'PENDING': 'PENDING',
+      'CONFIRMED': 'CONFIRMED',
+      'SHIPPED': 'SHIPPED',
+      'DELIVERED': 'DELIVERED',
+      'FAILED': 'FAILED',
+      'CANCELLED': 'CANCELLED',
+
       // Order Details UI
       'Order Details': 'Order Details',
       'Address & Delivery': 'Address & Delivery',
@@ -94,12 +139,26 @@ class AppTranslations {
       'Wilaya': 'Wilaya',
       'Commune': 'Commune',
       'Address': 'Address',
+      'Delivery Type': 'Delivery Type',
+      'Tracking Number': 'Tracking Number',
+      'Notes': 'Notes',
+      'Cancel Order': 'Cancel Order',
+      'Are you sure you want to cancel this order?':
+          'Are you sure you want to cancel this order?',
+      'Yes': 'Yes',
+      'No': 'No',
+      'Search orders...': 'Search orders...',
+      'No orders found.': 'No orders found.',
+      'Failed to load orders.': 'Failed to load orders.',
+      'Order cancelled successfully': 'Order cancelled successfully',
+      'Error cancelling order': 'Error cancelling order',
 
       // Header
       'Marketer Pulse': 'Marketer Pulse',
 
       // Shipping Prices Page
-      'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.': 'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.',
+      'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.':
+          'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.',
       'Home Delivery': 'Home Delivery',
       'Desk Delivery': 'Desk Delivery',
 
@@ -111,10 +170,17 @@ class AppTranslations {
       'Home': 'Home',
       'Beauty': 'Beauty',
       'In Stock': 'In Stock',
+      'Out of Stock': 'Out of Stock',
       'Low Stock': 'Low Stock',
+      'No products found.': 'No products found.',
+      'No product ID provided.': 'No product ID provided.',
+      'Product is out of stock': 'Product is out of stock',
+      'Added to cart': 'Added to cart',
       'Buy now': 'Buy now',
       'Buy Now': 'Buy Now',
       'Add to Cart': 'Add to Cart',
+      'Categories': 'Categories',
+      'Clear Cart': 'Clear Cart',
 
       // Product Details
       'Downloading all images...': 'Downloading all images...',
@@ -130,6 +196,14 @@ class AppTranslations {
       'PHONE NUMBER': 'PHONE NUMBER',
       'WILAYA': 'WILAYA',
       'COMMUNE': 'COMMUNE',
+      'DELIVERY TYPE': 'DELIVERY TYPE',
+      'A Domicile': 'A Domicile',
+      'Stop Desk': 'Stop Desk',
+      'Select Option': 'Select Option',
+      'Please fill all required fields.': 'Please fill all required fields.',
+      'Order placed successfully!': 'Order placed successfully!',
+      'Failed to submit order': 'Failed to submit order',
+      'available': 'available',
 
       // Filter Bottom Sheet
       'Filters': 'Filters',
@@ -145,7 +219,8 @@ class AppTranslations {
 
       // Cart Page
       'Your Cart is Empty': 'Your Cart is Empty',
-      'Looks like you haven\'t added\nanything to your cart yet.': 'Looks like you haven\'t added\nanything to your cart yet.',
+      'Looks like you haven\'t added\nanything to your cart yet.':
+          'Looks like you haven\'t added\nanything to your cart yet.',
       'Start Shopping': 'Start Shopping',
       'removed from cart': 'removed from cart',
       'Undo': 'Undo',
@@ -158,16 +233,19 @@ class AppTranslations {
 
       // Checkout (Order Creation Form)
       'Order Successful!': 'Order Successful!',
-      'Your order has been placed successfully. You can track its status in the orders page.': 'Your order has been placed successfully. You can track its status in the orders page.',
+      'Your order has been placed successfully. You can track its status in the orders page.':
+          'Your order has been placed successfully. You can track its status in the orders page.',
       'Back to Home': 'Back to Home',
       'Confirm Order': 'Confirm Order',
       'Order Summary': 'Order Summary',
       'Shipping Fee': 'Shipping Fee',
       'Your Commission': 'Your Commission',
-      
+
       // Orders & Wallet Pages
       'Confirmed': 'Confirmed',
       'Shipping Status': 'Shipping',
+      'Pending': 'Pending',
+      'Shipped': 'Shipped',
       'Cancelled': 'Cancelled',
       'AMOUNT': 'AMOUNT',
       'PROFIT': 'PROFIT',
@@ -190,7 +268,6 @@ class AppTranslations {
       'Performance Bonus': 'Performance Bonus',
       'COMPLETED': 'COMPLETED',
       'DEDUCTED': 'DEDUCTED',
-      'PENDING': 'PENDING',
       'REWARD': 'REWARD',
     },
     'ar': {
@@ -210,17 +287,36 @@ class AppTranslations {
 
       // Login Page
       'Welcome Back': 'مرحباً بعودتك',
-      'Sign in to continue to your dashboard': 'قم بتسجيل الدخول للمتابعة إلى لوحة التحكم',
+      'Sign in to continue to your dashboard':
+          'قم بتسجيل الدخول للمتابعة إلى لوحة التحكم',
       'Email Address': 'البريد الإلكتروني',
       'Enter your email': 'أدخل بريدك الإلكتروني',
       'Password': 'كلمة المرور',
       'Enter your password': 'أدخل كلمة المرور',
       'Forgot Password?': 'هل نسيت كلمة المرور؟',
       'Sign In': 'تسجيل الدخول',
+      'Create Account': 'إنشاء حساب',
+      'Sign up to get started': 'أنشئ حساباً للبدء',
+      'Full Name': 'الاسم الكامل',
+      'Enter your name': 'أدخل اسمك',
+      'Create a password': 'أنشئ كلمة مرور',
+      'Already have an account?': 'لديك حساب بالفعل؟',
       'Or continue with': 'أو المتابعة باستخدام',
       'Sign in with Google': 'تسجيل الدخول باستخدام جوجل',
       "Don't have an account?": "ليس لديك حساب؟",
       'Sign Up': 'إنشاء حساب',
+      'Signing in...': 'جاري تسجيل الدخول...',
+      'Signing up...': 'جاري إنشاء الحساب...',
+      'Please fill in all fields.': 'يرجى ملء جميع الحقول.',
+      'Connection error. Is the backend running?':
+          'تعذر الاتصال. تأكد أن الخادم يعمل.',
+      'Please sign in with a marketer account.':
+          'يرجى تسجيل الدخول بحساب مسوق.',
+      'Session expired. Please login again.':
+          'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+      'Invalid credentials': 'بيانات الدخول غير صحيحة',
+      'Forbidden': 'غير مسموح',
+      'Unauthenticated.': 'غير مسجل الدخول.',
 
       // Profile Page
       'ANALYTICS OVERVIEW': 'نظرة عامة على الإحصائيات',
@@ -244,26 +340,44 @@ class AppTranslations {
       'Name': 'الاسم',
       'Name is required.': 'الاسم مطلوب.',
       'Bank Account Number': 'رقم الحساب البنكي',
+      'Phone Number': 'رقم الهاتف',
       'New Password (Optional)': 'كلمة مرور جديدة (اختياري)',
-      'Leave blank to keep current password': 'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية',
+      'Leave blank to keep current password':
+          'اتركه فارغاً للاحتفاظ بكلمة المرور الحالية',
       'Save Changes': 'حفظ التغييرات',
       'Profile updated successfully!': 'تم تحديث الملف الشخصي بنجاح!',
       'Failed to update profile.': 'فشل تحديث الملف الشخصي.',
-      'Password must be at least 8 characters.': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+      'Password must be at least 8 characters.':
+          'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+      'Retry': 'إعادة المحاولة',
 
       // Dashboard
       'FINANCIAL SUMMARY': 'الملخص المالي',
       'SALES & ORDERS': 'المبيعات والطلبات',
       'Delivery Rate': 'نسبة التوصيل',
       'Failed to load dashboard data.': 'فشل تحميل بيانات لوحة التحكم.',
+      'Total Earned': 'إجمالي الأرباح',
 
       // Withdrawal UX
+      'Request Withdrawal': 'طلب سحب',
       'Select Payment Method': 'اختر طريقة الدفع',
       'Select Operator': 'اختر المتعامل',
+      'Amount (DZD)': 'المبلغ (د.ج)',
       'Flexy Phone Number': 'رقم هاتف فليكسي',
       'Bank Account Number / CCP / RIP': 'رقم الحساب البنكي / CCP / RIP',
       'Bank Transfer': 'تحويل بنكي',
+      'Flexy': 'فليكسي',
+      'Submit Request': 'إرسال الطلب',
+      'Transaction History': 'سجل المعاملات',
+      'Commission': 'عمولة',
+      'Withdrawal': 'سحب',
       'Enter bank account number.': 'أدخل رقم الحساب البنكي.',
+      'Enter a valid amount.': 'أدخل مبلغاً صحيحاً.',
+      'Enter a valid phone number.': 'أدخل رقم هاتف صحيحاً.',
+      'Withdrawal request submitted!': 'تم إرسال طلب السحب!',
+      'Request failed.': 'فشل الطلب.',
+      'Failed to load wallet data.': 'فشل تحميل بيانات المحفظة.',
+      'No transactions yet.': 'لا توجد معاملات بعد.',
       'approved': 'مقبول',
       'rejected': 'مرفوض',
       'pending': 'قيد الانتظار',
@@ -272,7 +386,15 @@ class AppTranslations {
       'delivered': 'تم التوصيل',
       'failed': 'فشل التوصيل',
       'cancelled': 'ملغى',
-      
+      'APPROVED': 'مقبول',
+      'REJECTED': 'مرفوض',
+      'PENDING': 'قيد الانتظار',
+      'CONFIRMED': 'مؤكد',
+      'SHIPPED': 'تم الشحن',
+      'DELIVERED': 'تم التوصيل',
+      'FAILED': 'فشل',
+      'CANCELLED': 'ملغى',
+
       // Order Details UI
       'Order Details': 'تفاصيل الطلب',
       'Address & Delivery': 'العنوان والتوصيل',
@@ -285,28 +407,49 @@ class AppTranslations {
       'Wilaya': 'الولاية',
       'Commune': 'البلدية',
       'Address': 'العنوان',
-      'Pro Affiliate': 'مسوق محترف',
+      'Delivery Type': 'نوع التوصيل',
+      'Tracking Number': 'رقم التتبع',
+      'Notes': 'ملاحظات',
+      'Cancel Order': 'إلغاء الطلب',
+      'Are you sure you want to cancel this order?':
+          'هل أنت متأكد أنك تريد إلغاء هذا الطلب؟',
+      'Yes': 'نعم',
+      'No': 'لا',
+      'Search orders...': 'ابحث في الطلبات...',
+      'No orders found.': 'لا توجد طلبات.',
+      'Failed to load orders.': 'فشل تحميل الطلبات.',
+      'Order cancelled successfully': 'تم إلغاء الطلب بنجاح',
+      'Error cancelling order': 'حدث خطأ أثناء إلغاء الطلب',
 
       // Header
       'Marketer Pulse': 'نبض المسوق',
 
       // Shipping Prices Page
-      'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.': 'تختلف أسعار التوصيل حسب الولاية. اختر بين التوصيل للمنزل أو الاستلام من المكتب.',
+      'Delivery rates vary by state. Choose between Home Delivery or Stop Desk pickup.':
+          'تختلف أسعار التوصيل حسب الولاية. اختر بين التوصيل للمنزل أو الاستلام من المكتب.',
       'Home Delivery': 'توصيل للمنزل',
       'Desk Delivery': 'توصيل للمكتب',
 
       // Shop & Product Card
-      'Search for products, brands...': 'ابحث عن المنتجات، العلامات التجارية...',
+      'Search for products, brands...':
+          'ابحث عن المنتجات، العلامات التجارية...',
       'All': 'الكل',
       'Electronics': 'إلكترونيات',
       'Fashion': 'أزياء',
       'Home': 'المنزل',
       'Beauty': 'تجميل',
       'In Stock': 'متوفر',
+      'Out of Stock': 'غير متوفر',
       'Low Stock': 'كمية قليلة',
+      'No products found.': 'لا توجد منتجات.',
+      'No product ID provided.': 'لم يتم تحديد المنتج.',
+      'Product is out of stock': 'المنتج غير متوفر',
+      'Added to cart': 'تمت الإضافة إلى السلة',
       'Buy now': 'اشتري الآن',
       'Buy Now': 'اشتري الآن',
       'Add to Cart': 'أضف للسلة',
+      'Categories': 'الأقسام',
+      'Clear Cart': 'إفراغ السلة',
 
       // Product Details
       'Downloading all images...': 'جاري تنزيل جميع الصور...',
@@ -322,6 +465,14 @@ class AppTranslations {
       'PHONE NUMBER': 'رقم الهاتف',
       'WILAYA': 'الولاية',
       'COMMUNE': 'البلدية',
+      'DELIVERY TYPE': 'نوع التوصيل',
+      'A Domicile': 'إلى المنزل',
+      'Stop Desk': 'نقطة الاستلام',
+      'Select Option': 'اختر الخيار',
+      'Please fill all required fields.': 'يرجى ملء جميع الحقول المطلوبة.',
+      'Order placed successfully!': 'تم إرسال الطلب بنجاح!',
+      'Failed to submit order': 'فشل إرسال الطلب',
+      'available': 'متاح',
 
       // Filter Bottom Sheet
       'Filters': 'التصنيفات',
@@ -337,7 +488,8 @@ class AppTranslations {
 
       // Cart Page
       'Your Cart is Empty': 'سلة التسوق فارغة',
-      'Looks like you haven\'t added\nanything to your cart yet.': 'يبدو أنك لم تضف\nأي شيء إلى سلتك بعد.',
+      'Looks like you haven\'t added\nanything to your cart yet.':
+          'يبدو أنك لم تضف\nأي شيء إلى سلتك بعد.',
       'Start Shopping': 'ابدأ التسوق',
       'removed from cart': 'تمت الإزالة من السلة',
       'Undo': 'تراجع',
@@ -350,16 +502,19 @@ class AppTranslations {
 
       // Checkout (Order Creation Form)
       'Order Successful!': 'تم الطلب بنجاح!',
-      'Your order has been placed successfully. You can track its status in the orders page.': 'تم تقديم طلبك بنجاح. يمكنك تتبع حالته في صفحة الطلبات.',
+      'Your order has been placed successfully. You can track its status in the orders page.':
+          'تم تقديم طلبك بنجاح. يمكنك تتبع حالته في صفحة الطلبات.',
       'Back to Home': 'العودة للرئيسية',
       'Confirm Order': 'تأكيد الطلب',
       'Order Summary': 'ملخص الطلب',
       'Shipping Fee': 'رسوم الشحن',
       'Your Commission': 'عمولتك',
-      
+
       // Orders & Wallet Pages
       'Confirmed': 'مؤكد',
       'Shipping Status': 'الشحن',
+      'Pending': 'قيد الانتظار',
+      'Shipped': 'تم الشحن',
       'Cancelled': 'ملغى',
       'AMOUNT': 'المبلغ',
       'PROFIT': 'الربح',
@@ -382,13 +537,13 @@ class AppTranslations {
       'Performance Bonus': 'مكافأة الأداء',
       'COMPLETED': 'مكتمل',
       'DEDUCTED': 'مخصوم',
-      'PENDING': 'قيد الانتظار',
       'REWARD': 'مكافأة',
-    }
+    },
   };
 
   static String translate(String key, String langCode) {
-    if (_translations.containsKey(langCode) && _translations[langCode]!.containsKey(key)) {
+    if (_translations.containsKey(langCode) &&
+        _translations[langCode]!.containsKey(key)) {
       return _translations[langCode]![key]!;
     }
     // Fallback to English, then the key itself

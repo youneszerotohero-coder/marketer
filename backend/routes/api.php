@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\Confirmatrice\OrderWorkflowController;
+use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\MarketerStatsController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
@@ -43,6 +44,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{product}', [ProductController::class, 'show']);
     Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('delivery/territories', [DeliveryController::class, 'territories']);
+    Route::get('delivery/rates', [DeliveryController::class, 'rates']);
+    Route::post('orders/{order}/delivery-status', [DeliveryController::class, 'syncOrder']);
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('brands', [BrandController::class, 'index']);
 

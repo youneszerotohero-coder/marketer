@@ -43,11 +43,13 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() {
           _user = user as Map<String, dynamic>;
-          _nameController.text = _user?['name'] ?? '';
-          _phoneController.text = _user?['phone'] ?? '';
-          
+          _nameController.text = (_user?['name'] ?? '').toString();
+          _phoneController.text = (_user?['phone'] ?? '').toString();
+
           final profile = _user?['profile'];
-          _bankController.text = (profile is Map ? profile['bank_number'] : null) ?? '';
+          _bankController.text =
+              (profile is Map ? profile['bank_number'] : null)?.toString() ??
+              '';
           _loading = false;
         });
       }
@@ -63,31 +65,50 @@ class _ProfilePageState extends State<ProfilePage> {
     final password = _passwordController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Name is required.'.tr)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Name is required.'.tr)));
       return;
     }
     if (password.isNotEmpty && password.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Password must be at least 8 characters.'.tr)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password must be at least 8 characters.'.tr)),
+      );
       return;
     }
 
     setState(() => _saving = true);
     try {
-      final updatedUser = await ApiService.instance.put('/me', body: {
-        'name': name,
-        'phone': phone,
-        'bank_number': bankNumber,
-        if (password.isNotEmpty) 'password': password,
-      });
+      final updatedUser = await ApiService.instance.put(
+        '/me',
+        body: {
+          'name': name,
+          'phone': phone.isEmpty ? null : phone,
+          'bank_number': bankNumber.isEmpty ? null : bankNumber,
+          if (password.isNotEmpty) 'password': password,
+        },
+      );
 
       if (mounted) {
+        final user = Map<String, dynamic>.from(updatedUser as Map);
+        await AuthService.instance.cacheUser(user);
+        if (!mounted) return;
         setState(() {
-          _user = updatedUser as Map<String, dynamic>;
+          _user = user;
+          _nameController.text = (_user?['name'] ?? '').toString();
+          _phoneController.text = (_user?['phone'] ?? '').toString();
+          final profile = _user?['profile'];
+          _bankController.text =
+              (profile is Map ? profile['bank_number'] : null)?.toString() ??
+              '';
           _passwordController.clear();
           _saving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile updated successfully!'.tr), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Profile updated successfully!'.tr),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } on ApiException catch (e) {
@@ -101,7 +122,10 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile.'.tr), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to update profile.'.tr),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -187,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   spreadRadius: 2,
-                )
+                ),
               ],
             ),
             child: const CircleAvatar(
@@ -198,13 +222,20 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            _user?['name'] ?? '—',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            (_user?['name'] ?? '—').toString(),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            _user?['email'] ?? '',
-            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
+            (_user?['email'] ?? '').toString(),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
           ),
           const SizedBox(height: 16),
           Container(
@@ -214,8 +245,12 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _user?['tier'] ?? 'Marketer',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+              (_user?['tier'] ?? 'Marketer').toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -239,7 +274,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
+        color:
+            theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -257,7 +293,9 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: InputDecoration(
               labelText: 'Name'.tr,
               prefixIcon: const Icon(Icons.person_outline),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -267,7 +305,9 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: InputDecoration(
               labelText: 'Phone Number'.tr,
               prefixIcon: const Icon(Icons.phone_outlined),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -276,7 +316,9 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: InputDecoration(
               labelText: 'Bank Account Number'.tr,
               prefixIcon: const Icon(Icons.account_balance_outlined),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -286,7 +328,9 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: InputDecoration(
               labelText: 'New Password (Optional)'.tr,
               prefixIcon: const Icon(Icons.lock_outline),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               helperText: 'Leave blank to keep current password'.tr,
             ),
           ),
@@ -299,15 +343,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: _saving
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : Text('Save Changes'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  : Text(
+                      'Save Changes'.tr,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -318,7 +373,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildSettingsCard(BuildContext context, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
+        color:
+            theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -342,12 +398,16 @@ class _ProfilePageState extends State<ProfilePage> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeModeNotifier,
       builder: (context, currentThemeMode, _) {
-        final isDark = currentThemeMode == ThemeMode.dark || 
-            (currentThemeMode == ThemeMode.system && 
-             MediaQuery.of(context).platformBrightness == Brightness.dark);
+        final isDark =
+            currentThemeMode == ThemeMode.dark ||
+            (currentThemeMode == ThemeMode.system &&
+                MediaQuery.of(context).platformBrightness == Brightness.dark);
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 4,
+          ),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -355,20 +415,26 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined, 
-              color: theme.colorScheme.onSurface, 
-              size: 20
+              isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+              color: theme.colorScheme.onSurface,
+              size: 20,
             ),
           ),
           title: Text(
-            'Dark Mode'.tr, 
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onSurface)
+            'Dark Mode'.tr,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           trailing: Switch(
             value: isDark,
             activeThumbColor: theme.colorScheme.primary,
             onChanged: (value) {
-              themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+              themeModeNotifier.value = value
+                  ? ThemeMode.dark
+                  : ThemeMode.light;
             },
           ),
         );
@@ -383,7 +449,10 @@ class _ProfilePageState extends State<ProfilePage> {
         final isArabic = currentLocale.languageCode == 'ar';
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 4,
+          ),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -391,20 +460,26 @@ class _ProfilePageState extends State<ProfilePage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.language, 
-              color: theme.colorScheme.onSurface, 
-              size: 20
+              Icons.language,
+              color: theme.colorScheme.onSurface,
+              size: 20,
             ),
           ),
           title: Text(
-            'العربية'.tr, 
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: theme.colorScheme.onSurface)
+            'العربية'.tr,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           trailing: Switch(
             value: isArabic,
             activeThumbColor: theme.colorScheme.primary,
             onChanged: (value) {
-              localeNotifier.value = value ? const Locale('ar') : const Locale('en');
+              localeNotifier.value = value
+                  ? const Locale('ar')
+                  : const Locale('en');
             },
           ),
         );
@@ -413,7 +488,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildDivider(ThemeData theme) {
-    return Divider(height: 1, thickness: 1, color: theme.colorScheme.surfaceContainerHighest, indent: 60, endIndent: 20);
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: theme.colorScheme.surfaceContainerHighest,
+      indent: 60,
+      endIndent: 20,
+    );
   }
 
   Widget _buildLogoutButton(BuildContext context) {
@@ -425,14 +506,19 @@ class _ProfilePageState extends State<ProfilePage> {
           foregroundColor: const Color(0xFFBA1A1A),
           side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.logout, size: 20),
             const SizedBox(width: 8),
-            Text('Log Out'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              'Log Out'.tr,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),

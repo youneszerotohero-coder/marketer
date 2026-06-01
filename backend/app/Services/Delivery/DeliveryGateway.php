@@ -11,4 +11,8 @@ interface DeliveryGateway
     public function createShipment(Order $order): array;
 
     public function track(string $trackingNumber): array;
+
+    public function territories(): array;
+
+    public function rates(): array;
 }

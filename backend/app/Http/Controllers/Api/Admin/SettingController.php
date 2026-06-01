@@ -11,7 +11,7 @@ class SettingController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Setting::orderBy('key')->get());
+        return response()->json($this->settingsMap());
     }
 
     public function upsert(Request $request): JsonResponse
@@ -26,6 +26,13 @@ class SettingController extends Controller
             Setting::updateOrCreate(['key' => $setting['key']], ['value' => $setting['value'] ?? null]);
         }
 
-        return response()->json(Setting::orderBy('key')->get());
+        return response()->json($this->settingsMap());
+    }
+
+    private function settingsMap(): array
+    {
+        return Setting::orderBy('key')->get()->mapWithKeys(fn ($setting) => [
+            $setting->key => $setting->value,
+        ])->all();
     }
 }

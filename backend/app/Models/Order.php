@@ -33,6 +33,8 @@ class Order extends Model
         'status',
         'delivery_type',
         'delivery_status',
+        'delivery_current_location',
+        'delivery_last_synced_at',
         'tracking_number',
         'is_duplicate',
         'notes',
@@ -53,6 +55,7 @@ class Order extends Model
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'failed_at' => 'datetime',
+        'delivery_last_synced_at' => 'datetime',
     ];
 
     public function marketer(): BelongsTo
@@ -78,6 +81,11 @@ class Order extends Model
     public function returnFeeTransaction(): HasOne
     {
         return $this->hasOne(WalletTransaction::class)->where('type', 'return_fee');
+    }
+
+    public function deliveryShipment(): HasOne
+    {
+        return $this->hasOne(DeliveryShipment::class)->latestOfMany();
     }
 
     public function walletTransactions(): HasMany

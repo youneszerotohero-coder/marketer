@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../l10n/app_translations.dart';
 import '../screens/login_page.dart';
 
 class ApiService {
@@ -18,7 +19,7 @@ class ApiService {
   static ApiService get instance => _instance ??= ApiService._();
 
   static String get imageUrlPrefix => _baseUrl.replaceAll('/api', '/storage/');
-  
+
   static String getImageUrl(String path) {
     if (path.startsWith('http')) return path;
     return '$_baseUrl/image?path=$path';
@@ -41,7 +42,9 @@ class ApiService {
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final uri = Uri.parse('$_baseUrl$path');
     if (query == null || query.isEmpty) return uri;
-    return uri.replace(queryParameters: query.map((k, v) => MapEntry(k, v.toString())));
+    return uri.replace(
+      queryParameters: query.map((k, v) => MapEntry(k, v.toString())),
+    );
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) async {
@@ -88,16 +91,32 @@ class ApiService {
           (route) => false,
         );
       }
-      throw ApiException('Session expired. Please login again.', 401);
+      throw ApiException(
+        _translateMessage('Session expired. Please login again.'),
+        401,
+      );
     }
-    
+
     final body = jsonDecode(utf8.decode(res.bodyBytes));
     if (res.statusCode >= 200 && res.statusCode < 300) return body;
-    final message = body['message'] ??
+    final message =
+        body['message'] ??
         (body['errors'] != null
             ? (body['errors'] as Map).values.expand((e) => e as List).join('\n')
             : 'Request failed (${res.statusCode})');
-    throw ApiException(message, res.statusCode);
+    throw ApiException(_translateMessage(message.toString()), res.statusCode);
+  }
+
+  String _translateMessage(String message) {
+    return message
+        .split('\n')
+        .map(
+          (line) => AppTranslations.translate(
+            line,
+            localeNotifier.value.languageCode,
+          ),
+        )
+        .join('\n');
   }
 }
 

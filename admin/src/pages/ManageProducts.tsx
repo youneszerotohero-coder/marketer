@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Archive, Filter, LayoutGrid, Upload, X, Star } from 'lucide-react';
+import { Search, Plus, Edit, Archive, LayoutGrid, Upload, X, Star } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import api from '../services/api';
 
@@ -17,14 +17,6 @@ export const ManageProducts: React.FC = () => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   
-  type ProductImageState = {
-    id?: number;
-    path?: string;
-    file?: File;
-    isMain: boolean;
-    isDeleted?: boolean;
-    preview?: string;
-  };
   const [productImages, setProductImages] = useState<any[]>([]);
   const [deletedImages, setDeletedImages] = useState<number[]>([]);
   const [productVariants, setProductVariants] = useState<any[]>([]);

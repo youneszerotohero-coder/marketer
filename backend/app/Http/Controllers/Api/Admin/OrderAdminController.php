@@ -17,7 +17,7 @@ class OrderAdminController extends Controller
     public function index(Request $request): JsonResponse
     {
         return response()->json(
-            Order::with(['items', 'marketer', 'confirmatrice'])
+            Order::with(['items', 'marketer', 'confirmatrice', 'deliveryShipment'])
                 ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
                 ->when($request->query('confirmatrice_id'), fn ($q, $id) => $q->where('confirmatrice_id', $id))
                 ->when($request->query('search'), function ($q, $search) {
@@ -74,7 +74,7 @@ class OrderAdminController extends Controller
             $wallet->cancelReturnFee($order);
         }
 
-        return response()->json($order->load(['items', 'commissionTransaction']));
+        return response()->json($order->load(['items', 'commissionTransaction', 'deliveryShipment']));
     }
 
     public function assignConfirmatrice(Request $request, Order $order): JsonResponse

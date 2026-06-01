@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Loader2 } from 'lucide-react';
+import { Search, Download, Loader2, RefreshCw } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { ordersApi, usersApi } from '../services/api';
 
@@ -29,6 +29,7 @@ export const OrdersManagement: React.FC = () => {
   const [confirmatrices, setConfirmatrices] = useState<any[]>([]);
   const [selectedConfirmatrice, setSelectedConfirmatrice] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
   const [search, setSearch] = useState('');
@@ -72,6 +73,22 @@ export const OrdersManagement: React.FC = () => {
     setSelectedOrder(order);
     setSelectedConfirmatrice(order.confirmatrice_id ? String(order.confirmatrice_id) : '');
     setActionModal(type);
+    if (type === 'view') syncDeliveryStatus(order);
+  };
+
+  const syncDeliveryStatus = async (order: any) => {
+    if (!order?.tracking_number) return;
+    setTrackingLoading(true);
+    try {
+      const { data } = await ordersApi.syncDeliveryStatus(order.id);
+      const synced = data.order ?? data;
+      setSelectedOrder((prev: any) => prev?.id === order.id ? { ...prev, ...synced } : prev);
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, ...synced } : o));
+    } catch {
+      // Keep existing order details visible if ZR Express is temporarily unavailable.
+    } finally {
+      setTrackingLoading(false);
+    }
   };
 
   const handleStatusChange = async (order: any, newStatus: string) => {
@@ -173,7 +190,7 @@ export const OrdersManagement: React.FC = () => {
                         className="appearance-none outline-none pl-3 pr-7 py-1 rounded-lg text-xs font-semibold bg-surface border border-border cursor-pointer focus:border-primary"
                         style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
                       >
-                        <option value="delivery_company">Delivery Company</option>
+                        <option value="delivery_company">ZR Express</option>
                         <option value="self_shipping">Self Shipping</option>
                       </select>
                     </td>
@@ -217,7 +234,21 @@ export const OrdersManagement: React.FC = () => {
             <div><p className="text-xs text-text-muted mb-1">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Shipping Method</p><p className="text-sm font-semibold text-text">{selectedOrder?.shipping_method === 'self_shipping' ? 'Self Shipping' : 'Delivery Company'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1">Shipping Method</p><p className="text-sm font-semibold text-text">{selectedOrder?.shipping_method === 'self_shipping' ? 'Self Shipping' : 'ZR Express'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1">Tracking Number</p><p className="text-sm font-semibold text-text">{selectedOrder?.tracking_number ?? '—'}</p></div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs text-text-muted">ZR Status</p>
+                {selectedOrder?.tracking_number && (
+                  <button onClick={() => syncDeliveryStatus(selectedOrder)} className="text-primary hover:text-primary-hover" title="Refresh ZR Express status">
+                    <RefreshCw className={`w-3.5 h-3.5 ${trackingLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-text">{selectedOrder?.delivery_status ?? '—'}</p>
+            </div>
+            <div><p className="text-xs text-text-muted mb-1">Current Location</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_current_location ?? '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1">Last ZR Sync</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_last_synced_at ? new Date(selectedOrder.delivery_last_synced_at).toLocaleString() : '—'}</p></div>
           </div>
 
           <div>

@@ -32,7 +32,8 @@ class ProductCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
+        color:
+            theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -65,11 +66,10 @@ class ProductCard extends StatelessWidget {
                     Hero(
                       tag: imageUrl,
                       child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
                         ),
+                        child: Image.network(imageUrl, fit: BoxFit.cover),
                       ),
                     ),
                     // Gradient overlay to make text pop
@@ -80,7 +80,9 @@ class ProductCard extends StatelessWidget {
                       height: 60,
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -97,13 +99,18 @@ class ProductCard extends StatelessWidget {
                       top: 10,
                       right: 10,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF97316),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFFF97316,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -112,7 +119,11 @@ class ProductCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.monetization_on_outlined, color: Colors.white, size: 12),
+                            const Icon(
+                              Icons.monetization_on_outlined,
+                              color: Colors.white,
+                              size: 12,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               commission,
@@ -131,7 +142,11 @@ class ProductCard extends StatelessWidget {
                       top: 6,
                       left: 6,
                       child: IconButton(
-                        icon: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.add_shopping_cart,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         tooltip: 'Add to Cart'.tr,
                         onPressed: onAddToCart,
                         style: IconButton.styleFrom(
@@ -167,7 +182,11 @@ class ProductCard extends StatelessWidget {
                           ),
                           Row(
                             children: [
-                              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF97316)),
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: Color(0xFFF97316),
+                              ),
                               const SizedBox(width: 2),
                               Text(
                                 rating,
@@ -206,9 +225,14 @@ class ProductCard extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: inStock ? theme.colorScheme.tertiaryContainer : theme.colorScheme.errorContainer,
+                              color: inStock
+                                  ? theme.colorScheme.tertiaryContainer
+                                  : theme.colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -216,7 +240,9 @@ class ProductCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: inStock ? theme.colorScheme.onTertiaryContainer : theme.colorScheme.onErrorContainer,
+                                color: inStock
+                                    ? theme.colorScheme.onTertiaryContainer
+                                    : theme.colorScheme.onErrorContainer,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -233,24 +259,37 @@ class ProductCard extends StatelessWidget {
                                 backgroundColor: const Color(0xFFF97316),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              child: Text('Buy now'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                'Buy now'.tr,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                              color: theme.colorScheme.primaryContainer
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.add_shopping_cart_rounded, size: 18, color: Color(0xFFF97316)),
+                              icon: const Icon(
+                                Icons.add_shopping_cart_rounded,
+                                size: 18,
+                                color: Color(0xFFF97316),
+                              ),
                               onPressed: onAddToCart,
-                              tooltip: 'Add to Cart',
+                              tooltip: 'Add to Cart'.tr,
                             ),
                           ),
                         ],

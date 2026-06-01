@@ -10,12 +10,9 @@ export const Settings: React.FC = () => {
   const [limit, setLimit] = useState(20);
 
   const [accountsList, setAccountsList] = useState<any[]>([]);
-  const [settingsData, setSettingsData] = useState<any>({});
   const [loading, setLoading] = useState(false);
-  const [yalidineEnabled, setYalidineEnabled] = useState(true);
-  const [nordEnabled, setNordEnabled] = useState(false);
-  const [yalidineCredentials, setYalidineCredentials] = useState({ id: '', token: '' });
-  const [nordCredentials, setNordCredentials] = useState({ id: '', token: '' });
+  const [zrEnabled, setZrEnabled] = useState(true);
+  const [zrCredentials, setZrCredentials] = useState({ tenantId: '', secretKey: '', baseUrl: '', version: '1' });
   const [returnFee, setReturnFee] = useState('400');
 
   useEffect(() => {
@@ -31,9 +28,13 @@ export const Settings: React.FC = () => {
       } else {
         const response = await api.get('/admin/settings');
         const data = response.data.data || response.data || {};
-        setSettingsData(data);
-        setYalidineCredentials({ id: data.yalidine_api_id || '', token: data.yalidine_api_token || '' });
-        setNordCredentials({ id: data.nord_api_id || '', token: data.nord_api_token || '' });
+        setZrEnabled((data.delivery_provider || data['delivery.provider'] || 'zr_express') === 'zr_express');
+        setZrCredentials({
+          tenantId: data.zr_express_tenant_id || '',
+          secretKey: data.zr_express_secret_key || '',
+          baseUrl: data.zr_express_base_url || 'https://app.zrexpress.fr/api',
+          version: data.zr_express_api_version || '1',
+        });
         setReturnFee(data.return_fee || '400');
       }
     } catch (error) {
@@ -47,10 +48,11 @@ export const Settings: React.FC = () => {
     try {
       await api.patch('/admin/settings', {
         settings: [
-          { key: 'yalidine_api_id', value: yalidineCredentials.id },
-          { key: 'yalidine_api_token', value: yalidineCredentials.token },
-          { key: 'nord_api_id', value: nordCredentials.id },
-          { key: 'nord_api_token', value: nordCredentials.token },
+          { key: 'delivery.provider', value: zrEnabled ? 'zr_express' : 'mock' },
+          { key: 'zr_express_tenant_id', value: zrCredentials.tenantId },
+          { key: 'zr_express_secret_key', value: zrCredentials.secretKey },
+          { key: 'zr_express_base_url', value: zrCredentials.baseUrl },
+          { key: 'zr_express_api_version', value: zrCredentials.version },
           { key: 'return_fee', value: returnFee }
         ]
       });
@@ -116,70 +118,43 @@ export const Settings: React.FC = () => {
                   <Truck className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text">Yalidine Express</h2>
-                  <p className="text-sm text-text-muted">Configure your Yalidine API credentials for automated shipping.</p>
+                  <h2 className="text-lg font-bold text-text">ZR Express</h2>
+                  <p className="text-sm text-text-muted">Configure ZR Express API credentials for automated shipping, tracking, wilayas, and rates.</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" checked={yalidineEnabled} onChange={() => setYalidineEnabled(!yalidineEnabled)} />
+                <input type="checkbox" className="sr-only peer" checked={zrEnabled} onChange={() => setZrEnabled(!zrEnabled)} />
                 <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
               </label>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">API ID</label>
+                <label className="block text-sm font-medium text-text mb-1">Tenant ID</label>
                 <div className="relative">
                   <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="text" value={yalidineCredentials.id} onChange={(e) => setYalidineCredentials({...yalidineCredentials, id: e.target.value})} placeholder="yd_123456789" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <input type="text" value={zrCredentials.tenantId} onChange={(e) => setZrCredentials({...zrCredentials, tenantId: e.target.value})} placeholder="e10b8c86-54ab-4d46-ace7-62b4590e733b" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">API Token</label>
+                <label className="block text-sm font-medium text-text mb-1">Secret Key</label>
                 <div className="relative">
                   <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="password" value={yalidineCredentials.token} onChange={(e) => setYalidineCredentials({...yalidineCredentials, token: e.target.value})} placeholder="************************" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
-                <Save className="w-4 h-4" />
-                Save Changes
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-surface border border-border rounded-2xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 text-primary rounded-xl">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-text">Nord Express</h2>
-                  <p className="text-sm text-text-muted">Configure your Nord Express API credentials for automated shipping.</p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" checked={nordEnabled} onChange={() => setNordEnabled(!nordEnabled)} />
-                <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-              </label>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-text mb-1">API ID</label>
-                <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="text" value={nordCredentials.id} onChange={(e) => setNordCredentials({...nordCredentials, id: e.target.value})} placeholder="Enter API ID" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <input type="password" value={zrCredentials.secretKey} onChange={(e) => setZrCredentials({...zrCredentials, secretKey: e.target.value})} placeholder="************************" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">API Token</label>
+                <label className="block text-sm font-medium text-text mb-1">Base URL</label>
                 <div className="relative">
                   <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="password" value={nordCredentials.token} onChange={(e) => setNordCredentials({...nordCredentials, token: e.target.value})} placeholder="Enter API Token" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <input type="text" value={zrCredentials.baseUrl} onChange={(e) => setZrCredentials({...zrCredentials, baseUrl: e.target.value})} placeholder="https://app.zrexpress.fr/api" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">API Version</label>
+                <div className="relative">
+                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input type="text" value={zrCredentials.version} onChange={(e) => setZrCredentials({...zrCredentials, version: e.target.value})} placeholder="1" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
                 </div>
               </div>
             </div>

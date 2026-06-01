@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
+import '../widgets/custom_header.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -12,7 +12,6 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   Map<String, dynamic>? _stats;
-  Map<String, dynamic>? _user;
   bool _loading = true;
   String _error = '';
 
@@ -30,14 +29,10 @@ class _DashboardPageState extends State<DashboardPage> {
     });
     try {
       final api = ApiService.instance;
-      final results = await Future.wait([
-        api.get('/me'),
-        api.get('/marketer/stats'),
-      ]);
+      final stats = await api.get('/marketer/stats');
       if (mounted) {
         setState(() {
-          _user = results[0] as Map<String, dynamic>;
-          _stats = results[1] as Map<String, dynamic>;
+          _stats = stats as Map<String, dynamic>;
           _loading = false;
         });
       }
@@ -64,11 +59,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final primaryColor = theme.colorScheme.primary;
 
     if (_loading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error.isNotEmpty) {
@@ -79,9 +70,20 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 60, color: theme.colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 60,
+                  color: theme.colorScheme.error,
+                ),
                 const SizedBox(height: 16),
-                Text(_error, style: TextStyle(color: theme.colorScheme.error, fontSize: 16), textAlign: TextAlign.center),
+                Text(
+                  _error.tr,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: _loadData,
@@ -97,129 +99,29 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(theme, primaryColor),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('FINANCIAL SUMMARY'.tr, theme),
-                    const SizedBox(height: 16),
-                    _buildFinancialGrid(theme, primaryColor),
-                    const SizedBox(height: 28),
-                    _buildSectionTitle('SALES & ORDERS'.tr, theme),
-                    const SizedBox(height: 16),
-                    _buildAnalyticsGrid(theme),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme, Color primaryColor) {
-    final name = _user?['name'] ?? '—';
-    final tier = _user?['tier'] ?? 'Marketer';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Welcome Back'.tr,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        tier.tr,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const CustomHeader(),
+                const SizedBox(height: 24),
+                _buildSectionTitle('FINANCIAL SUMMARY'.tr, theme),
+                const SizedBox(height: 16),
+                _buildFinancialGrid(theme, primaryColor),
+                const SizedBox(height: 28),
+                _buildSectionTitle('SALES & ORDERS'.tr, theme),
+                const SizedBox(height: 16),
+                _buildAnalyticsGrid(theme),
+                const SizedBox(height: 40),
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                )
-              ],
-            ),
-            child: const CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.dashboard_rounded, size: 40, color: Colors.grey),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -276,7 +178,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
-                  const Icon(Icons.account_balance_wallet, color: Colors.white70),
+                  const Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.white70,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -424,7 +329,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
+        color:
+            theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

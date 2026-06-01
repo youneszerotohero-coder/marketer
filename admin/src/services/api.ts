@@ -91,6 +91,13 @@ export const ordersApi = {
     api.patch(`/admin/orders/${id}/assign-confirmatrice`, {
       confirmatrice_id: confirmatriceId,
     }),
+  syncDeliveryStatus: (id: number) => api.post(`/orders/${id}/delivery-status`),
+};
+
+// ─── Delivery / ZR Express ──────────────────────────────────────────────────
+export const deliveryApi = {
+  territories: () => api.get('/delivery/territories'),
+  rates: () => api.get('/delivery/rates'),
 };
 
 // ─── Wallet / Withdrawals ─────────────────────────────────────────────────────
