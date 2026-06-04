@@ -52,17 +52,16 @@ class OrderController extends Controller
             $preparedItems = [];
 
             foreach ($data['items'] as $item) {
-                $variant = ProductVariant::with('product')->lockForUpdate()->findOrFail($item['product_variant_id']);
+                $variant = ProductVariant::with('product')->findOrFail($item['product_variant_id']);
 
-                if ($variant->stock < $item['quantity'] || $variant->status !== 'active') {
-                    abort(422, "Insufficient stock for SKU {$variant->sku}.");
+                if ($variant->status !== 'active') {
+                    abort(422, "Variant SKU {$variant->sku} is not active.");
                 }
 
                 $lineTotal = (float) $variant->sale_price * $item['quantity'];
                 $lineCommission = $variant->commissionFor($item['quantity']);
                 $subtotal += $lineTotal;
                 $commission += $lineCommission;
-                $variant->decrement('stock', $item['quantity']);
 
                 $preparedItems[] = [
                     'product_variant_id' => $variant->id,
@@ -111,6 +110,39 @@ class OrderController extends Controller
         abort_unless($order->marketer_id === $request->user()->id, 403);
 
         return response()->json($order->load(['items', 'deliveryShipment']));
+    }
+
+    public function update(Request $request, Order $order, DeliveryGateway $delivery): JsonResponse
+    {
+        if ($order->marketer_id !== $request->user()->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $data = $request->validate([
+            'client_name' => ['required', 'string', 'max:255'],
+            'client_phone' => ['required', 'string', 'max:20'],
+            'wilaya' => ['required', 'string', 'max:80'],
+            'commune' => ['required', 'string', 'max:120'],
+            'address' => ['nullable', 'string'],
+            'delivery_type' => ['required', 'in:home,desk'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $shippingFee = $delivery->calculateCost($data['wilaya'], $data['commune'], $data['delivery_type']);
+
+        $order->update([
+            'client_name' => $data['client_name'],
+            'client_phone' => $data['client_phone'],
+            'wilaya' => $data['wilaya'],
+            'commune' => $data['commune'],
+            'address' => $data['address'] ?? null,
+            'delivery_type' => $data['delivery_type'],
+            'shipping_fee' => $shippingFee,
+            'total' => $order->subtotal + $shippingFee,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return response()->json(['message' => 'Order updated successfully', 'order' => $order]);
     }
 
     public function cancel(Request $request, Order $order): JsonResponse

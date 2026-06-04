@@ -54,10 +54,58 @@ class _OrdersPageState extends State<OrdersPage> {
   bool _loading = true;
   String _error = '';
 
+  List<Map<String, dynamic>> _territories = [];
+  List<String> wilayas = ['16 - Alger', '09 - Blida', '31 - Oran'];
+  List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
+
   @override
   void initState() {
     super.initState();
     _loadOrders();
+    _loadTerritories();
+  }
+
+  Future<void> _loadTerritories() async {
+    try {
+      final data = await ApiService.instance.get('/delivery/territories');
+      final territories = List<Map<String, dynamic>>.from(
+        (data['data'] ?? data).map((item) => Map<String, dynamic>.from(item)),
+      );
+      if (territories.isEmpty || !mounted) return;
+
+      setState(() {
+        _territories = territories;
+        wilayas = territories.map(_territoryLabel).toList();
+      });
+    } catch (_) {
+    }
+  }
+
+  String _territoryLabel(Map<String, dynamic> territory) {
+    final code = (territory['code'] ?? '').toString();
+    final name = (territory['name'] ?? '').toString();
+    return code.isNotEmpty ? '$code - $name' : name;
+  }
+
+  List<String> _communesFor(String? wilaya) {
+    final territory = _territories.cast<Map<String, dynamic>?>().firstWhere(
+      (item) => _territoryLabel(item ?? {}) == wilaya,
+      orElse: () => null,
+    );
+    final values = territory?['communes'];
+    if (values is List && values.isNotEmpty) {
+      return values
+          .map((item) {
+            if (item is Map) {
+              return (item['name'] ?? item['label'] ?? item['commune'] ?? '')
+                  .toString();
+            }
+            return item.toString();
+          })
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return communes;
   }
 
   Future<void> _loadOrders() async {
@@ -803,6 +851,27 @@ class _OrdersPageState extends State<OrdersPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showEditOrderSheet(order);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Edit Order'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                   if (status == 'pending') ...[
                     const SizedBox(width: 12),
                     Expanded(
@@ -949,6 +1018,195 @@ class _OrdersPageState extends State<OrdersPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditOrderSheet(Map<String, dynamic> order) {
+    final clientNameController = TextEditingController(text: order['client_name']);
+    final clientPhoneController = TextEditingController(text: order['client_phone']);
+    String selectedWilaya = order['wilaya'] ?? wilayas.first;
+    String deliveryType = order['delivery_type'] ?? 'home';
+
+    // ensure wilaya is in list
+    if (!wilayas.contains(selectedWilaya)) {
+      selectedWilaya = wilayas.first;
+    }
+    List<String> currentCommunes = _communesFor(selectedWilaya);
+    String? selectedCommune = order['commune'];
+    if (!currentCommunes.contains(selectedCommune)) {
+      selectedCommune = currentCommunes.isNotEmpty ? currentCommunes.first : null;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            bool isSubmitting = false;
+
+            Future<void> updateOrder() async {
+              setSheetState(() => isSubmitting = true);
+              try {
+                await ApiService.instance.put('/orders/${order['id']}', body: {
+                  'client_name': clientNameController.text.trim(),
+                  'client_phone': clientPhoneController.text.trim(),
+                  'wilaya': selectedWilaya,
+                  'commune': selectedCommune,
+                  'delivery_type': deliveryType,
+                });
+                Navigator.pop(context);
+                _loadOrders();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Order updated successfully!'.tr)),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error updating order'.tr)),
+                );
+              } finally {
+                setSheetState(() => isSubmitting = false);
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Edit Order'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: clientNameController, 
+                      decoration: InputDecoration(
+                        labelText: 'Customer Name'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      )
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainer,
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                          ),
+                          child: Text('+213', style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: clientPhoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'Phone Number'.tr,
+                              border: const OutlineInputBorder(
+                                borderRadius: BorderRadius.horizontal(right: Radius.circular(8)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedWilaya,
+                      isExpanded: true,
+                      items: wilayas.map((w) => DropdownMenuItem(value: w, child: Text(w, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setSheetState(() {
+                            selectedWilaya = val;
+                            currentCommunes = _communesFor(val);
+                            selectedCommune = currentCommunes.isNotEmpty ? currentCommunes.first : null;
+                          });
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Wilaya'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedCommune,
+                      isExpanded: true,
+                      items: currentCommunes.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
+                      onChanged: (val) => setSheetState(() => selectedCommune = val),
+                      decoration: InputDecoration(
+                        labelText: 'Commune'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Delivery Type'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: RadioListTile<String>(
+                              title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
+                              value: 'home',
+                              groupValue: deliveryType,
+                              contentPadding: EdgeInsets.zero,
+                              activeColor: Theme.of(context).colorScheme.primary,
+                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: RadioListTile<String>(
+                              title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
+                              value: 'desk',
+                              groupValue: deliveryType,
+                              contentPadding: EdgeInsets.zero,
+                              activeColor: Theme.of(context).colorScheme.primary,
+                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting ? null : updateOrder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF97316),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: isSubmitting
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text('Update Order'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

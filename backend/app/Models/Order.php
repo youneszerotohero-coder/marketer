@@ -15,6 +15,10 @@ class Order extends Model
     public const STATUS_DELIVERED = 'delivered';
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_APPEL_1 = 'appel_1';
+    public const STATUS_APPEL_2 = 'appel_2';
+    public const STATUS_APPEL_3 = 'appel_3';
+    public const STATUS_REPORTE = 'reporte';
 
     protected $fillable = [
         'reference',
@@ -42,6 +46,7 @@ class Order extends Model
         'shipped_at',
         'delivered_at',
         'failed_at',
+        'postponed_until',
     ];
 
     protected $casts = [
@@ -55,6 +60,7 @@ class Order extends Model
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'failed_at' => 'datetime',
+        'postponed_until' => 'datetime',
         'delivery_last_synced_at' => 'datetime',
     ];
 
@@ -93,32 +99,4 @@ class Order extends Model
         return $this->hasMany(WalletTransaction::class);
     }
 
-    protected static function booted()
-    {
-        static::updated(function (Order $order) {
-            $inactiveStatuses = [self::STATUS_CANCELLED, self::STATUS_FAILED];
-            
-            if ($order->isDirty('status')) {
-                $oldStatus = $order->getOriginal('status');
-                $newStatus = $order->status;
-                
-                $wasInactive = in_array($oldStatus, $inactiveStatuses);
-                $isInactive = in_array($newStatus, $inactiveStatuses);
-                
-                if (!$wasInactive && $isInactive) {
-                    foreach ($order->items as $item) {
-                        if ($item->variant) {
-                            $item->variant->increment('stock', $item->quantity);
-                        }
-                    }
-                } elseif ($wasInactive && !$isInactive) {
-                    foreach ($order->items as $item) {
-                        if ($item->variant) {
-                            $item->variant->decrement('stock', $item->quantity);
-                        }
-                    }
-                }
-            }
-        });
-    }
 }

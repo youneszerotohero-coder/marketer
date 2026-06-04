@@ -4,7 +4,7 @@ class AppTranslations {
   static final Map<String, Map<String, String>> _translations = {
     'en': {
       // Drawer & Navigation
-      'Shop': 'Shop',
+      'Shop': 'Products',
       'Orders': 'Orders',
       'Wallet': 'Wallet',
       'Profile': 'Profile',
@@ -187,6 +187,9 @@ class AppTranslations {
       'Save All': 'Save All',
       'Reviews': 'Reviews',
       'Description': 'Description',
+      'Download All Images': 'Download All Images',
+      'Copy Description': 'Copy Description',
+      'Copied!': 'Copied!',
       'Product Price': 'Product Price',
       'Shipping Cost': 'Shipping Cost',
       'Total Price': 'Total Price',
@@ -250,6 +253,9 @@ class AppTranslations {
       'AMOUNT': 'AMOUNT',
       'PROFIT': 'PROFIT',
       'Details': 'Details',
+      'Edit Order': 'Edit Order',
+      'Update Order': 'Update Order',
+      'Order updated successfully!': 'Order updated successfully!',
       'Contact client': 'Contact client',
       'Available balance': 'Available balance',
       '+12% this week': '+12% this week',
@@ -272,7 +278,7 @@ class AppTranslations {
     },
     'ar': {
       // Drawer & Navigation
-      'Shop': 'المتجر',
+      'Shop': 'المنتجات',
       'Orders': 'الطلبات',
       'Wallet': 'المحفظة',
       'Profile': 'الحساب',
@@ -456,6 +462,9 @@ class AppTranslations {
       'Save All': 'حفظ الكل',
       'Reviews': 'التقييمات',
       'Description': 'الوصف',
+      'Download All Images': 'تحميل جميع الصور',
+      'Copy Description': 'نسخ الوصف',
+      'Copied!': 'تم النسخ!',
       'Product Price': 'سعر المنتج',
       'Shipping Cost': 'تكلفة الشحن',
       'Total Price': 'السعر الإجمالي',
@@ -519,6 +528,9 @@ class AppTranslations {
       'AMOUNT': 'المبلغ',
       'PROFIT': 'الربح',
       'Details': 'التفاصيل',
+      'Edit Order': 'تعديل الطلب',
+      'Update Order': 'تحديث الطلب',
+      'Order updated successfully!': 'تم تحديث الطلب بنجاح!',
       'Contact client': 'اتصل بالعميل',
       'Available balance': 'الرصيد المتاح',
       '+12% this week': '+12% هذا الأسبوع',

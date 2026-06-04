@@ -36,10 +36,15 @@ class OrderAdminController extends Controller
     public function updateStatus(Request $request, Order $order, WalletService $wallet, DeliveryGateway $delivery): JsonResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:pending,confirmed,shipped,delivered,failed,cancelled'],
+            'status' => ['required', 'in:pending,confirmed,shipped,delivered,failed,cancelled,appel_1,appel_2,appel_3,reporte'],
             'delivery_status' => ['nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string'],
+            'postponed_until' => ['nullable', 'date', 'after_or_equal:today'],
         ]);
+
+        if ($data['status'] === 'reporte' && empty($data['postponed_until'])) {
+            return response()->json(['message' => 'A postpone date is required when setting status to Reporté.'], 422);
+        }
 
         // Transition validation removed
         $timestamps = match ($data['status']) {
@@ -54,6 +59,7 @@ class OrderAdminController extends Controller
             'status' => $data['status'],
             'delivery_status' => $data['delivery_status'] ?? $order->delivery_status,
             'notes' => $data['notes'] ?? $order->notes,
+            'postponed_until' => $data['status'] === 'reporte' ? $data['postponed_until'] : null,
         ], $timestamps));
 
         if ($order->status === 'shipped' && !$order->tracking_number) {

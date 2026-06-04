@@ -11,7 +11,7 @@ class ApiService {
   // Use localhost for web (flutter run -d chrome)
   static const String _baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:8005/api',
+    defaultValue: 'http://localhost:8000/api',
   );
 
   static ApiService? _instance;

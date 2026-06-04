@@ -39,7 +39,6 @@ class ProductAdminController extends Controller
             'variants.*.sale_price' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_value' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_type' => ['required', 'in:fixed,percent'],
-            'variants.*.stock' => ['required', 'integer', 'min:0'],
         ]);
 
         $product = DB::transaction(function () use ($data, $request) {
@@ -91,7 +90,6 @@ class ProductAdminController extends Controller
             'variants.*.sale_price' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_value' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_type' => ['required', 'in:fixed,percent'],
-            'variants.*.stock' => ['required', 'integer', 'min:0'],
         ]);
 
         unset($data['images'], $data['deleted_images'], $data['main_image_id'], $data['main_image_index']);
@@ -145,7 +143,6 @@ class ProductAdminController extends Controller
                         'sale_price' => $variantData['sale_price'],
                         'commission_value' => $variantData['commission_value'],
                         'commission_type' => $variantData['commission_type'],
-                        'stock' => $variantData['stock'],
                         'status' => 'active', // Reactivate if it was archived
                     ]
                 );
@@ -169,7 +166,6 @@ class ProductAdminController extends Controller
             'sale_price' => ['sometimes', 'numeric', 'min:0'],
             'commission_value' => ['sometimes', 'numeric', 'min:0'],
             'commission_type' => ['sometimes', 'in:fixed,percent'],
-            'stock' => ['sometimes', 'integer', 'min:0'],
             'status' => ['sometimes', 'in:active,archived'],
         ]);
 

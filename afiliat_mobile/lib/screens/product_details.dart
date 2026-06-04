@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
 import '../models/cart_item_model.dart';
@@ -197,6 +202,44 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
   }
 
+  Future<void> _downloadImages() async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Downloading to gallery is not supported on Web. Please test on Android/iOS.'.tr)),
+      );
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final hasAccess = await Gal.requestAccess();
+      if (!hasAccess) {
+        throw Exception('Gallery permission denied'.tr);
+      }
+
+      final dio = Dio();
+      final dir = await getTemporaryDirectory();
+      for (int i = 0; i < sliderImages.length; i++) {
+        final url = sliderImages[i];
+        final path = '${dir.path}/image_$i.jpg';
+        await dio.download(url, path);
+        await Gal.putImage(path);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('All images saved to gallery!'.tr)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'Failed to download images'.tr}: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   String get _title => _product?['name'] ?? 'Loading...';
   String get _description =>
       _product?['description'] ?? 'No description available.';
@@ -331,7 +374,16 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: _submitting ? null : _downloadImages,
+                        icon: const Icon(Icons.download),
+                        label: Text('Download All Images'.tr),
+                        style: TextButton.styleFrom(foregroundColor: primaryColor),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
 
                     // 3. Title, Rating, and Quantity
                     Row(
@@ -577,7 +629,19 @@ class _ProductDetailsState extends State<ProductDetails> {
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _description));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Copied!'.tr)),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: Text('Copy Description'.tr),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    ),
+                    const SizedBox(height: 24),
 
                     // 5. Client Information Form (Optional here since cart also asks for it, but kept to follow instruction)
                     _buildClientInformationCard(theme),
@@ -934,29 +998,35 @@ class _ProductDetailsState extends State<ProductDetails> {
             child: Row(
               children: [
                 Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(
-                      'A Domicile'.tr,
-                      style: const TextStyle(fontSize: 14),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: RadioListTile<String>(
+                      title: Text(
+                        'A Domicile'.tr,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      value: 'home',
+                      groupValue: _deliveryType,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
-                    value: 'home',
-                    groupValue: _deliveryType,
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => setState(() => _deliveryType = val!),
                   ),
                 ),
                 Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(
-                      'Stop Desk'.tr,
-                      style: const TextStyle(fontSize: 14),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: RadioListTile<String>(
+                      title: Text(
+                        'Stop Desk'.tr,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      value: 'desk',
+                      groupValue: _deliveryType,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
-                    value: 'desk',
-                    groupValue: _deliveryType,
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => setState(() => _deliveryType = val!),
                   ),
                 ),
               ],

@@ -67,7 +67,7 @@ export const ManageProducts: React.FC = () => {
           id: img.id,
           path: img.path,
           isMain: item.main_image_path === img.path,
-          preview: img.path.startsWith('http') ? img.path : `http://localhost:8005/storage/${img.path}`
+          preview: img.path.startsWith('http') ? img.path : `http://localhost:8000/storage/${img.path}`
         }));
 
         if (existingImages.length === 0 && item.main_image_path) {
@@ -75,7 +75,7 @@ export const ManageProducts: React.FC = () => {
             id: undefined, // Mock images don't have an ID
             path: item.main_image_path,
             isMain: true,
-            preview: item.main_image_path.startsWith('http') ? item.main_image_path : `http://localhost:8005/storage/${item.main_image_path}`
+            preview: item.main_image_path.startsWith('http') ? item.main_image_path : `http://localhost:8000/storage/${item.main_image_path}`
           });
         }
 
@@ -85,17 +85,17 @@ export const ManageProducts: React.FC = () => {
         if (item.variants && item.variants.length > 0) {
           setProductVariants(item.variants.filter((v: any) => v.status !== 'archived'));
         } else {
-          setProductVariants([{ sku: `P-${Date.now()}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed', stock: '' }]);
+          setProductVariants([{ sku: `P-${Date.now()}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }]);
         }
       } else {
-        setCategoryImagePreview(item.image_path ? (item.image_path.startsWith('http') ? item.image_path : `http://localhost:8005/storage/${item.image_path}`) : null);
+        setCategoryImagePreview(item.image_path ? (item.image_path.startsWith('http') ? item.image_path : `http://localhost:8000/storage/${item.image_path}`) : null);
         setCategoryImageDeleted(false);
         setCategoryImageFile(null);
       }
     } else {
       setProductImages([]);
       setDeletedImages([]);
-      setProductVariants([{ sku: `P-${Date.now()}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed', stock: '' }]);
+      setProductVariants([{ sku: `P-${Date.now()}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }]);
       setCategoryImagePreview(null);
       setCategoryImageDeleted(false);
       setCategoryImageFile(null);
@@ -183,7 +183,7 @@ export const ManageProducts: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8005/api';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       let url = '';
 
       if (activeTab === 'products') {
@@ -230,13 +230,6 @@ export const ManageProducts: React.FC = () => {
       return `$${product.variants[0].commission_value}`;
     }
     return 'N/A';
-  };
-
-  const getProductStock = (product: any) => {
-    if (product.variants && product.variants.length > 0) {
-      return product.variants.reduce((sum: number, v: any) => sum + (v.status !== 'archived' ? Number(v.stock || 0) : 0), 0);
-    }
-    return 0;
   };
 
   return (
@@ -307,7 +300,6 @@ export const ManageProducts: React.FC = () => {
                   <th className="p-4 font-medium">Product</th>
                   <th className="p-4 font-medium">Category & Brand</th>
                   <th className="p-4 font-medium">Price</th>
-                  <th className="p-4 font-medium">Stock</th>
                   <th className="p-4 font-medium">Commission</th>
                   <th className="p-4 font-medium text-right">Actions</th>
                 </tr>
@@ -318,7 +310,7 @@ export const ManageProducts: React.FC = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.main_image_path ? (
-                          <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `http://localhost:8005/storage/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
+                          <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `http://localhost:8000/storage/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center border border-border">
                             <LayoutGrid className="w-5 h-5 text-text-muted" />
@@ -334,14 +326,6 @@ export const ManageProducts: React.FC = () => {
                       <p className="text-xs text-text-muted">{product.brand?.name || 'N/A'}</p>
                     </td>
                     <td className="p-4 text-sm font-bold text-text">{getProductPrice(product)}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        getProductStock(product) > 10 ? 'bg-success/10 text-success' : 
-                        getProductStock(product) > 0 ? 'bg-primary/10 text-primary' : 'bg-danger/10 text-danger'
-                      }`}>
-                        {getProductStock(product) > 0 ? `${getProductStock(product)} in stock` : 'Out of stock'}
-                      </span>
-                    </td>
                     <td className="p-4 text-sm font-medium text-success">{getProductCommission(product)}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -357,7 +341,7 @@ export const ManageProducts: React.FC = () => {
                 ))}
                 {visibleProducts.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-text-muted">No products found.</td>
+                    <td colSpan={5} className="p-4 text-center text-text-muted">No products found.</td>
                   </tr>
                 )}
               </tbody>
@@ -410,7 +394,7 @@ export const ManageProducts: React.FC = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {category.image_path ? (
-                          <img src={category.image_path.startsWith('http') ? category.image_path : `http://localhost:8005/storage/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
+                          <img src={category.image_path.startsWith('http') ? category.image_path : `http://localhost:8000/storage/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-border">
                             <LayoutGrid className="w-5 h-5" />
@@ -499,7 +483,7 @@ export const ManageProducts: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-text">Product Variants</h3>
-                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed', stock: '' }])} className="text-xs text-primary hover:underline font-medium">
+                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }])} className="text-xs text-primary hover:underline font-medium">
                     + Add Variant
                   </button>
                 </div>
@@ -515,10 +499,6 @@ export const ManageProducts: React.FC = () => {
                       <div className="col-span-2 sm:col-span-1">
                         <label className="block text-xs font-medium text-text mb-1">SKU / Option (e.g. RED-M)</label>
                         <input type="text" name={`variants[${i}][sku]`} defaultValue={v.sku} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="e.g. RED-M" />
-                      </div>
-                      <div className="col-span-2 sm:col-span-1">
-                        <label className="block text-xs font-medium text-text mb-1">Stock</label>
-                        <input type="number" name={`variants[${i}][stock]`} defaultValue={v.stock} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="100" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-text mb-1">Purchase Price</label>

@@ -22,6 +22,16 @@ class _ProfilePageState extends State<ProfilePage> {
   final _bankController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  String? _selectedWilaya;
+  final List<String> _wilayas = [
+    '01 - Adrar', '02 - Chlef', '03 - Laghouat', '04 - Oum El Bouaghi', '05 - Batna', '06 - Béjaïa', '07 - Biskra', '08 - Béchar', '09 - Blida', '10 - Bouira',
+    '11 - Tamanrasset', '12 - Tébessa', '13 - Tlemcen', '14 - Tiaret', '15 - Tizi Ouzou', '16 - Alger', '17 - Djelfa', '18 - Jijel', '19 - Sétif', '20 - Saïda',
+    '21 - Skikda', '22 - Sidi Bel Abbès', '23 - Annaba', '24 - Guelma', '25 - Constantine', '26 - Médéa', '27 - Mostaganem', '28 - M\'Sila', '29 - Mascara', '30 - Ouargla',
+    '31 - Oran', '32 - El Bayadh', '33 - Illizi', '34 - Bordj Bou Arréridj', '35 - Boumerdès', '36 - El Tarf', '37 - Tindouf', '38 - Tissemsilt', '39 - El Oued', '40 - Khenchela',
+    '41 - Souk Ahras', '42 - Tipaza', '43 - Mila', '44 - Aïn Defla', '45 - Naâma', '46 - Aïn Témouchent', '47 - Ghardaïa', '48 - Relizane',
+    '49 - Timimoun', '50 - Bordj Badji Mokhtar', '51 - Ouled Djellal', '52 - Béni Abbès', '53 - In Salah', '54 - In Guezzam', '55 - Touggourt', '56 - Djanet', '57 - El M\'Ghair', '58 - El Meniaa'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +60,8 @@ class _ProfilePageState extends State<ProfilePage> {
           _bankController.text =
               (profile is Map ? profile['bank_number'] : null)?.toString() ??
               '';
+          String? w = (profile is Map ? profile['wilaya'] : null)?.toString();
+          if (_wilayas.contains(w)) _selectedWilaya = w;
           _loading = false;
         });
       }
@@ -63,6 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final phone = _phoneController.text.trim();
     final bankNumber = _bankController.text.trim();
     final password = _passwordController.text.trim();
+    final wilaya = _selectedWilaya;
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(
@@ -85,6 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
           'name': name,
           'phone': phone.isEmpty ? null : phone,
           'bank_number': bankNumber.isEmpty ? null : bankNumber,
+          'wilaya': wilaya,
           if (password.isNotEmpty) 'password': password,
         },
       );
@@ -101,6 +115,8 @@ class _ProfilePageState extends State<ProfilePage> {
           _bankController.text =
               (profile is Map ? profile['bank_number'] : null)?.toString() ??
               '';
+          String? w = (profile is Map ? profile['wilaya'] : null)?.toString();
+          if (_wilayas.contains(w)) _selectedWilaya = w;
           _passwordController.clear();
           _saving = false;
         });
@@ -305,6 +321,19 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: InputDecoration(
               labelText: 'Phone Number'.tr,
               prefixIcon: const Icon(Icons.phone_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _selectedWilaya,
+            items: _wilayas.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+            onChanged: (val) => setState(() => _selectedWilaya = val),
+            decoration: InputDecoration(
+              labelText: 'Wilaya'.tr,
+              prefixIcon: const Icon(Icons.map_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

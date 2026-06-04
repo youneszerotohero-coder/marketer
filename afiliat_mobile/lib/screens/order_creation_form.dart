@@ -432,29 +432,35 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
             child: Row(
               children: [
                 Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(
-                      'A Domicile'.tr,
-                      style: const TextStyle(fontSize: 14),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: RadioListTile<String>(
+                      title: Text(
+                        'A Domicile'.tr,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      value: 'home',
+                      groupValue: _deliveryType,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
-                    value: 'home',
-                    groupValue: _deliveryType,
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => setState(() => _deliveryType = val!),
                   ),
                 ),
                 Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(
-                      'Stop Desk'.tr,
-                      style: const TextStyle(fontSize: 14),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: RadioListTile<String>(
+                      title: Text(
+                        'Stop Desk'.tr,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      value: 'desk',
+                      groupValue: _deliveryType,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
-                    value: 'desk',
-                    groupValue: _deliveryType,
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => setState(() => _deliveryType = val!),
                   ),
                 ),
               ],

@@ -82,6 +82,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],
             'bank_number' => ['nullable', 'string', 'max:255'],
+            'wilaya' => ['nullable', 'string', 'max:80'],
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 
@@ -90,6 +91,7 @@ class AuthController extends Controller
         
         $profile = $user->profile ?? [];
         $profile['bank_number'] = $data['bank_number'] ?? null;
+        $profile['wilaya'] = $data['wilaya'] ?? null;
         $user->profile = $profile;
 
         if (!empty($data['password'])) {

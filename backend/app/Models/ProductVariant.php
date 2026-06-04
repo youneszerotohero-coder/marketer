@@ -15,7 +15,6 @@ class ProductVariant extends Model
         'sale_price',
         'commission_value',
         'commission_type',
-        'stock',
         'image_path',
         'status',
     ];

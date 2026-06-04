@@ -52,7 +52,7 @@ Route::middleware('auth:api')->group(function () {
 
     // ─── Marketer routes ─────────────────────────────────────────────────────
     Route::middleware('role:marketer')->group(function () {
-        Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show']);
+        Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show', 'update']);
         Route::get('wallet', [WalletController::class, 'summary']);
         Route::get('wallet/transactions', [WalletController::class, 'transactions']);
         Route::post('wallet/withdraw', [WalletController::class, 'withdraw']);

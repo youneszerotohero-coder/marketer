@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Download, Loader2, RefreshCw, Calendar } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { ordersApi, usersApi } from '../services/api';
 
@@ -10,14 +10,47 @@ const STATUS_STYLES: Record<string, string> = {
   delivered: 'bg-success/10 text-success border-success/20',
   failed: 'bg-danger/10 text-danger border-danger/20',
   cancelled: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
+  appel_1: 'bg-orange-400/10 text-orange-500 border-orange-400/20',
+  appel_2: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  appel_3: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
+  reporte: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+  appel_1: 'Appel 1',
+  appel_2: 'Appel 2',
+  appel_3: 'Appel 3',
+  reporte: 'Reporté',
 };
 
 const ALL_STATUSES = [
-  'pending', 'confirmed', 'shipped', 'delivered', 'failed', 'cancelled'
+  'pending', 'confirmed', 'shipped', 'delivered', 'failed', 'cancelled',
+  'appel_1', 'appel_2', 'appel_3', 'reporte'
 ];
 
 const fmt = (n: number | string) =>
   'DZD ' + new Intl.NumberFormat('fr-DZ').format(Math.round(Number(n)));
+
+const formatDateOnly = (dateStr: string) => {
+  if (!dateStr) return '';
+  const parts = dateStr.slice(0, 10).split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
+const getLocalTodayString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const OrdersManagement: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -33,6 +66,8 @@ export const OrdersManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
   const [search, setSearch] = useState('');
+  // For inline postpone date picker
+  const [postponeDateMap, setPostponeDateMap] = useState<Record<number, string>>({});
 
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
@@ -93,8 +128,30 @@ export const OrdersManagement: React.FC = () => {
 
   const handleStatusChange = async (order: any, newStatus: string) => {
     if (newStatus === order.status) return;
+
+    // If setting to reporté, require a date first
+    if (newStatus === 'reporte') {
+      const dateVal = postponeDateMap[order.id];
+      if (!dateVal) {
+        // Show date picker — update map to signal user must pick date
+        setPostponeDateMap(prev => ({ ...prev, [order.id]: '' }));
+        return;
+      }
+      try {
+        await ordersApi.updateStatus(order.id, { status: newStatus, postponed_until: dateVal });
+        setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; });
+        loadOrders(page, statusFilter, search);
+        if (selectedOrder?.id === order.id) setSelectedOrder({ ...selectedOrder, status: newStatus });
+      } catch (e: any) {
+        alert(e.response?.data?.message || 'Status update failed.');
+      }
+      return;
+    }
+
     try {
       await ordersApi.updateStatus(order.id, { status: newStatus });
+      // Clear any pending postpone date if status changed away from reporte
+      setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; });
       loadOrders(page, statusFilter, search);
       if (selectedOrder?.id === order.id) setSelectedOrder({ ...selectedOrder, status: newStatus });
     } catch (e: any) {
@@ -146,12 +203,9 @@ export const OrdersManagement: React.FC = () => {
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-surface border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
             <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="failed">Failed</option>
-            <option value="cancelled">Cancelled</option>
+            {ALL_STATUSES.map(s => (
+              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            ))}
           </select>
         </div>
 
@@ -177,36 +231,80 @@ export const OrdersManagement: React.FC = () => {
                 {orders.length === 0 ? (
                   <tr><td colSpan={7} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
                 ) : orders.map((order) => (
-                  <tr key={order.id} onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
-                    <td className="p-4 text-sm font-bold text-text">{order.reference}</td>
-                    <td className="p-4 text-sm text-text-muted">{new Date(order.created_at).toLocaleDateString()}</td>
-                    <td className="p-4 text-sm font-medium text-text">{order.client_name}</td>
-                    <td className="p-4 text-sm text-text-muted">{order.marketer?.name ?? '—'}</td>
-                    <td className="p-4 text-sm font-bold text-text">{fmt(order.total)}</td>
-                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={order.shipping_method || 'delivery_company'}
-                        onChange={(e) => handleShippingMethodChange(order, e.target.value)}
-                        className="appearance-none outline-none pl-3 pr-7 py-1 rounded-lg text-xs font-semibold bg-surface border border-border cursor-pointer focus:border-primary"
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
-                      >
-                        <option value="delivery_company">ZR Express</option>
-                        <option value="self_shipping">Self Shipping</option>
-                      </select>
-                    </td>
-                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={order.status}
-                        onChange={(e) => handleStatusChange(order, e.target.value)}
-                        className={`appearance-none outline-none pl-3 pr-7 py-1 rounded-full text-xs font-bold border cursor-pointer ${STATUS_STYLES[order.status] ?? ''}`}
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
-                      >
-                        {ALL_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
+                  <React.Fragment key={order.id}>
+                    <tr onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
+                      <td className="p-4 text-sm font-bold text-text">{order.reference}</td>
+                      <td className="p-4 text-sm text-text-muted">
+                        <div>{new Date(order.created_at).toLocaleDateString()}</div>
+                        {order.status === 'reporte' && order.postponed_until && (
+                          <div className="text-xs text-indigo-500 mt-0.5 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Reporté au {formatDateOnly(order.postponed_until)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 text-sm font-medium text-text">{order.client_name}</td>
+                      <td className="p-4 text-sm text-text-muted">{order.marketer?.name ?? '—'}</td>
+                      <td className="p-4 text-sm font-bold text-text">{fmt(order.total)}</td>
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={order.shipping_method || 'delivery_company'}
+                          onChange={(e) => handleShippingMethodChange(order, e.target.value)}
+                          className="appearance-none outline-none pl-3 pr-7 py-1 rounded-lg text-xs font-semibold bg-surface border border-border cursor-pointer focus:border-primary"
+                          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
+                        >
+                          <option value="delivery_company">ZR Express</option>
+                          <option value="self_shipping">Self Shipping</option>
+                        </select>
+                      </td>
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusChange(order, e.target.value)}
+                          className={`appearance-none outline-none pl-3 pr-7 py-1 rounded-full text-xs font-bold border cursor-pointer ${STATUS_STYLES[order.status] ?? ''}`}
+                          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
+                        >
+                          {ALL_STATUSES.map((s) => (
+                            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    {/* Postpone date row — appears when admin selects "Reporté" */}
+                    {order.id in postponeDateMap && (
+                      <tr className="bg-indigo-500/5 border-b border-indigo-500/20" onClick={(e) => e.stopPropagation()}>
+                        <td colSpan={7} className="px-4 py-3">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span className="text-sm font-medium text-indigo-600">Date de report requise :</span>
+                            <input
+                              type="date"
+                              className="px-3 py-1.5 border border-indigo-300 rounded-lg text-sm bg-surface focus:outline-none focus:border-indigo-500"
+                              value={postponeDateMap[order.id] || ''}
+                              min={getLocalTodayString()}
+                              onChange={(e) => setPostponeDateMap(prev => ({ ...prev, [order.id]: e.target.value }))}
+                            />
+                            <button
+                              onClick={() => handleStatusChange(order, 'reporte')}
+                              disabled={!postponeDateMap[order.id]}
+                              className="px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg disabled:opacity-40 hover:bg-indigo-700 transition-colors"
+                            >
+                              Confirmer le report
+                            </button>
+                            <button
+                              onClick={() => setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; })}
+                              className="px-3 py-1.5 border border-border text-sm text-text-muted rounded-lg hover:bg-background transition-colors"
+                            >
+                              Annuler
+                            </button>
+                            {order.postponed_until && (
+                              <span className="text-xs text-indigo-500">Actuellement reporté au : {formatDateOnly(order.postponed_until)}</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -249,6 +347,12 @@ export const OrdersManagement: React.FC = () => {
             </div>
             <div><p className="text-xs text-text-muted mb-1">Current Location</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_current_location ?? '—'}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Last ZR Sync</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_last_synced_at ? new Date(selectedOrder.delivery_last_synced_at).toLocaleString() : '—'}</p></div>
+            {selectedOrder?.status === 'reporte' && selectedOrder?.postponed_until && (
+              <div className="col-span-2">
+                <p className="text-xs text-indigo-500 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Reporté jusqu'au</p>
+                <p className="text-sm font-semibold text-indigo-600">{formatDateOnly(selectedOrder.postponed_until)}</p>
+              </div>
+            )}
           </div>
 
           <div>

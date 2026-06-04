@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -81,7 +81,7 @@ export const ordersApi = {
     const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
     return api.get(`${prefix}/orders`, { params });
   },
-  updateStatus: (id: number, data: { status: string; notes?: string }) => {
+  updateStatus: (id: number, data: { status: string; notes?: string; postponed_until?: string }) => {
     const userStr = localStorage.getItem('user');
     const role = userStr ? JSON.parse(userStr).role : 'admin';
     const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
