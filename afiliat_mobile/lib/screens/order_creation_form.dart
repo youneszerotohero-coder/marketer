@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 
 class OrderCreationForm extends StatefulWidget {
   final List<CartItemModel> cartItems;
+  // shippingCost kept for backward compatibility but ignored — we compute it dynamically
   final double shippingCost;
 
   const OrderCreationForm({
@@ -23,13 +24,18 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  String? selectedWilaya = '16 - Alger';
-  String? selectedCommune = 'Hydra';
+  String? selectedWilaya;
+  String? selectedCommune;
   bool _isLoading = false;
+  bool _isLoadingTerritories = true;
 
+  // Territories from /delivery/territories (active wilayas with communes)
   List<Map<String, dynamic>> _territories = [];
-  List<String> wilayas = ['16 - Alger', '09 - Blida', '31 - Oran'];
-  List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
+  // Rates from /delivery/rates (all wilayas with prices + active flags)
+  List<Map<String, dynamic>> _allRates = [];
+
+  List<String> wilayas = [];
+  List<String> communes = [];
   String _deliveryType = 'home';
 
   late List<CartItemModel> _items;
@@ -38,28 +44,46 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
   void initState() {
     super.initState();
     _items = List.from(widget.cartItems);
-    _loadTerritories();
+    _loadData();
   }
 
-  Future<void> _loadTerritories() async {
+  // ─── Data Loading ─────────────────────────────────────────────────────────
+
+  Future<void> _loadData() async {
     try {
-      final data = await ApiService.instance.get('/delivery/territories');
+      final results = await Future.wait([
+        ApiService.instance.get('/delivery/territories'),
+        ApiService.instance.get('/delivery/rates'),
+      ]);
+
       final territories = List<Map<String, dynamic>>.from(
-        (data['data'] ?? data).map((item) => Map<String, dynamic>.from(item)),
+        (results[0]['data'] ?? results[0]).map((item) => Map<String, dynamic>.from(item)),
       );
-      if (territories.isEmpty || !mounted) return;
+      final rates = List<Map<String, dynamic>>.from(
+        (results[1]['data'] ?? results[1]).map((item) => Map<String, dynamic>.from(item)),
+      );
+
+      if (!mounted) return;
 
       setState(() {
         _territories = territories;
+        _allRates = rates;
         wilayas = territories.map(_territoryLabel).toList();
-        selectedWilaya = wilayas.first;
-        communes = _communesFor(selectedWilaya);
-        selectedCommune = communes.isNotEmpty ? communes.first : null;
+        if (wilayas.isNotEmpty) {
+          selectedWilaya = wilayas.first;
+          communes = _communesFor(selectedWilaya);
+          selectedCommune = communes.isNotEmpty ? communes.first : null;
+        }
+        _isLoadingTerritories = false;
       });
     } catch (_) {
-      // Keep the local fallback values when ZR Express territories are unavailable.
+      if (mounted) {
+        setState(() => _isLoadingTerritories = false);
+      }
     }
   }
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
 
   String _territoryLabel(Map<String, dynamic> territory) {
     final code = (territory['code'] ?? '').toString();
@@ -77,16 +101,51 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
       return values
           .map((item) {
             if (item is Map) {
-              return (item['name'] ?? item['label'] ?? item['commune'] ?? '')
-                  .toString();
+              return (item['name'] ?? item['label'] ?? item['commune'] ?? '').toString();
             }
             return item.toString();
           })
           .where((item) => item.isNotEmpty)
           .toList();
     }
-    return communes;
+    return [];
   }
+
+  /// Get the rate record for the currently selected wilaya
+  Map<String, dynamic>? get _selectedRate {
+    if (selectedWilaya == null || _allRates.isEmpty) return null;
+    final code = selectedWilaya!.split(' - ').first.trim();
+    try {
+      return _allRates.firstWhere(
+        (r) => r['code'].toString() == code || r['wilaya_code'].toString() == code,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get _wilayaActive => _selectedRate?['is_active'] as bool? ?? true;
+  bool get _homeActive => _selectedRate?['home_active'] as bool? ?? true;
+  bool get _deskActive => _selectedRate?['desk_active'] as bool? ?? true;
+
+  double get _computedShippingCost {
+    final rate = _selectedRate;
+    if (rate == null) return 0;
+    if (_deliveryType == 'home') {
+      return (rate['home'] ?? rate['home_price'] ?? 0).toDouble();
+    } else {
+      return (rate['desk'] ?? rate['desk_price'] ?? 0).toDouble();
+    }
+  }
+
+  bool get _canSubmit {
+    if (!_wilayaActive) return false;
+    if (_deliveryType == 'home' && !_homeActive) return false;
+    if (_deliveryType == 'desk' && !_deskActive) return false;
+    return true;
+  }
+
+  // ─── Computed totals (use dynamic shipping) ────────────────────────────────
 
   double get subtotal =>
       _items.fold(0, (total, item) => total + (item.price * item.quantity));
@@ -94,9 +153,28 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     0,
     (total, item) => total + (item.commission * item.quantity),
   );
-  double get total => subtotal + widget.shippingCost;
+  double get total => subtotal + _computedShippingCost;
+
 
   Future<void> _submitOrder() async {
+    if (!_canSubmit) {
+      String msg;
+      if (!_wilayaActive) {
+        msg = 'Delivery to this wilaya is currently unavailable.'.tr;
+      } else if (_deliveryType == 'home' && !_homeActive) {
+        msg = 'Home delivery is not available for this wilaya.'.tr;
+      } else {
+        msg = 'Desk delivery is not available for this wilaya.'.tr;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (_nameController.text.trim().isEmpty ||
         _phoneController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,7 +206,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           'delivery_type': _deliveryType,
           'items': items,
           'status': 'pending',
-          'shipping_fee': widget.shippingCost,
+          'shipping_fee': _computedShippingCost,
         },
       );
 
@@ -253,55 +331,103 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
               padding: EdgeInsets.all(16.0),
               child: CustomHeader(showBackButton: true),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: Column(
-                  children: [
-                    _buildClientInformationCard(theme),
-                    const SizedBox(height: 16),
-                    _buildOrderSummaryCard(theme),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitOrder,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF97316),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                          shadowColor: const Color(
-                            0xFFF97316,
-                          ).withValues(alpha: 0.4),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : Text(
-                                'Confirm Order'.tr,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+            if (_isLoadingTerritories)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Column(
+                    children: [
+                      // ⚠️ Blocking banners
+                      if (!_wilayaActive) _buildBlockingBanner(
+                        theme,
+                        message: 'Delivery to this wilaya is currently unavailable.'.tr,
+                      )
+                      else if (_deliveryType == 'home' && !_homeActive) _buildBlockingBanner(
+                        theme,
+                        message: 'Home delivery is not available for this wilaya.'.tr,
+                      )
+                      else if (_deliveryType == 'desk' && !_deskActive) _buildBlockingBanner(
+                        theme,
+                        message: 'Desk delivery is not available for this wilaya.'.tr,
                       ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+                      if (!_wilayaActive || (_deliveryType == 'home' && !_homeActive) || (_deliveryType == 'desk' && !_deskActive))
+                        const SizedBox(height: 12),
+                      _buildClientInformationCard(theme),
+                      const SizedBox(height: 16),
+                      _buildOrderSummaryCard(theme),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: (_isLoading || !_canSubmit) ? null : _submitOrder,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _canSubmit
+                                ? const Color(0xFFF97316)
+                                : Colors.grey.shade400,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: _canSubmit ? 4 : 0,
+                            shadowColor: const Color(0xFFF97316).withValues(alpha: 0.4),
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                                  _canSubmit
+                                      ? 'Confirm Order'.tr
+                                      : 'Delivery Unavailable'.tr,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBlockingBanner(ThemeData theme, {required String message}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -525,7 +651,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           const SizedBox(height: 12),
           _buildSummaryRow(
             'Shipping Fee'.tr,
-            'DZD ${widget.shippingCost.toStringAsFixed(0)}',
+            'DZD ${_computedShippingCost.toStringAsFixed(0)}',
           ),
           const SizedBox(height: 16),
 
@@ -912,8 +1038,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                 runSpacing: 8,
                 children: item.availableVariants!.map((v) {
                   final isSelected = v['id'].toString() == item.id;
-                  final stock = int.tryParse(v['stock'].toString()) ?? 0;
-                  final isAvailable = stock > 0 && v['status'] == 'active';
+                  final isAvailable = v['status'] == 'active';
 
                   return InkWell(
                     onTap: isAvailable
@@ -932,9 +1057,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                                   ) ??
                                   item.commission,
                               imageUrl: item.imageUrl,
-                              quantity: item.quantity > stock
-                                  ? stock
-                                  : item.quantity,
+                              quantity: item.quantity,
                               availableVariants: item.availableVariants,
                             );
 

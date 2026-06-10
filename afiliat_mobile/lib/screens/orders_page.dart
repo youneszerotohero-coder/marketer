@@ -55,6 +55,7 @@ class _OrdersPageState extends State<OrdersPage> {
   String _error = '';
 
   List<Map<String, dynamic>> _territories = [];
+  List<Map<String, dynamic>> _allRates = [];
   List<String> wilayas = ['16 - Alger', '09 - Blida', '31 - Oran'];
   List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
 
@@ -71,11 +72,18 @@ class _OrdersPageState extends State<OrdersPage> {
       final territories = List<Map<String, dynamic>>.from(
         (data['data'] ?? data).map((item) => Map<String, dynamic>.from(item)),
       );
+      
+      final ratesData = await ApiService.instance.get('/delivery/rates');
+      final rates = List<Map<String, dynamic>>.from(
+        (ratesData['data'] ?? ratesData).map((item) => Map<String, dynamic>.from(item)),
+      );
+
       if (territories.isEmpty || !mounted) return;
 
       setState(() {
         _territories = territories;
         wilayas = territories.map(_territoryLabel).toList();
+        _allRates = rates;
       });
     } catch (_) {
     }
@@ -1021,6 +1029,32 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
+  double _getShippingCost(String? wilayaLabel, String deliveryType) {
+    if (wilayaLabel == null || _allRates.isEmpty) return 0.0;
+    
+    String wilayaName = wilayaLabel;
+    String? wilayaCode;
+    if (wilayaLabel.contains(' - ')) {
+      final parts = wilayaLabel.split(' - ');
+      wilayaCode = parts[0].trim();
+      wilayaName = parts[1].trim();
+    }
+    
+    final rate = _allRates.firstWhere(
+      (r) => (wilayaCode != null && r['wilaya_code']?.toString() == wilayaCode) ||
+             r['wilaya_name']?.toString().toLowerCase() == wilayaName.toLowerCase(),
+      orElse: () => {},
+    );
+    
+    if (rate.isEmpty) return 0.0;
+    
+    if (deliveryType == 'home') {
+      return (rate['home'] ?? rate['home_price'] ?? 0).toDouble();
+    } else {
+      return (rate['desk'] ?? rate['desk_price'] ?? 0).toDouble();
+    }
+  }
+
   void _showEditOrderSheet(Map<String, dynamic> order) {
     final clientNameController = TextEditingController(text: order['client_name']);
     final clientPhoneController = TextEditingController(text: order['client_phone']);
@@ -1072,6 +1106,10 @@ class _OrdersPageState extends State<OrdersPage> {
                 setSheetState(() => isSubmitting = false);
               }
             }
+
+            final currentShippingFee = _getShippingCost(selectedWilaya, deliveryType);
+            final subtotal = double.tryParse(order['subtotal']?.toString() ?? '0') ?? 0.0;
+            final total = subtotal + currentShippingFee;
 
             return Padding(
               padding: EdgeInsets.only(
@@ -1182,6 +1220,43 @@ class _OrdersPageState extends State<OrdersPage> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Order Summary'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Subtotal'.tr, style: const TextStyle(fontSize: 13)),
+                              Text('DZD $subtotal', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Shipping Fee'.tr, style: const TextStyle(fontSize: 13)),
+                              Text('DZD $currentShippingFee', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total'.tr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                              Text('DZD $total', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(

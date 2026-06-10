@@ -54,6 +54,6 @@ class CartService {
   }
 
   double get subtotal => cartNotifier.value.fold(0, (total, item) => total + (item.price * item.quantity));
-  double get shippingCost => cartNotifier.value.isEmpty ? 0 : 500.0;
-  double get total => subtotal + shippingCost;
+  double get shippingCost => 0.0;
+  double get total => subtotal;
 }

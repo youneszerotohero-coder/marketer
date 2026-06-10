@@ -243,6 +243,15 @@ class AppTranslations {
       'Order Summary': 'Order Summary',
       'Shipping Fee': 'Shipping Fee',
       'Your Commission': 'Your Commission',
+      'Delivery Unavailable': 'Delivery Unavailable',
+      'Delivery to this wilaya is currently unavailable.':
+          'Delivery to this wilaya is currently unavailable.',
+      'Home delivery is not available for this wilaya.':
+          'Home delivery is not available for this wilaya.',
+      'Desk delivery is not available for this wilaya.':
+          'Desk delivery is not available for this wilaya.',
+      'CONTACT US': 'CONTACT US',
+      'Calculated at checkout': 'Calculated at checkout',
 
       // Orders & Wallet Pages
       'Confirmed': 'Confirmed',
@@ -518,6 +527,15 @@ class AppTranslations {
       'Order Summary': 'ملخص الطلب',
       'Shipping Fee': 'رسوم الشحن',
       'Your Commission': 'عمولتك',
+      'Delivery Unavailable': 'التوصيل غير متاح',
+      'Delivery to this wilaya is currently unavailable.':
+          'التوصيل إلى هذه الولاية غير متاح حالياً.',
+      'Home delivery is not available for this wilaya.':
+          'التوصيل للمنزل غير متاح لهذه الولاية.',
+      'Desk delivery is not available for this wilaya.':
+          'التوصيل للمكتب غير متاح لهذه الولاية.',
+      'CONTACT US': 'تواصل معنا',
+      'Calculated at checkout': 'يحدد عند الدفع',
 
       // Orders & Wallet Pages
       'Confirmed': 'مؤكد',

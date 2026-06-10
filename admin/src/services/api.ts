@@ -115,3 +115,16 @@ export const settingsApi = {
   upsert: (settings: { key: string; value: unknown }[]) =>
     api.patch('/admin/settings', { settings }),
 };
+
+// ─── Shipping Rates ────────────────────────────────────────────────────────────
+export const shippingRatesApi = {
+  list: () => api.get('/admin/shipping-rates'),
+  bulkUpdate: (rates: {
+    id: number;
+    home_price: number;
+    desk_price: number;
+    is_active: boolean;
+    home_active: boolean;
+    desk_active: boolean;
+  }[]) => api.patch('/admin/shipping-rates', { rates }),
+};

@@ -212,7 +212,7 @@ class ProductCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // Price & Stock
+                      // Price
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -222,29 +222,6 @@ class ProductCard extends StatelessWidget {
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
                               color: Color(0xFFF97316),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: inStock
-                                  ? theme.colorScheme.tertiaryContainer
-                                  : theme.colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              stockText,
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: inStock
-                                    ? theme.colorScheme.onTertiaryContainer
-                                    : theme.colorScheme.onErrorContainer,
-                                letterSpacing: 0.2,
-                              ),
                             ),
                           ),
                         ],

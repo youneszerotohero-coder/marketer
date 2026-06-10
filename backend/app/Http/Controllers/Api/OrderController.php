@@ -74,7 +74,51 @@ class OrderController extends Controller
                 ];
             }
 
-            $shippingFee = $delivery->calculateCost($data['wilaya'], $data['commune'], $data['delivery_type']);
+            $wilayaInput = $data['wilaya'];
+            $code = null;
+            $name = $wilayaInput;
+            if (str_contains($wilayaInput, ' - ')) {
+                $parts = explode(' - ', $wilayaInput, 2);
+                $code = trim($parts[0]);
+                $name = trim($parts[1]);
+            }
+
+            $rateQuery = \App\Models\ShippingRate::query();
+            if ($code) {
+                $rateQuery->where('wilaya_code', $code);
+            } else {
+                $rateQuery->where('wilaya_name', $name)->orWhere('wilaya_name_ar', $name);
+            }
+            $shippingRate = $rateQuery->first();
+
+            if (!$shippingRate) {
+                abort(422, "La wilaya sélectionnée n'est pas valide.");
+            }
+
+            if (!$shippingRate->is_active) {
+                abort(422, "La livraison vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+            }
+
+            $type = $data['delivery_type'];
+            if ($type === 'home' && !$shippingRate->home_active) {
+                abort(422, "La livraison à domicile vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+            }
+            if ($type === 'desk' && !$shippingRate->desk_active) {
+                abort(422, "La livraison en point de retrait (Stop Desk) vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+            }
+
+            $communeExists = $shippingRate->communes()
+                ->where(function ($q) use ($data) {
+                    $q->where('name', $data['commune'])
+                      ->orWhere('name_ar', $data['commune']);
+                })->exists();
+
+            if (!$communeExists) {
+                abort(422, "La commune sélectionnée n'appartient pas à la wilaya choisie.");
+            }
+
+            $shippingFee = $type === 'home' ? (float) $shippingRate->home_price : (float) $shippingRate->desk_price;
+
             $duplicate = Order::where('client_phone', $data['client_phone'])
                 ->whereIn('status', [Order::STATUS_PENDING, Order::STATUS_CONFIRMED, Order::STATUS_SHIPPED])
                 ->exists();
@@ -128,7 +172,50 @@ class OrderController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $shippingFee = $delivery->calculateCost($data['wilaya'], $data['commune'], $data['delivery_type']);
+        $wilayaInput = $data['wilaya'];
+        $code = null;
+        $name = $wilayaInput;
+        if (str_contains($wilayaInput, ' - ')) {
+            $parts = explode(' - ', $wilayaInput, 2);
+            $code = trim($parts[0]);
+            $name = trim($parts[1]);
+        }
+
+        $rateQuery = \App\Models\ShippingRate::query();
+        if ($code) {
+            $rateQuery->where('wilaya_code', $code);
+        } else {
+            $rateQuery->where('wilaya_name', $name)->orWhere('wilaya_name_ar', $name);
+        }
+        $shippingRate = $rateQuery->first();
+
+        if (!$shippingRate) {
+            abort(422, "La wilaya sélectionnée n'est pas valide.");
+        }
+
+        if (!$shippingRate->is_active) {
+            abort(422, "La livraison vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+        }
+
+        $type = $data['delivery_type'];
+        if ($type === 'home' && !$shippingRate->home_active) {
+            abort(422, "La livraison à domicile vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+        }
+        if ($type === 'desk' && !$shippingRate->desk_active) {
+            abort(422, "La livraison en point de retrait (Stop Desk) vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
+        }
+
+        $communeExists = $shippingRate->communes()
+            ->where(function ($q) use ($data) {
+                $q->where('name', $data['commune'])
+                  ->orWhere('name_ar', $data['commune']);
+            })->exists();
+
+        if (!$communeExists) {
+            abort(422, "La commune sélectionnée n'appartient pas à la wilaya choisie.");
+        }
+
+        $shippingFee = $type === 'home' ? (float) $shippingRate->home_price : (float) $shippingRate->desk_price;
 
         $order->update([
             'client_name' => $data['client_name'],

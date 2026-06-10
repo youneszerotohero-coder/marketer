@@ -7,6 +7,7 @@ import { OrdersManagement } from './pages/OrdersManagement';
 import { WalletManagement } from './pages/WalletManagement';
 import { Settings } from './pages/Settings';
 import { LoginPage } from './pages/LoginPage';
+import { ShippingRates } from './pages/ShippingRates';
 
 // Guard: redirect to /login if no token stored
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +41,7 @@ function App() {
           <Route path="orders" element={<OrdersManagement />} />
           <Route path="wallet" element={<AdminRoute><WalletManagement /></AdminRoute>} />
           <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
+          <Route path="shipping-rates" element={<AdminRoute><ShippingRates /></AdminRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

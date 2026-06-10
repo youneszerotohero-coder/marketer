@@ -279,8 +279,7 @@ class _CartPageState extends State<CartPage> {
                 runSpacing: 8,
                 children: item.availableVariants!.map((v) {
                   final isSelected = v['id'].toString() == item.id;
-                  final stock = int.tryParse(v['stock'].toString()) ?? 0;
-                  final isAvailable = stock > 0 && v['status'] == 'active';
+                  final isAvailable = v['status'] == 'active';
 
                   return InkWell(
                     onTap: isAvailable ? () {
@@ -292,7 +291,7 @@ class _CartPageState extends State<CartPage> {
                         price: double.tryParse(v['sale_price'].toString()) ?? item.price,
                         commission: double.tryParse(v['commission_value'].toString()) ?? item.commission,
                         imageUrl: item.imageUrl,
-                        quantity: item.quantity > stock ? stock : item.quantity,
+                        quantity: item.quantity,
                         availableVariants: item.availableVariants,
                       );
                       CartService.instance.updateItem(index, updatedItem);
@@ -344,7 +343,7 @@ class _CartPageState extends State<CartPage> {
         children: [
           _buildSummaryRow(theme, 'Subtotal'.tr, 'DZD ${CartService.instance.subtotal.toStringAsFixed(0)}'),
           const SizedBox(height: 12),
-          _buildSummaryRow(theme, 'Shipping'.tr, 'DZD ${CartService.instance.shippingCost.toStringAsFixed(0)}'),
+          _buildSummaryRow(theme, 'Shipping'.tr, 'Calculated at checkout'.tr),
           const SizedBox(height: 12),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
@@ -356,7 +355,7 @@ class _CartPageState extends State<CartPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
               ),
               Text(
-                'DZD ${CartService.instance.total.toStringAsFixed(0)}',
+                'DZD ${CartService.instance.subtotal.toStringAsFixed(0)}',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: theme.colorScheme.primary),
               ),
             ],

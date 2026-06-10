@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Plus, Edit, Trash2, Key, Users, Truck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, Plus, Edit, Trash2, Key, Users, Truck, Share2, Upload, FileText, X, ExternalLink } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import api from '../services/api';
 
 export const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'delivery' | 'accounts'>('delivery');
+  const [activeTab, setActiveTab] = useState<'delivery' | 'accounts' | 'contact'>('delivery');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [limit, setLimit] = useState(20);
@@ -14,6 +14,19 @@ export const Settings: React.FC = () => {
   const [zrEnabled, setZrEnabled] = useState(true);
   const [zrCredentials, setZrCredentials] = useState({ tenantId: '', secretKey: '', baseUrl: '', version: '1' });
   const [returnFee, setReturnFee] = useState('400');
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const [socialLinks, setSocialLinks] = useState({
+    facebook: '',
+    telegram: '',
+    whatsapp: '',
+    instagram: '',
+    tiktok: '',
+    viber: '',
+    phone: '',
+    pdfUrl: ''
+  });
 
   useEffect(() => {
     fetchData();
@@ -36,6 +49,16 @@ export const Settings: React.FC = () => {
           version: data.zr_express_api_version || '1',
         });
         setReturnFee(data.return_fee || '400');
+        setSocialLinks({
+          facebook: data['social.facebook'] || '',
+          telegram: data['social.telegram'] || '',
+          whatsapp: data['social.whatsapp'] || '',
+          instagram: data['social.instagram'] || '',
+          tiktok: data['social.tiktok'] || '',
+          viber: data['social.viber'] || '',
+          phone: data['social.phone'] || '',
+          pdfUrl: data.pdf_document_url || '',
+        });
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -53,13 +76,51 @@ export const Settings: React.FC = () => {
           { key: 'zr_express_secret_key', value: zrCredentials.secretKey },
           { key: 'zr_express_base_url', value: zrCredentials.baseUrl },
           { key: 'zr_express_api_version', value: zrCredentials.version },
-          { key: 'return_fee', value: returnFee }
+          { key: 'return_fee', value: returnFee },
+          { key: 'social.facebook', value: socialLinks.facebook },
+          { key: 'social.telegram', value: socialLinks.telegram },
+          { key: 'social.whatsapp', value: socialLinks.whatsapp },
+          { key: 'social.instagram', value: socialLinks.instagram },
+          { key: 'social.tiktok', value: socialLinks.tiktok },
+          { key: 'social.viber', value: socialLinks.viber },
+          { key: 'social.phone', value: socialLinks.phone },
+          { key: 'pdf_document_url', value: socialLinks.pdfUrl },
         ]
       });
       alert("Settings saved!");
     } catch (error) {
       console.error('Failed to save settings', error);
       alert("Failed to save settings");
+    }
+  };
+
+  // ─── PDF file upload ────────────────────────────────────────────────────
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert('Please select a valid PDF file.');
+      return;
+    }
+    setPdfUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      const res = await api.post('/admin/settings/upload-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url: string = res.data?.url || res.data?.data?.url || '';
+      if (url) {
+        setSocialLinks(prev => ({ ...prev, pdfUrl: url }));
+      } else {
+        alert('Upload succeeded but no URL returned.');
+      }
+    } catch (err) {
+      console.error('PDF upload failed:', err);
+      alert('Failed to upload PDF. Please try again.');
+    } finally {
+      setPdfUploading(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
     }
   };
 
@@ -95,6 +156,13 @@ export const Settings: React.FC = () => {
         >
           <Truck className="w-4 h-4" />
           Delivery APIs
+        </button>
+        <button 
+          onClick={() => setActiveTab('contact')}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contact' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+        >
+          <Share2 className="w-4 h-4" />
+          Contact & Document Settings
         </button>
         <button 
           onClick={() => setActiveTab('accounts')}
@@ -188,6 +256,161 @@ export const Settings: React.FC = () => {
             </div>
             <div className="mt-4 flex justify-end">
               <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+                <Save className="w-4 h-4" />
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'contact' ? (
+        <div className="space-y-6">
+          <div className="bg-surface border border-border rounded-2xl shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-primary/10 text-primary rounded-xl">
+                <Share2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-text">Contact & Document Settings</h2>
+                <p className="text-sm text-text-muted">Configure the social links, support number, and office numbers PDF URL.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Facebook Link</label>
+                <input
+                  type="text"
+                  value={socialLinks.facebook}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, facebook: e.target.value })}
+                  placeholder="https://facebook.com/..."
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Telegram Link</label>
+                <input
+                  type="text"
+                  value={socialLinks.telegram}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, telegram: e.target.value })}
+                  placeholder="https://t.me/..."
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">WhatsApp Link / Number</label>
+                <input
+                  type="text"
+                  value={socialLinks.whatsapp}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, whatsapp: e.target.value })}
+                  placeholder="https://wa.me/... or phone number"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Instagram Link</label>
+                <input
+                  type="text"
+                  value={socialLinks.instagram}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, instagram: e.target.value })}
+                  placeholder="https://instagram.com/..."
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">TikTok Link</label>
+                <input
+                  type="text"
+                  value={socialLinks.tiktok}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, tiktok: e.target.value })}
+                  placeholder="https://tiktok.com/@..."
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Viber Link / Number</label>
+                <input
+                  type="text"
+                  value={socialLinks.viber}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, viber: e.target.value })}
+                  placeholder="viber://chat?... or phone number"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Support Phone Number</label>
+                <input
+                  type="text"
+                  value={socialLinks.phone}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, phone: e.target.value })}
+                  placeholder="+213..."
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-text mb-2">Office Numbers PDF (أرقام المكاتب)</label>
+
+                {/* Current PDF preview */}
+                {socialLinks.pdfUrl && (
+                  <div className="flex items-center gap-2 mb-3 p-3 bg-background border border-border rounded-lg">
+                    <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
+                    <a
+                      href={socialLinks.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline truncate flex-1"
+                    >
+                      {socialLinks.pdfUrl}
+                    </a>
+                    <ExternalLink className="w-4 h-4 text-text-muted flex-shrink-0" />
+                    <button
+                      type="button"
+                      onClick={() => setSocialLinks(prev => ({ ...prev, pdfUrl: '' }))}
+                      className="p-1 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"
+                      title="Remove PDF"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload zone */}
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handlePdfUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => pdfInputRef.current?.click()}
+                  disabled={pdfUploading}
+                  className="flex items-center gap-2 w-full px-4 py-3 border-2 border-dashed border-border rounded-lg text-text-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pdfUploading ? (
+                    <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm">Uploading…</span></>
+                  ) : (
+                    <><Upload className="w-4 h-4" /><span className="text-sm">{socialLinks.pdfUrl ? 'Replace PDF file' : 'Click to upload PDF file'}</span></>
+                  )}
+                </button>
+
+                {/* Manual URL fallback */}
+                <p className="text-xs text-text-muted mt-2 mb-1">Or paste a direct URL:</p>
+                <input
+                  type="text"
+                  value={socialLinks.pdfUrl}
+                  onChange={(e) => setSocialLinks({ ...socialLinks, pdfUrl: e.target.value })}
+                  placeholder="https://example.com/office-numbers.pdf"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleSaveSettings}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+              >
                 <Save className="w-4 h-4" />
                 Save Changes
               </button>

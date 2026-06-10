@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
 
@@ -13,11 +14,32 @@ class _ShippingPricesPageState extends State<ShippingPricesPage> {
   bool _loading = true;
   String _error = '';
   List<Map<String, dynamic>> _shippingRates = [];
+  String? _pdfUrl;
 
   @override
   void initState() {
     super.initState();
     _loadShippingRates();
+    _loadPdfUrl();
+  }
+
+  Future<void> _loadPdfUrl() async {
+    try {
+      final data = await ApiService.instance.get('/app/settings');
+      if (mounted) {
+        setState(() {
+          _pdfUrl = data['pdf_document_url']?.toString();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   Future<void> _loadShippingRates() async {
@@ -86,11 +108,38 @@ class _ShippingPricesPageState extends State<ShippingPricesPage> {
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_pdfUrl != null && _pdfUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF22C55E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
+                onPressed: () => _launchUrl(_pdfUrl!),
+                icon: const Icon(Icons.picture_as_pdf, size: 14, color: Colors.white),
+                label: const Text(
+                  'أرقام المكاتب',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(

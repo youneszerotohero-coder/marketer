@@ -71,5 +71,7 @@ class DatabaseSeeder extends Seeder
 
         Setting::updateOrCreate(['key' => 'commission.default_type'], ['value' => 'fixed']);
         Setting::updateOrCreate(['key' => 'delivery.provider'], ['value' => 'zr_express']);
+
+        $this->call(ShippingRatesSeeder::class);
     }
 }

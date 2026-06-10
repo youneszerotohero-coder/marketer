@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CreditCard, History, Loader2, CheckCircle, XCircle, Receipt, Printer, Download } from 'lucide-react';
+import { CreditCard, History, Loader2, CheckCircle, XCircle, Receipt, Printer } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { walletApi } from '../services/api';
 

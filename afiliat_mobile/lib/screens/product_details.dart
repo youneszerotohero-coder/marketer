@@ -30,6 +30,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   String? selectedCommune = 'Hydra';
 
   List<Map<String, dynamic>> _territories = [];
+  List<Map<String, dynamic>> _allRates = [];
   List<String> wilayas = ['16 - Alger', '09 - Blida', '31 - Oran'];
   List<String> communes = ['Hydra', 'El Biar', 'Bab Ezzouar'];
   String _deliveryType = 'home';
@@ -53,14 +54,21 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   Future<void> _loadTerritories() async {
     try {
-      final data = await ApiService.instance.get('/delivery/territories');
+      final results = await Future.wait([
+        ApiService.instance.get('/delivery/territories'),
+        ApiService.instance.get('/delivery/rates'),
+      ]);
       final territories = List<Map<String, dynamic>>.from(
-        (data['data'] ?? data).map((item) => Map<String, dynamic>.from(item)),
+        (results[0]['data'] ?? results[0]).map((item) => Map<String, dynamic>.from(item)),
+      );
+      final rates = List<Map<String, dynamic>>.from(
+        (results[1]['data'] ?? results[1]).map((item) => Map<String, dynamic>.from(item)),
       );
       if (territories.isEmpty || !mounted) return;
 
       setState(() {
         _territories = territories;
+        _allRates = rates;
         wilayas = territories.map(_territoryLabel).toList();
         selectedWilaya = wilayas.first;
         communes = _communesFor(selectedWilaya);
@@ -179,7 +187,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           'delivery_type': _deliveryType,
           'items': items,
           'status': 'pending',
-          'shipping_fee': 600,
+          'shipping_fee': _computedShippingCost,
         },
       );
 
@@ -249,18 +257,39 @@ class _ProductDetailsState extends State<ProductDetails> {
   double get _commissionNum => _defaultVariant != null
       ? double.parse(_defaultVariant!['commission_value'].toString())
       : 0.0;
-  int get _stock => _defaultVariant != null
-      ? int.tryParse(_defaultVariant!['stock'].toString()) ?? 0
-      : 0;
+  int get _stock => 999999;
 
   String get _productTotalPrice {
     final total = _priceNum * quantity;
     return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 
+  /// Get rate record for the selected wilaya
+  Map<String, dynamic>? get _selectedRate {
+    if (selectedWilaya == null || _allRates.isEmpty) return null;
+    final code = selectedWilaya!.split(' - ').first.trim();
+    try {
+      return _allRates.firstWhere(
+        (r) => r['code'].toString() == code || r['wilaya_code'].toString() == code,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  double get _computedShippingCost {
+    final rate = _selectedRate;
+    if (rate == null) return 0;
+    if (_deliveryType == 'home') {
+      return (rate['home'] ?? rate['home_price'] ?? 0).toDouble();
+    } else {
+      return (rate['desk'] ?? rate['desk_price'] ?? 0).toDouble();
+    }
+  }
+
   String get _finalTotalPrice {
-    final total = (_priceNum * quantity) + 600; // Assuming 600 shipping
-    return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
+    final total = (_priceNum * quantity) + _computedShippingCost;
+    return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'; 
   }
 
   @override
@@ -451,28 +480,11 @@ class _ProductDetailsState extends State<ProductDetails> {
                                       ],
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Text(
-                                    _stock > 0
-                                        ? '${'In Stock'.tr} ($_stock ${'available'.tr})'
-                                        : 'Out of Stock'.tr,
-                                    style: TextStyle(
-                                      color: _stock > 0
-                                          ? Colors.green
-                                          : Colors.red,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
                         const SizedBox(width: 16),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -542,11 +554,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                             onTap: () {
                               setState(() {
                                 _defaultVariant = variant;
-                                if (quantity > variant['stock']) {
-                                  quantity = variant['stock'] > 0
-                                      ? variant['stock']
-                                      : 1;
-                                }
                               });
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -576,11 +583,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                                     onChanged: (val) {
                                       setState(() {
                                         _defaultVariant = variant;
-                                        if (quantity > variant['stock']) {
-                                          quantity = variant['stock'] > 0
-                                              ? variant['stock']
-                                              : 1;
-                                        }
                                       });
                                     },
                                     materialTapTargetSize:
@@ -705,7 +707,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
                       ),
                       Text(
-                        'DZD 600',
+                        'DZD ${_computedShippingCost.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

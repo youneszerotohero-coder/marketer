@@ -331,15 +331,14 @@ class _ShopPageState extends State<ShopPage> {
         
         final price = defaultVariant != null ? double.tryParse(defaultVariant['sale_price'].toString()) ?? 0.0 : 0.0;
         final commission = defaultVariant != null ? double.tryParse(defaultVariant['commission_value'].toString()) ?? 0.0 : 0.0;
-        final stock = defaultVariant != null ? int.tryParse(defaultVariant['stock'].toString()) ?? 0 : 0;
 
         return ProductCard(
           brand: brandName,
           rating: '4.5', // Placeholder, API might not have it
           title: title,
           price: 'DZD $price',
-          stockText: stock > 0 ? 'In Stock'.tr : 'Out of Stock'.tr,
-          inStock: stock > 0,
+          stockText: 'In Stock'.tr,
+          inStock: true,
           commission: '+ DZD $commission',
           imageUrl: imageUrl,
           onTap: () {
@@ -349,10 +348,7 @@ class _ShopPageState extends State<ShopPage> {
             )));
           },
           onAddToCart: () {
-            if (defaultVariant == null || stock <= 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Product is out of stock'.tr)),
-              );
+            if (defaultVariant == null) {
               return;
             }
             final item = CartItemModel(

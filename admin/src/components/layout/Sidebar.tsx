@@ -7,7 +7,8 @@ import {
   ShoppingCart, 
   Wallet,
   Settings,
-  LogOut
+  LogOut,
+  Truck
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -22,6 +23,7 @@ const navItems = [
   { name: 'Products', path: '/products', icon: Package, roles: ['admin'] },
   { name: 'Orders', path: '/orders', icon: ShoppingCart, roles: ['admin', 'confirmatrice'] },
   { name: 'Wallet', path: '/wallet', icon: Wallet, roles: ['admin'] },
+  { name: 'Shipping Rates', path: '/shipping-rates', icon: Truck, roles: ['admin'] },
 ];
 
 export const Sidebar: React.FC = () => {

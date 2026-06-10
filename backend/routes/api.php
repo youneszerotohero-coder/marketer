@@ -46,6 +46,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('delivery/territories', [DeliveryController::class, 'territories']);
     Route::get('delivery/rates', [DeliveryController::class, 'rates']);
+    Route::get('app/settings', [\App\Http\Controllers\Api\Admin\SettingController::class, 'publicSettings']);
     Route::post('orders/{order}/delivery-status', [DeliveryController::class, 'syncOrder']);
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('brands', [BrandController::class, 'index']);
@@ -96,5 +97,10 @@ Route::middleware('auth:api')->group(function () {
         // Settings (delivery API keys, etc.)
         Route::get('settings', [SettingController::class, 'index']);
         Route::patch('settings', [SettingController::class, 'upsert']);
+        Route::post('settings/upload-pdf', [SettingController::class, 'uploadPdf']);
+
+        // Shipping Rates management
+        Route::get('shipping-rates', [\App\Http\Controllers\Api\Admin\ShippingRateAdminController::class, 'index']);
+        Route::patch('shipping-rates', [\App\Http\Controllers\Api\Admin\ShippingRateAdminController::class, 'bulkUpdate']);
     });
 });
