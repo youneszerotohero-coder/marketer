@@ -64,6 +64,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('confirmatrice')->middleware('role:confirmatrice,admin')->group(function () {
         Route::get('orders', [OrderWorkflowController::class, 'index']);
         Route::patch('orders/{order}/status', [OrderWorkflowController::class, 'updateStatus']);
+        Route::patch('orders/{order}', [OrderWorkflowController::class, 'update']);
     });
 
     Route::get('admin/dashboard', DashboardController::class)->middleware('role:admin,confirmatrice');
@@ -77,6 +78,7 @@ Route::middleware('auth:api')->group(function () {
         // Orders
         Route::get('orders', [OrderAdminController::class, 'index']);
         Route::patch('orders/{order}/status', [OrderAdminController::class, 'updateStatus']);
+        Route::patch('orders/{order}', [OrderAdminController::class, 'update']);
         Route::patch('orders/{order}/assign-confirmatrice', [OrderAdminController::class, 'assignConfirmatrice']);
 
         // Products

@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
               themeMode: currentThemeMode,
               locale: currentLocale,
               supportedLocales: const [
-                Locale('en'),
+                Locale('fr'),
                 Locale('ar'),
               ],
               localizationsDelegates: const [

@@ -71,6 +71,14 @@ class DatabaseSeeder extends Seeder
 
         Setting::updateOrCreate(['key' => 'commission.default_type'], ['value' => 'fixed']);
         Setting::updateOrCreate(['key' => 'delivery.provider'], ['value' => 'zr_express']);
+        Setting::updateOrCreate(['key' => 'social.facebook'], ['value' => 'https://facebook.com/afiliat']);
+        Setting::updateOrCreate(['key' => 'social.telegram'], ['value' => 'https://t.me/afiliat_support']);
+        Setting::updateOrCreate(['key' => 'social.whatsapp'], ['value' => '+213555123456']);
+        Setting::updateOrCreate(['key' => 'social.instagram'], ['value' => 'https://instagram.com/afiliat']);
+        Setting::updateOrCreate(['key' => 'social.tiktok'], ['value' => 'https://tiktok.com/@afiliat']);
+        Setting::updateOrCreate(['key' => 'social.viber'], ['value' => '+213555123456']);
+        Setting::updateOrCreate(['key' => 'social.phone'], ['value' => '+213555123456']);
+        Setting::updateOrCreate(['key' => 'pdf_document_url'], ['value' => 'https://afiliat.com/office-numbers.pdf']);
 
         $this->call(ShippingRatesSeeder::class);
     }

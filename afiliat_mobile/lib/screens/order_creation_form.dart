@@ -153,7 +153,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     0,
     (total, item) => total + (item.commission * item.quantity),
   );
-  double get total => subtotal + _computedShippingCost;
+  double get total => subtotal + _computedShippingCost + totalCommission;
 
 
   Future<void> _submitOrder() async {
@@ -652,6 +652,11 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           _buildSummaryRow(
             'Shipping Fee'.tr,
             'DZD ${_computedShippingCost.toStringAsFixed(0)}',
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryRow(
+            'Commission'.tr,
+            'DZD ${totalCommission.toStringAsFixed(0)}',
           ),
           const SizedBox(height: 16),
 

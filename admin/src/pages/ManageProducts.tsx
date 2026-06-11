@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Archive, LayoutGrid, Upload, X, Star } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
-import api from '../services/api';
+import api, { STORAGE_URL } from '../services/api';
 
 export const ManageProducts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -67,7 +67,7 @@ export const ManageProducts: React.FC = () => {
           id: img.id,
           path: img.path,
           isMain: item.main_image_path === img.path,
-          preview: img.path.startsWith('http') ? img.path : `http://localhost:8000/storage/${img.path}`
+          preview: img.path.startsWith('http') ? img.path : `${STORAGE_URL}/${img.path}`
         }));
 
         if (existingImages.length === 0 && item.main_image_path) {
@@ -75,7 +75,7 @@ export const ManageProducts: React.FC = () => {
             id: undefined, // Mock images don't have an ID
             path: item.main_image_path,
             isMain: true,
-            preview: item.main_image_path.startsWith('http') ? item.main_image_path : `http://localhost:8000/storage/${item.main_image_path}`
+            preview: item.main_image_path.startsWith('http') ? item.main_image_path : `${STORAGE_URL}/${item.main_image_path}`
           });
         }
 
@@ -88,7 +88,7 @@ export const ManageProducts: React.FC = () => {
           setProductVariants([{ sku: `P-${Date.now()}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }]);
         }
       } else {
-        setCategoryImagePreview(item.image_path ? (item.image_path.startsWith('http') ? item.image_path : `http://localhost:8000/storage/${item.image_path}`) : null);
+        setCategoryImagePreview(item.image_path ? (item.image_path.startsWith('http') ? item.image_path : `${STORAGE_URL}/${item.image_path}`) : null);
         setCategoryImageDeleted(false);
         setCategoryImageFile(null);
       }
@@ -310,7 +310,7 @@ export const ManageProducts: React.FC = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.main_image_path ? (
-                          <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `http://localhost:8000/storage/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
+                          <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `${STORAGE_URL}/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center border border-border">
                             <LayoutGrid className="w-5 h-5 text-text-muted" />
@@ -394,7 +394,7 @@ export const ManageProducts: React.FC = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {category.image_path ? (
-                          <img src={category.image_path.startsWith('http') ? category.image_path : `http://localhost:8000/storage/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
+                          <img src={category.image_path.startsWith('http') ? category.image_path : `${STORAGE_URL}/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-border">
                             <LayoutGrid className="w-5 h-5" />

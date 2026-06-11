@@ -24,7 +24,6 @@ class AppDrawer extends StatefulWidget {
 
 class _AppDrawerState extends State<AppDrawer> {
   Map<String, String?> _socialLinks = {};
-  bool _loadingLinks = true;
 
   @override
   void initState() {
@@ -47,11 +46,9 @@ class _AppDrawerState extends State<AppDrawer> {
             'phone': data['social.phone']?.toString(),
             'pdf': data['pdf_document_url']?.toString(),
           };
-          _loadingLinks = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loadingLinks = false);
     }
   }
 
@@ -96,9 +93,6 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    final hasSocials = !_loadingLinks &&
-        _socialLinks.values.any((v) => v != null && v.isNotEmpty);
 
     return Drawer(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -224,14 +218,17 @@ class _AppDrawerState extends State<AppDrawer> {
                           ),
                         );
                       }),
-
-                  // ── Contact / Social links ───────────────────────────
-                  if (hasSocials) ...[
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('CONTACT US'.tr, theme),
-                    const SizedBox(height: 8),
-                    _buildSocialLinksRow(theme),
-                  ],
+                  _buildNavItem(context, theme,
+                      icon: Icons.description_outlined,
+                      label: 'Office Numbers'.tr,
+                      isSelected: false,
+                      onTap: () {
+                        Navigator.pop(context);
+                        final rawPdf = _socialLinks['pdf']?.trim().isNotEmpty == true
+                            ? _socialLinks['pdf']!
+                            : 'https://afiliat.com/office-numbers.pdf';
+                        _launchUrl(_buildLaunchUrl('pdf', rawPdf));
+                      }),
 
                   const SizedBox(height: 24),
                   _buildSectionTitle('SETTINGS'.tr, theme),
@@ -284,11 +281,16 @@ class _AppDrawerState extends State<AppDrawer> {
                         activeThumbColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           localeNotifier.value =
-                              value ? const Locale('ar') : const Locale('en');
+                              value ? const Locale('ar') : const Locale('fr');
                         },
                       );
                     },
                   ),
+
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('HELP & SUPPORT'.tr, theme),
+                  const SizedBox(height: 12),
+                  _buildSupportSection(theme, isDark),
                 ],
               ),
             ),
@@ -298,23 +300,46 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
-  // ─── Social icons ────────────────────────────────────────────────────────
-  Widget _buildSocialLinksRow(ThemeData theme) {
-    final Map<String, Map<String, dynamic>> iconMap = {
-      'facebook': {
-        'icon': FontAwesomeIcons.facebook,
-        'color': const Color(0xFF1877F2),
-        'label': 'Facebook',
+  // ─── Help & Support Section ─────────────────────────────────────────────
+  Widget _buildSupportSection(ThemeData theme, bool isDark) {
+    // Primary support channels
+    final Map<String, Map<String, dynamic>> primaryChannels = {
+      'whatsapp': {
+        'icon': FontAwesomeIcons.whatsapp,
+        'color': const Color(0xFF25D366),
+        'title': 'WhatsApp'.tr,
+        'subtitle': 'Chat Support'.tr,
+        'key': 'whatsapp',
+      },
+      'phone': {
+        'icon': FontAwesomeIcons.phone,
+        'color': const Color(0xFF0D9488), // Teal
+        'title': 'Call Us'.tr,
+        'subtitle': 'Direct Call'.tr,
+        'key': 'phone',
       },
       'telegram': {
         'icon': FontAwesomeIcons.telegram,
         'color': const Color(0xFF26A5E4),
-        'label': 'Telegram',
+        'title': 'Telegram'.tr,
+        'subtitle': 'Join Channel'.tr,
+        'key': 'telegram',
       },
-      'whatsapp': {
-        'icon': FontAwesomeIcons.whatsapp,
-        'color': const Color(0xFF25D366),
-        'label': 'WhatsApp',
+      'viber': {
+        'icon': FontAwesomeIcons.viber,
+        'color': const Color(0xFF7360F2),
+        'title': 'Viber'.tr,
+        'subtitle': 'Chat Support'.tr,
+        'key': 'viber',
+      },
+    };
+
+    // Secondary social channels
+    final Map<String, Map<String, dynamic>> secondaryChannels = {
+      'facebook': {
+        'icon': FontAwesomeIcons.facebook,
+        'color': const Color(0xFF1877F2),
+        'label': 'Facebook',
       },
       'instagram': {
         'icon': FontAwesomeIcons.instagram,
@@ -323,49 +348,144 @@ class _AppDrawerState extends State<AppDrawer> {
       },
       'tiktok': {
         'icon': FontAwesomeIcons.tiktok,
-        'color': Colors.black87,
+        'color': isDark ? Colors.white70 : Colors.black87,
         'label': 'TikTok',
-      },
-      'viber': {
-        'icon': FontAwesomeIcons.viber,
-        'color': const Color(0xFF7360F2),
-        'label': 'Viber',
-      },
-      'phone': {
-        'icon': FontAwesomeIcons.phone,
-        'color': Colors.green,
-        'label': 'Phone',
-      },
-      'pdf': {
-        'icon': FontAwesomeIcons.filePdf,
-        'color': Colors.red,
-        'label': 'PDF',
       },
     };
 
-    final buttons = iconMap.entries
-        .where((e) =>
-            _socialLinks[e.key] != null && _socialLinks[e.key]!.isNotEmpty)
-        .map((e) {
-      final rawValue = _socialLinks[e.key]!;
-      final color = e.value['color'] as Color;
-      return GestureDetector(
-        onTap: () => _launchUrl(_buildLaunchUrl(e.key, rawValue)),
-        child: Tooltip(
-          message: e.value['label'] as String,
+    // Fallbacks if backend DB settings are not configured/seeded
+    final defaultValues = {
+      'phone': '+213555123456',
+      'whatsapp': '+213555123456',
+      'telegram': 'afiliat_support',
+      'pdf': 'https://afiliat.com/office-numbers.pdf',
+      'facebook': 'https://facebook.com/afiliat',
+      'instagram': 'https://instagram.com/afiliat',
+      'tiktok': 'https://tiktok.com/@afiliat',
+      'viber': '+213555123456',
+    };
+
+    String getVal(String key) {
+      final val = _socialLinks[key];
+      if (val != null && val.trim().isNotEmpty) {
+        return val;
+      }
+      return defaultValues[key] ?? '';
+    }
+
+    final gridItems = primaryChannels.entries.map((entry) {
+      final item = entry.value;
+      final key = item['key'] as String;
+      final rawValue = getVal(key);
+      final color = item['color'] as Color;
+
+      return Material(
+        color: isDark ? theme.colorScheme.surface : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            if (rawValue.isNotEmpty) {
+              _launchUrl(_buildLaunchUrl(key, rawValue));
+            }
+          },
           child: Container(
-            width: 44,
-            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.25)),
+              border: Border.all(
+                color: isDark
+                    ? theme.dividerColor.withValues(alpha: 0.5)
+                    : Colors.grey.shade200,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: FaIcon(
+                      item['icon'],
+                      color: color,
+                      size: 15,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        item['title'] as String,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item['subtitle'] as String,
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+
+    // Secondary buttons (shown only if configured in DB or fallback exists)
+    final secondaryButtons = secondaryChannels.entries
+        .where((entry) => _socialLinks[entry.key] != null && _socialLinks[entry.key]!.trim().isNotEmpty)
+        .map((entry) {
+      final key = entry.key;
+      final item = entry.value;
+      final rawValue = getVal(key);
+      final color = item['color'] as Color;
+
+      return GestureDetector(
+        onTap: () {
+          if (rawValue.isNotEmpty) {
+            _launchUrl(_buildLaunchUrl(key, rawValue));
+          }
+        },
+        child: Tooltip(
+          message: item['label'] as String,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: isDark ? theme.colorScheme.surface : Colors.grey.shade100,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? theme.dividerColor.withValues(alpha: 0.5)
+                    : Colors.grey.shade200,
+              ),
             ),
             child: Center(
               child: FaIcon(
-                e.value['icon'] as IconData,
-                color: color,
-                size: 20,
+                item['icon'],
+                color: isDark ? color : color.withValues(alpha: 0.85),
+                size: 14,
               ),
             ),
           ),
@@ -373,9 +493,45 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Wrap(spacing: 10, runSpacing: 10, children: buttons),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 2.3,
+            children: gridItems,
+          ),
+        ),
+        if (secondaryButtons.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Follow Us'.tr,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  children: secondaryButtons,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 

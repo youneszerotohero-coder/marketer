@@ -13,7 +13,7 @@ class OrderWorkflowController extends Controller
     public function index(Request $request): JsonResponse
     {
         return response()->json(
-            Order::with(['items', 'marketer'])
+            Order::with(['items.variant.product', 'marketer'])
                 ->where(function ($query) use ($request) {
                     $query->whereNull('confirmatrice_id')
                         ->orWhere('confirmatrice_id', $request->user()->id);
@@ -45,5 +45,15 @@ class OrderWorkflowController extends Controller
             app(\App\Services\Wallet\WalletService::class),
             app(\App\Services\Delivery\DeliveryGateway::class)
         );
+    }
+
+    public function update(
+        Request $request,
+        Order $order,
+        OrderAdminController $orders
+    ): JsonResponse {
+        abort_if($order->confirmatrice_id && $order->confirmatrice_id !== $request->user()->id, 403);
+
+        return $orders->update($request, $order);
     }
 }

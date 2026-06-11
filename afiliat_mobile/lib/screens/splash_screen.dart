@@ -124,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
-                        padding: const EdgeInsets.all(28),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -141,10 +141,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.trending_up_rounded,
-                          size: 80,
-                          color: Color(0xFFF97316),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/appLogo.jpg',
+                            width: 124,
+                            height: 124,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),

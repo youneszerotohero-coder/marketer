@@ -288,7 +288,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   String get _finalTotalPrice {
-    final total = (_priceNum * quantity) + _computedShippingCost;
+    final total = (_priceNum * quantity) + _computedShippingCost + (_commissionNum * quantity);
     return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'; 
   }
 
@@ -708,6 +708,28 @@ class _ProductDetailsState extends State<ProductDetails> {
                       ),
                       Text(
                         'DZD ${_computedShippingCost.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Commission'.tr,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'DZD ${(_commissionNum * quantity).toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

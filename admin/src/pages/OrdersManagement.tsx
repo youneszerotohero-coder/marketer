@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Loader2, RefreshCw, Calendar } from 'lucide-react';
+import { Search, Download, Loader2, RefreshCw, Calendar, LayoutGrid } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
-import { ordersApi, usersApi } from '../services/api';
+import { ordersApi, usersApi, deliveryApi, STORAGE_URL } from '../services/api';
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
@@ -69,6 +69,13 @@ export const OrdersManagement: React.FC = () => {
   // For inline postpone date picker
   const [postponeDateMap, setPostponeDateMap] = useState<Record<number, string>>({});
 
+  const [territories, setTerritories] = useState<any[]>([]);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [editWilaya, setEditWilaya] = useState('');
+  const [editCommune, setEditCommune] = useState('');
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressError, setAddressError] = useState('');
+
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
 
@@ -102,12 +109,19 @@ export const OrdersManagement: React.FC = () => {
   useEffect(() => {
     usersApi.list({ role: 'confirmatrice', per_page: 100 })
       .then(({ data }) => setConfirmatrices(data.data ?? data));
+    deliveryApi.territories()
+      .then(({ data }) => setTerritories(data.data ?? data))
+      .catch((err) => console.error('Failed to load territories', err));
   }, []);
 
   const openModal = (type: any, order: any) => {
     setSelectedOrder(order);
     setSelectedConfirmatrice(order.confirmatrice_id ? String(order.confirmatrice_id) : '');
     setActionModal(type);
+    setIsEditingAddress(false);
+    setEditWilaya(order?.wilaya ?? '');
+    setEditCommune(order?.commune ?? '');
+    setAddressError('');
     if (type === 'view') syncDeliveryStatus(order);
   };
 
@@ -123,6 +137,38 @@ export const OrdersManagement: React.FC = () => {
       // Keep existing order details visible if ZR Express is temporarily unavailable.
     } finally {
       setTrackingLoading(false);
+    }
+  };
+
+  const getSelectedTerritory = (wilayaValue: string) => {
+    if (!wilayaValue) return null;
+    const codePart = wilayaValue.includes(' - ') ? wilayaValue.split(' - ')[0].trim() : null;
+    const namePart = wilayaValue.includes(' - ') ? wilayaValue.split(' - ')[1].trim() : wilayaValue.trim();
+    
+    return territories.find(t => 
+      (codePart && t.code === codePart) || 
+      t.name.toLowerCase() === namePart.toLowerCase()
+    );
+  };
+
+  const handleSaveAddress = async () => {
+    if (!selectedOrder) return;
+    setIsSavingAddress(true);
+    setAddressError('');
+    try {
+      const res = await ordersApi.update(selectedOrder.id, {
+        wilaya: editWilaya,
+        commune: editCommune,
+      });
+      const updatedOrder = res.data;
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, ...updatedOrder } : o));
+      setSelectedOrder(prev => prev ? { ...prev, ...updatedOrder } : null);
+      setIsEditingAddress(false);
+    } catch (err: any) {
+      console.error(err);
+      setAddressError(err.response?.data?.message || 'Failed to update address');
+    } finally {
+      setIsSavingAddress(false);
     }
   };
 
@@ -220,6 +266,7 @@ export const OrdersManagement: React.FC = () => {
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
                   <th className="p-4 font-medium">Order ID</th>
                   <th className="p-4 font-medium">Date</th>
+                  <th className="p-4 font-medium">Product</th>
                   <th className="p-4 font-medium">Customer</th>
                   <th className="p-4 font-medium">Marketer</th>
                   <th className="p-4 font-medium">Total</th>
@@ -229,7 +276,7 @@ export const OrdersManagement: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.length === 0 ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
+                  <tr><td colSpan={8} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
                 ) : orders.map((order) => (
                   <React.Fragment key={order.id}>
                     <tr onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
@@ -242,6 +289,34 @@ export const OrdersManagement: React.FC = () => {
                             Reporté au {formatDateOnly(order.postponed_until)}
                           </div>
                         )}
+                      </td>
+                      <td className="p-4 text-sm">
+                        <div className="flex flex-col gap-1.5 max-w-[200px]">
+                          {(order.items ?? []).map((item: any, idx: number) => {
+                            const imgPath = item.variant?.image_path || item.variant?.product?.main_image_path;
+                            const imgUrl = imgPath
+                              ? (imgPath.startsWith('http') ? imgPath : `${STORAGE_URL}/${imgPath}`)
+                              : null;
+                            return (
+                              <div key={item.id || idx} className="flex items-center gap-2">
+                                {imgUrl ? (
+                                  <img
+                                    src={imgUrl}
+                                    alt={item.product_name}
+                                    className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center border border-border shrink-0">
+                                    <LayoutGrid className="w-4 h-4 text-text-muted" />
+                                  </div>
+                                )}
+                                <span className="text-xs font-medium text-text line-clamp-1" title={item.product_name}>
+                                  {item.product_name}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td className="p-4 text-sm font-medium text-text">{order.client_name}</td>
                       <td className="p-4 text-sm text-text-muted">{order.marketer?.name ?? '—'}</td>
@@ -273,7 +348,7 @@ export const OrdersManagement: React.FC = () => {
                     {/* Postpone date row — appears when admin selects "Reporté" */}
                     {order.id in postponeDateMap && (
                       <tr className="bg-indigo-500/5 border-b border-indigo-500/20" onClick={(e) => e.stopPropagation()}>
-                        <td colSpan={7} className="px-4 py-3">
+                        <td colSpan={8} className="px-4 py-3">
                           <div className="flex items-center gap-3 flex-wrap">
                             <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
                             <span className="text-sm font-medium text-indigo-600">Date de report requise :</span>
@@ -328,7 +403,84 @@ export const OrdersManagement: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-xs text-text-muted mb-1">Customer</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_name}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Phone</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_phone}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Wilaya / Commune</p><p className="text-sm font-semibold text-text">{selectedOrder?.wilaya} / {selectedOrder?.commune}</p></div>
+            <div>
+              <p className="text-xs text-text-muted mb-1">Wilaya / Commune</p>
+              {isEditingAddress ? (
+                <div className="space-y-2 mt-1">
+                  <select
+                    value={editWilaya}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditWilaya(val);
+                      const terr = getSelectedTerritory(val);
+                      if (terr && terr.communes && terr.communes.length > 0) {
+                        setEditCommune(terr.communes[0].name);
+                      } else {
+                        setEditCommune('');
+                      }
+                    }}
+                    className="w-full text-sm p-1.5 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary"
+                  >
+                    <option value="">Select Wilaya</option>
+                    {territories.map((t) => (
+                      <option key={t.code} value={`${t.code} - ${t.name}`}>
+                        {t.code} - {t.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={editCommune}
+                    onChange={(e) => setEditCommune(e.target.value)}
+                    disabled={!editWilaya}
+                    className="w-full text-sm p-1.5 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary disabled:opacity-50"
+                  >
+                    <option value="">Select Commune</option>
+                    {(getSelectedTerritory(editWilaya)?.communes ?? []).map((c: any) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {addressError && <p className="text-xs text-danger">{addressError}</p>}
+
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setIsEditingAddress(false)}
+                      disabled={isSavingAddress}
+                      className="px-2 py-1 text-xs border border-border text-text-muted hover:bg-background rounded"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveAddress}
+                      disabled={isSavingAddress || !editWilaya || !editCommune}
+                      className="px-2 py-1 text-xs bg-primary text-white hover:bg-primary-hover rounded flex items-center gap-1"
+                    >
+                      {isSavingAddress ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-text">
+                    {selectedOrder?.wilaya} / {selectedOrder?.commune}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setEditWilaya(selectedOrder?.wilaya ?? '');
+                      setEditCommune(selectedOrder?.commune ?? '');
+                      setIsEditingAddress(true);
+                      setAddressError('');
+                    }}
+                    className="text-primary hover:text-primary-hover text-xs font-medium underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+            </div>
             <div><p className="text-xs text-text-muted mb-1">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>
@@ -358,12 +510,34 @@ export const OrdersManagement: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-text mb-2">Order Items</h3>
             <div className="space-y-2">
-              {(selectedOrder?.items ?? []).map((item: any) => (
-                <div key={item.id} className="flex justify-between text-sm p-3 bg-background border border-border rounded-lg">
-                  <span>{item.quantity}× {item.product_name} ({item.sku})</span>
-                  <span className="font-medium">{fmt(item.line_total)}</span>
-                </div>
-              ))}
+              {(selectedOrder?.items ?? []).map((item: any) => {
+                const imgPath = item.variant?.image_path || item.variant?.product?.main_image_path;
+                const imgUrl = imgPath
+                  ? (imgPath.startsWith('http') ? imgPath : `${STORAGE_URL}/${imgPath}`)
+                  : null;
+                return (
+                  <div key={item.id} className="flex items-center justify-between text-sm p-3 bg-background border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={item.product_name}
+                          className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-background/50 flex items-center justify-center border border-border shrink-0">
+                          <LayoutGrid className="w-6 h-6 text-text-muted" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-text">{item.product_name}</p>
+                        <p className="text-xs text-text-muted">SKU: {item.sku} • Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                    <span className="font-semibold text-text">{fmt(item.line_total)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

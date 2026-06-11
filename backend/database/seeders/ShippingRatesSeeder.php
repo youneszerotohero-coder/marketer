@@ -11,12 +11,12 @@ class ShippingRatesSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Load and decode JSON files using absolute paths
-        $wilayasPath = 'c:/Users/ENPEI/marketer/Wilaya-Of-Algeria-master/Wilaya_Of_Algeria.json';
-        $communesPath = 'c:/Users/ENPEI/marketer/Wilaya-Of-Algeria-master/Commune_Of_Algeria.json';
+        // 1. Load and decode JSON files using portable paths
+        $wilayasPath = base_path('../Wilaya-Of-Algeria-master/Wilaya_Of_Algeria.json');
+        $communesPath = base_path('../Wilaya-Of-Algeria-master/Commune_Of_Algeria.json');
 
         if (!File::exists($wilayasPath) || !File::exists($communesPath)) {
-            $this->command->error("Wilayas or Communes JSON files not found!");
+            $this->command->error("Wilayas or Communes JSON files not found at: {$wilayasPath} / {$communesPath}");
             return;
         }
 

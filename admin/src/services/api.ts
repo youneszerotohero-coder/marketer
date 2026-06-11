@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+export const STORAGE_URL = BASE_URL.replace(/\/api$/, '/storage');
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -86,6 +88,12 @@ export const ordersApi = {
     const role = userStr ? JSON.parse(userStr).role : 'admin';
     const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
     return api.patch(`${prefix}/orders/${id}/status`, data);
+  },
+  update: (id: number, data: { client_name?: string; client_phone?: string; wilaya?: string; commune?: string; address?: string; delivery_type?: 'home' | 'desk'; notes?: string }) => {
+    const userStr = localStorage.getItem('user');
+    const role = userStr ? JSON.parse(userStr).role : 'admin';
+    const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
+    return api.patch(`${prefix}/orders/${id}`, data);
   },
   assignConfirmatrice: (id: number, confirmatriceId: number) =>
     api.patch(`/admin/orders/${id}/assign-confirmatrice`, {

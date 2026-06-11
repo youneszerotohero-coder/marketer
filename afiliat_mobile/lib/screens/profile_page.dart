@@ -508,7 +508,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onChanged: (value) {
               localeNotifier.value = value
                   ? const Locale('ar')
-                  : const Locale('en');
+                  : const Locale('fr');
             },
           ),
         );
