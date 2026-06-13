@@ -73,13 +73,14 @@ export const OrdersManagement: React.FC = () => {
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [editWilaya, setEditWilaya] = useState('');
   const [editCommune, setEditCommune] = useState('');
+  const [editDeliveryType, setEditDeliveryType] = useState<'home' | 'desk'>('home');
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState('');
 
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
 
-  const loadOrders = useCallback((p = 1, status = statusFilter, s = search) => {
+  const loadOrders = useCallback((p = 1, status = statusFilter, s = search, append = false) => {
     setLoading(true);
     const params: any = { page: p, per_page: 20 };
     if (status) params.status = status;
@@ -91,8 +92,13 @@ export const OrdersManagement: React.FC = () => {
           ...o,
           shipping_method: savedMethods[o.id] || 'delivery_company'
         }));
-        setOrders(ordersWithMethods);
-        setMeta(data.meta ?? null);
+        setOrders(prev => append ? [...prev, ...ordersWithMethods] : ordersWithMethods);
+        const metaObj = data.meta ?? {
+          current_page: data.current_page ?? 1,
+          last_page: data.last_page ?? 1,
+          total: data.total ?? 0
+        };
+        setMeta(metaObj);
         setPage(p);
       })
       .catch(() => setError('Failed to load orders.'))
@@ -101,7 +107,7 @@ export const OrdersManagement: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadOrders(1, statusFilter, search);
+      loadOrders(1, statusFilter, search, false);
     }, 300);
     return () => clearTimeout(timer);
   }, [search, statusFilter, loadOrders]);
@@ -121,6 +127,7 @@ export const OrdersManagement: React.FC = () => {
     setIsEditingAddress(false);
     setEditWilaya(order?.wilaya ?? '');
     setEditCommune(order?.commune ?? '');
+    setEditDeliveryType(order?.delivery_type ?? 'home');
     setAddressError('');
     if (type === 'view') syncDeliveryStatus(order);
   };
@@ -159,6 +166,7 @@ export const OrdersManagement: React.FC = () => {
       const res = await ordersApi.update(selectedOrder.id, {
         wilaya: editWilaya,
         commune: editCommune,
+        delivery_type: editDeliveryType,
       });
       const updatedOrder = res.data;
       setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, ...updatedOrder } : o));
@@ -386,13 +394,16 @@ export const OrdersManagement: React.FC = () => {
           </div>
         )}
 
-        {meta && meta.last_page > 1 && (
-          <div className="p-4 border-t border-border flex items-center justify-between bg-background/20">
-            <p className="text-xs text-text-muted">Page {meta.current_page} of {meta.last_page} — {meta.total} orders</p>
-            <div className="flex gap-2">
-              <button disabled={meta.current_page <= 1} onClick={() => loadOrders(page - 1, statusFilter, search)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Prev</button>
-              <button disabled={meta.current_page >= meta.last_page} onClick={() => loadOrders(page + 1, statusFilter, search)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Next</button>
-            </div>
+        {meta && meta.last_page > page && (
+          <div className="p-4 border-t border-border flex justify-center bg-background/20">
+            <button
+              onClick={() => loadOrders(page + 1, statusFilter, search, true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-40"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Load More
+            </button>
           </div>
         )}
       </div>
@@ -403,45 +414,140 @@ export const OrdersManagement: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div><p className="text-xs text-text-muted mb-1">Customer</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_name}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Phone</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_phone}</p></div>
-            <div>
-              <p className="text-xs text-text-muted mb-1">Wilaya / Commune</p>
+            <div className="col-span-2 border border-border/60 bg-background/20 p-3 rounded-xl">
+              <p className="text-xs font-bold text-text-muted mb-1.5 uppercase tracking-wider">Address & Delivery Details</p>
               {isEditingAddress ? (
-                <div className="space-y-2 mt-1">
-                  <select
-                    value={editWilaya}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditWilaya(val);
-                      const terr = getSelectedTerritory(val);
-                      if (terr && terr.communes && terr.communes.length > 0) {
-                        setEditCommune(terr.communes[0].name);
-                      } else {
-                        setEditCommune('');
-                      }
-                    }}
-                    className="w-full text-sm p-1.5 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary"
-                  >
-                    <option value="">Select Wilaya</option>
-                    {territories.map((t) => (
-                      <option key={t.code} value={`${t.code} - ${t.name}`}>
-                        {t.code} - {t.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={editWilaya}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditWilaya(val);
+                        const terr = getSelectedTerritory(val);
+                        if (terr && terr.communes && terr.communes.length > 0) {
+                          setEditCommune(terr.communes[0].name);
+                        } else {
+                          setEditCommune('');
+                        }
+                      }}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary"
+                    >
+                      <option value="">Select Wilaya</option>
+                      {territories.map((t) => (
+                        <option key={t.code} value={`${t.code} - ${t.name}`}>
+                          {t.code} - {t.name}
+                        </option>
+                      ))}
+                    </select>
 
-                  <select
-                    value={editCommune}
-                    onChange={(e) => setEditCommune(e.target.value)}
-                    disabled={!editWilaya}
-                    className="w-full text-sm p-1.5 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary disabled:opacity-50"
-                  >
-                    <option value="">Select Commune</option>
-                    {(getSelectedTerritory(editWilaya)?.communes ?? []).map((c: any) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={editCommune}
+                      onChange={(e) => setEditCommune(e.target.value)}
+                      disabled={!editWilaya}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary disabled:opacity-50"
+                    >
+                      <option value="">Select Commune</option>
+                      {(getSelectedTerritory(editWilaya)?.communes ?? []).map((c: any) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {editWilaya && (() => {
+                    const selectedTerritory = getSelectedTerritory(editWilaya);
+                    const homePrice = selectedTerritory?.home_price ?? 0;
+                    const deskPrice = selectedTerritory?.desk_price ?? 0;
+                    const homeActive = selectedTerritory?.home_active !== false;
+                    const deskActive = selectedTerritory?.desk_active !== false;
+
+                    return (
+                      <div className="space-y-2">
+                        <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">
+                          Delivery Type
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Home Delivery Card */}
+                          <div
+                            onClick={() => homeActive && setEditDeliveryType('home')}
+                            className={`flex flex-col p-2 rounded-lg border-2 transition-all cursor-pointer select-none ${
+                              !homeActive
+                                ? 'opacity-40 cursor-not-allowed border-border bg-background/50'
+                                : editDeliveryType === 'home'
+                                ? 'border-primary bg-primary/5 text-text font-semibold'
+                                : 'border-border bg-background hover:bg-background/80 text-text'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold">To Home</span>
+                              <input
+                                type="radio"
+                                name="edit_delivery_type"
+                                checked={editDeliveryType === 'home'}
+                                disabled={!homeActive}
+                                onChange={() => {}}
+                                className="w-3.5 h-3.5 text-primary focus:ring-primary border-border"
+                              />
+                            </div>
+                            <span className="text-xs font-extrabold text-primary mt-1">{fmt(homePrice)}</span>
+                            {!homeActive && (
+                              <span className="text-[10px] text-danger mt-0.5">Unavailable</span>
+                            )}
+                          </div>
+
+                          {/* Stop Desk Card */}
+                          <div
+                            onClick={() => deskActive && setEditDeliveryType('desk')}
+                            className={`flex flex-col p-2 rounded-lg border-2 transition-all cursor-pointer select-none ${
+                              !deskActive
+                                ? 'opacity-40 cursor-not-allowed border-border bg-background/50'
+                                : editDeliveryType === 'desk'
+                                ? 'border-primary bg-primary/5 text-text font-semibold'
+                                : 'border-border bg-background hover:bg-background/80 text-text'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold">Stopdesk</span>
+                              <input
+                                type="radio"
+                                name="edit_delivery_type"
+                                checked={editDeliveryType === 'desk'}
+                                disabled={!deskActive}
+                                onChange={() => {}}
+                                className="w-3.5 h-3.5 text-primary focus:ring-primary border-border"
+                              />
+                            </div>
+                            <span className="text-xs font-extrabold text-primary mt-1">{fmt(deskPrice)}</span>
+                            {!deskActive && (
+                              <span className="text-[10px] text-danger mt-0.5">Unavailable</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Pricing Calculator Preview */}
+                        <div className="bg-background/60 p-2.5 rounded-lg border border-border space-y-1">
+                          <div className="flex justify-between text-xs text-text-muted">
+                            <span>Subtotal:</span>
+                            <span className="font-semibold text-text">{fmt(selectedOrder?.subtotal ?? 0)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-text-muted">
+                            <span>Shipping Fee:</span>
+                            <span className="font-bold text-primary">
+                              +{fmt(editDeliveryType === 'home' ? homePrice : deskPrice)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs font-extrabold border-t border-border/40 pt-1 text-text">
+                            <span>Estimated Total:</span>
+                            <span className="text-primary font-bold">
+                              {fmt(Number(selectedOrder?.subtotal ?? 0) + (editDeliveryType === 'home' ? homePrice : deskPrice))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {addressError && <p className="text-xs text-danger">{addressError}</p>}
 
@@ -449,38 +555,48 @@ export const OrdersManagement: React.FC = () => {
                     <button
                       onClick={() => setIsEditingAddress(false)}
                       disabled={isSavingAddress}
-                      className="px-2 py-1 text-xs border border-border text-text-muted hover:bg-background rounded"
+                      className="px-3 py-1.5 text-xs border border-border text-text-muted hover:bg-background rounded-lg font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSaveAddress}
                       disabled={isSavingAddress || !editWilaya || !editCommune}
-                      className="px-2 py-1 text-xs bg-primary text-white hover:bg-primary-hover rounded flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs bg-primary text-white hover:bg-primary-hover rounded-lg font-semibold flex items-center gap-1"
                     >
-                      {isSavingAddress ? 'Saving...' : 'Save'}
+                      {isSavingAddress ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-text">
-                    {selectedOrder?.wilaya} / {selectedOrder?.commune}
-                  </p>
-                  <button
-                    onClick={() => {
-                      setEditWilaya(selectedOrder?.wilaya ?? '');
-                      setEditCommune(selectedOrder?.commune ?? '');
-                      setIsEditingAddress(true);
-                      setAddressError('');
-                    }}
-                    className="text-primary hover:text-primary-hover text-xs font-medium underline"
-                  >
-                    Edit
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-text">
+                        {selectedOrder?.wilaya} / {selectedOrder?.commune}
+                      </p>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        Delivery Type: <span className="font-semibold text-text capitalize">{selectedOrder?.delivery_type === 'desk' ? 'Stopdesk' : 'To Home'}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditWilaya(selectedOrder?.wilaya ?? '');
+                        setEditCommune(selectedOrder?.commune ?? '');
+                        setEditDeliveryType(selectedOrder?.delivery_type ?? 'home');
+                        setIsEditingAddress(true);
+                        setAddressError('');
+                      }}
+                      className="text-primary hover:text-primary-hover text-xs font-semibold underline"
+                    >
+                      Edit Address
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
+            <div><p className="text-xs text-text-muted mb-1">Subtotal</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.subtotal ?? 0)}</p></div>
+            <div><p className="text-xs text-text-muted mb-1">Shipping Fee</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.shipping_fee ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
             <div><p className="text-xs text-text-muted mb-1">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>

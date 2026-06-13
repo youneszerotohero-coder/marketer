@@ -378,7 +378,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.8),
+                            color: primaryColor.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -451,14 +451,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: primaryColor.withValues(
-                                        alpha: 0.1,
-                                      ),
+                                      color: primaryColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: primaryColor.withValues(
-                                          alpha: 0.2,
-                                        ),
+                                        color: primaryColor.withOpacity(0.2),
                                       ),
                                     ),
                                     child: Row(
@@ -564,7 +560,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? primaryColor.withValues(alpha: 0.1)
+                                    ? primaryColor.withOpacity(0.1)
                                     : theme.colorScheme.surfaceContainerHighest,
                                 border: Border.all(
                                   color: isSelected
@@ -661,7 +657,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 color: theme.colorScheme.surfaceContainerLowest,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -832,7 +828,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 8,
-                            shadowColor: primaryColor.withValues(alpha: 0.4),
+                            shadowColor: primaryColor.withOpacity(0.4),
                           ),
                           child: _submitting
                               ? const SizedBox(
@@ -905,7 +901,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1100,7 +1096,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         hintStyle: TextStyle(
           color: Theme.of(
             context,
-          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          ).colorScheme.onSurfaceVariant.withOpacity(0.6),
           fontSize: 14,
         ),
         filled: true,
@@ -1136,7 +1132,8 @@ class _ProductDetailsState extends State<ProductDetails> {
   }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
-      initialValue: value,
+      value: value,
+
       icon: Icon(
         Icons.keyboard_arrow_down_rounded,
         color: Theme.of(context).colorScheme.onSurfaceVariant,

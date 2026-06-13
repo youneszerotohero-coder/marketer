@@ -257,7 +257,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
+                    color: Colors.green.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -377,7 +377,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: _canSubmit ? 4 : 0,
-                            shadowColor: const Color(0xFFF97316).withValues(alpha: 0.4),
+                            shadowColor: const Color(0xFFF97316).withOpacity(0.4),
                           ),
                           child: _isLoading
                               ? const CircularProgressIndicator(color: Colors.white)
@@ -409,9 +409,9 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
+        color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -441,7 +441,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -606,7 +606,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -689,10 +689,10 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF97316).withValues(alpha: 0.08),
+              color: const Color(0xFFF97316).withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFF97316).withValues(alpha: 0.2),
+                color: const Color(0xFFF97316).withOpacity(0.2),
               ),
             ),
             child: Row(
@@ -934,7 +934,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
         hintStyle: TextStyle(
           color: Theme.of(
             context,
-          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          ).colorScheme.onSurfaceVariant.withOpacity(0.6),
           fontSize: 14,
         ),
         filled: true,
@@ -970,7 +970,8 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
   }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
-      initialValue: value,
+      value: value,
+
       icon: Icon(
         Icons.keyboard_arrow_down_rounded,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1098,12 +1099,12 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                         color: isSelected
                             ? Theme.of(
                                 context,
-                              ).colorScheme.primary.withValues(alpha: 0.1)
+                              ).colorScheme.primary.withOpacity(0.1)
                             : (isAvailable
                                   ? Theme.of(
                                       context,
                                     ).colorScheme.surfaceContainerHighest
-                                  : Colors.grey.withValues(alpha: 0.1)),
+                                  : Colors.grey.withOpacity(0.1)),
                         border: Border.all(
                           color: isSelected
                               ? Theme.of(context).colorScheme.primary

@@ -36,18 +36,32 @@ class _OrdersPageState extends State<OrdersPage> {
   String _searchQuery = '';
   Timer? _debounce;
 
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
       setState(() => _searchQuery = query);
-      _loadOrders();
+      _loadOrders(refresh: true);
     });
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_loading && !_isLoadingMore && _hasMore) {
+        _loadOrders(loadNextPage: true);
+      }
+    }
   }
 
   List<dynamic> _orders = [];
@@ -62,8 +76,9 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    _loadOrders(refresh: true);
     _loadTerritories();
+    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _loadTerritories() async {
@@ -116,21 +131,43 @@ class _OrdersPageState extends State<OrdersPage> {
     return communes;
   }
 
-  Future<void> _loadOrders() async {
-    setState(() {
-      _loading = true;
-      _error = '';
-    });
+  Future<void> _loadOrders({bool refresh = false, bool loadNextPage = false}) async {
+    if (loadNextPage) {
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() {
+        _currentPage = 1;
+        _hasMore = true;
+        _orders = [];
+        _loading = true;
+        _error = '';
+      });
+    }
     try {
-      final params = <String, dynamic>{'per_page': '50'};
+      final params = <String, dynamic>{
+        'page': _currentPage.toString(),
+        'per_page': '15',
+      };
       final statusKey = _statusKeys[_selectedFilterIndex];
       if (statusKey != null) params['status'] = statusKey;
       if (_searchQuery.isNotEmpty) params['search'] = _searchQuery;
       final data = await ApiService.instance.get('/orders', query: params);
       if (mounted) {
+        final newOrders = data['data'] as List? ?? [];
+        final lastPage = data['last_page'] ?? 1;
+
         setState(() {
-          _orders = data['data'] ?? data;
+          if (_currentPage == 1) {
+            _orders = newOrders;
+          } else {
+            _orders.addAll(newOrders);
+          }
+          _hasMore = _currentPage < lastPage;
+          if (_hasMore) {
+            _currentPage++;
+          }
           _loading = false;
+          _isLoadingMore = false;
         });
       }
     } on ApiException catch (e) {
@@ -138,12 +175,14 @@ class _OrdersPageState extends State<OrdersPage> {
         setState(() {
           _error = e.message;
           _loading = false;
+          _isLoadingMore = false;
         });
     } catch (_) {
       if (mounted)
         setState(() {
           _error = 'Failed to load orders.';
           _loading = false;
+          _isLoadingMore = false;
         });
     }
   }
@@ -185,7 +224,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
   void _selectFilter(int index) {
     setState(() => _selectedFilterIndex = index);
-    _loadOrders();
+    _loadOrders(refresh: true);
   }
 
   @override
@@ -241,11 +280,43 @@ class _OrdersPageState extends State<OrdersPage> {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: _orders.length,
-                      itemBuilder: (context, i) =>
-                          _buildOrderCard(theme, _orders[i]),
+                  : Stack(
+                      children: [
+                        ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: _orders.length,
+                          itemBuilder: (context, i) =>
+                              _buildOrderCard(theme, _orders[i]),
+                        ),
+                        if (_isLoadingMore)
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
             ),
           ],
@@ -331,7 +402,7 @@ class _OrdersPageState extends State<OrdersPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -453,9 +524,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiaryContainer.withValues(
-                        alpha: 0.4,
-                      ),
+                      color: theme.colorScheme.tertiaryContainer.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -698,9 +767,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       theme.colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
                   ),
                 ),
                 child: ListView.separated(
@@ -709,9 +776,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   itemCount: items.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
                   ),
                   itemBuilder: (context, idx) {
                     final item = items[idx];
@@ -941,7 +1006,7 @@ class _OrdersPageState extends State<OrdersPage> {
             theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
       ),
       child: Column(children: children),
@@ -962,7 +1027,7 @@ class _OrdersPageState extends State<OrdersPage> {
           Icon(
             icon,
             size: 20,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
           ),
           const SizedBox(width: 12),
           Expanded(

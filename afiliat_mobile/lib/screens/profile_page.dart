@@ -48,11 +48,34 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadData() async {
+    // 1. Try loading from cache first
+    try {
+      final cached = await AuthService.instance.cachedUser();
+      if (cached != null && mounted) {
+        setState(() {
+          _user = cached;
+          _nameController.text = (_user?['name'] ?? '').toString();
+          _phoneController.text = (_user?['phone'] ?? '').toString();
+
+          final profile = _user?['profile'];
+          _bankController.text =
+              (profile is Map ? profile['bank_number'] : null)?.toString() ??
+              '';
+          String? w = (profile is Map ? profile['wilaya'] : null)?.toString();
+          if (_wilayas.contains(w)) _selectedWilaya = w;
+          _loading = false;
+        });
+      }
+    } catch (_) {}
+
+    // 2. Fetch fresh details in the background
     try {
       final user = await ApiService.instance.get('/me');
+      final userMap = user as Map<String, dynamic>;
+      await AuthService.instance.cacheUser(userMap);
       if (mounted) {
         setState(() {
-          _user = user as Map<String, dynamic>;
+          _user = userMap;
           _nameController.text = (_user?['name'] ?? '').toString();
           _phoneController.text = (_user?['phone'] ?? '').toString();
 
@@ -66,7 +89,9 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && _user == null) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -203,14 +228,14 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
+          colors: [primaryColor, primaryColor.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(40)),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withValues(alpha: 0.3),
+            color: primaryColor.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -224,7 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
               border: Border.all(color: Colors.white, width: 4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -250,14 +275,14 @@ class _ProfilePageState extends State<ProfilePage> {
             (_user?['email'] ?? '').toString(),
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withOpacity(0.8),
             ),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -281,7 +306,7 @@ class _ProfilePageState extends State<ProfilePage> {
         fontSize: 12,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
-        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
       ),
     );
   }
@@ -295,7 +320,7 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -407,7 +432,7 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -459,7 +484,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           trailing: Switch(
             value: isDark,
-            activeThumbColor: theme.colorScheme.primary,
+            activeColor: theme.colorScheme.primary,
             onChanged: (value) {
               themeModeNotifier.value = value
                   ? ThemeMode.dark
@@ -504,7 +529,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           trailing: Switch(
             value: isArabic,
-            activeThumbColor: theme.colorScheme.primary,
+            activeColor: theme.colorScheme.primary,
             onChanged: (value) {
               localeNotifier.value = value
                   ? const Locale('ar')

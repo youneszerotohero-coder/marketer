@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-export const STORAGE_URL = BASE_URL.replace(/\/api$/, '/storage');
+export const STORAGE_URL = `${BASE_URL}/image?path=`;
 
 const api = axios.create({
   baseURL: BASE_URL,

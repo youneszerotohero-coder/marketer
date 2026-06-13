@@ -20,17 +20,26 @@ export const ManageMarketers: React.FC = () => {
   // Form state
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', status: 'active' });
 
-  const loadMarketers = useCallback((p = 1) => {
+  const loadMarketers = useCallback((p = 1, append = false) => {
     setLoading(true);
     const params: any = { role: 'marketer', page: p, per_page: 20 };
     if (statusFilter) params.status = statusFilter;
     usersApi.list(params)
-      .then(({ data }) => { setMarketers(data.data ?? data); setMeta(data.meta ?? null); setPage(p); })
+      .then(({ data }) => {
+        setMarketers(prev => append ? [...prev, ...(data.data ?? data)] : (data.data ?? data));
+        const metaObj = data.meta ?? {
+          current_page: data.current_page ?? 1,
+          last_page: data.last_page ?? 1,
+          total: data.total ?? 0
+        };
+        setMeta(metaObj);
+        setPage(p);
+      })
       .catch(() => setError('Failed to load marketers.'))
       .finally(() => setLoading(false));
   }, [statusFilter]);
 
-  useEffect(() => { loadMarketers(); }, [loadMarketers]);
+  useEffect(() => { loadMarketers(1, false); }, [loadMarketers]);
 
   const openModal = (type: any, marketer?: any) => {
     setSelectedMarketer(marketer || null);
@@ -60,7 +69,7 @@ export const ManageMarketers: React.FC = () => {
         await usersApi.create(payload);
       }
       setActionModal(null);
-      loadMarketers(page);
+      loadMarketers(1, false);
     } catch (e: any) {
       alert(e.response?.data?.message || Object.values(e.response?.data?.errors ?? {}).flat().join('\n') || 'Save failed.');
     } finally {
@@ -74,7 +83,7 @@ export const ManageMarketers: React.FC = () => {
       const newStatus = selectedMarketer.status === 'active' ? 'suspended' : 'active';
       await usersApi.update(selectedMarketer.id, { status: newStatus });
       setActionModal(null);
-      loadMarketers(page);
+      loadMarketers(1, false);
     } catch {
       alert('Action failed.');
     } finally {
@@ -104,14 +113,14 @@ export const ManageMarketers: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input type="text" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
           </div>
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); loadMarketers(1); }} className="bg-surface border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); }} className="bg-surface border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="suspended">Suspended</option>
           </select>
         </div>
 
-        {loading ? (
+        {loading && marketers.length === 0 ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
         ) : error ? (
           <div className="p-6 text-sm text-danger">{error}</div>
@@ -169,13 +178,16 @@ export const ManageMarketers: React.FC = () => {
           </div>
         )}
 
-        {meta && meta.last_page > 1 && (
-          <div className="p-4 border-t border-border flex items-center justify-between bg-background/20">
-            <p className="text-xs text-text-muted">Page {meta.current_page} of {meta.last_page} — {meta.total} total</p>
-            <div className="flex gap-2">
-              <button disabled={meta.current_page <= 1} onClick={() => loadMarketers(page - 1)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Prev</button>
-              <button disabled={meta.current_page >= meta.last_page} onClick={() => loadMarketers(page + 1)} className="px-3 py-1.5 border border-border text-sm rounded-lg disabled:opacity-40">Next</button>
-            </div>
+        {meta && meta.last_page > page && (
+          <div className="p-4 border-t border-border flex justify-center bg-background/20">
+            <button
+              onClick={() => loadMarketers(page + 1, true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-40"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Load More
+            </button>
           </div>
         )}
       </div>

@@ -21,6 +21,7 @@ class _ShopPageState extends State<ShopPage> {
   List<dynamic> _products = [];
   bool _loadingCategories = true;
   bool _loadingProducts = true;
+  bool _isLoadingMore = false;
   int _selectedCategoryIndex = 0;
   String _searchQuery = '';
   
@@ -29,17 +30,31 @@ class _ShopPageState extends State<ShopPage> {
   Set<int> _selectedCategoryIds = {};
   Timer? _debounce;
 
+  int _currentPage = 1;
+  bool _hasMore = true;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _loadCategories();
-    _loadProducts();
+    _loadProducts(refresh: true);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_loadingProducts && !_isLoadingMore && _hasMore) {
+        _loadProducts(loadNextPage: true);
+      }
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -64,10 +79,22 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
-  Future<void> _loadProducts({int? categoryId}) async {
-    setState(() => _loadingProducts = true);
+  Future<void> _loadProducts({int? categoryId, bool refresh = false, bool loadNextPage = false}) async {
+    if (loadNextPage) {
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() {
+        _currentPage = 1;
+        _hasMore = true;
+        _products = [];
+        _loadingProducts = true;
+      });
+    }
+
     try {
       final queryParams = <String, dynamic>{};
+      queryParams['page'] = _currentPage.toString();
+      queryParams['per_page'] = '10';
       
       final currentCatId = categoryId ?? (_categories.isNotEmpty ? _categories[_selectedCategoryIndex]['id'] : null);
       final Set<int> allCatIds = Set.from(_selectedCategoryIds);
@@ -91,13 +118,30 @@ class _ShopPageState extends State<ShopPage> {
 
       final data = await ApiService.instance.get('/products', query: queryParams);
       if (mounted) {
+        final newProducts = data['data'] as List? ?? [];
+        final lastPage = data['last_page'] ?? 1;
+        
         setState(() {
-          _products = data['data'] ?? [];
+          if (_currentPage == 1) {
+            _products = newProducts;
+          } else {
+            _products.addAll(newProducts);
+          }
+          _hasMore = _currentPage < lastPage;
+          if (_hasMore) {
+            _currentPage++;
+          }
           _loadingProducts = false;
+          _isLoadingMore = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loadingProducts = false);
+      if (mounted) {
+        setState(() {
+          _loadingProducts = false;
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -142,7 +186,38 @@ class _ShopPageState extends State<ShopPage> {
                     ? const Center(child: CircularProgressIndicator())
                     : _products.isEmpty
                         ? Center(child: Text('No products found.'.tr))
-                        : _buildProductGrid(context),
+                        : Stack(
+                            children: [
+                              _buildProductGrid(context),
+                              if (_isLoadingMore)
+                                Positioned(
+                                  bottom: 16,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: Card(
+                                      elevation: 4,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
               ),
             ],
           ),
@@ -161,7 +236,7 @@ class _ShopPageState extends State<ShopPage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withOpacity(0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -192,7 +267,7 @@ class _ShopPageState extends State<ShopPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                color: const Color(0xFFF97316).withOpacity(0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -257,14 +332,14 @@ class _ShopPageState extends State<ShopPage> {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                              color: const Color(0xFFF97316).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
                           ]
                         : [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withOpacity(0.05),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
@@ -284,7 +359,7 @@ class _ShopPageState extends State<ShopPage> {
                           ? Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: Colors.black.withOpacity(0.2),
                               ),
                             )
                           : null,
@@ -310,6 +385,7 @@ class _ShopPageState extends State<ShopPage> {
 
   Widget _buildProductGrid(BuildContext context) {
     return GridView.builder(
+      controller: _scrollController,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,

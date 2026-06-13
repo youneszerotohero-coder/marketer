@@ -501,7 +501,7 @@ class AppTranslations {
       'COMMUNE': 'البلدية',
       'DELIVERY TYPE': 'نوع التوصيل',
       'A Domicile': 'إلى المنزل',
-      'Stop Desk': 'نقطة الاستلام',
+      'Stop Desk': 'المكتب',
       'Select Option': 'اختر الخيار',
       'Please fill all required fields.': 'يرجى ملء جميع الحقول المطلوبة.',
       'Order placed successfully!': 'تم إرسال الطلب بنجاح!',

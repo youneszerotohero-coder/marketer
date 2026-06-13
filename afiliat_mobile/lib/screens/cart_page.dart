@@ -62,7 +62,7 @@ class _CartPageState extends State<CartPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -103,7 +103,7 @@ class _CartPageState extends State<CartPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               elevation: 4,
-              shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+              shadowColor: theme.colorScheme.primary.withOpacity(0.4),
             ),
             child: Text(
               'Start Shopping'.tr,
@@ -145,7 +145,7 @@ class _CartPageState extends State<CartPage> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withOpacity(0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -301,7 +301,7 @@ class _CartPageState extends State<CartPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : (isAvailable ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.grey.withValues(alpha: 0.1)),
+                        color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : (isAvailable ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.grey.withOpacity(0.1)),
                         border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -332,7 +332,7 @@ class _CartPageState extends State<CartPage> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             offset: const Offset(0, -10),
             blurRadius: 20,
           ),
@@ -384,7 +384,7 @@ class _CartPageState extends State<CartPage> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 4,
-                shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+                shadowColor: theme.colorScheme.primary.withOpacity(0.4),
               ),
               child: Text(
                 'Proceed to Checkout'.tr,

@@ -7,8 +7,10 @@ export const ManageProducts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
   const [actionModal, setActionModal] = useState<'add' | 'edit' | 'archive' | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [productsLimit, setProductsLimit] = useState(20);
-  const [categoriesLimit, setCategoriesLimit] = useState(20);
+  const [productsPage, setProductsPage] = useState(1);
+  const [productsMeta, setProductsMeta] = useState<any>(null);
+  const [categoriesPage, setCategoriesPage] = useState(1);
+  const [categoriesMeta, setCategoriesMeta] = useState<any>(null);
 
   const [productsList, setProductsList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
@@ -29,23 +31,35 @@ export const ManageProducts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    fetchData(1, false);
   }, [activeTab, search, categoryFilter]);
 
-  const fetchData = async () => {
+  const fetchData = async (p = 1, append = false) => {
     setLoading(true);
     try {
       if (activeTab === 'products') {
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (categoryFilter) params.append('category_id', categoryFilter);
+        params.append('page', p.toString());
+        params.append('per_page', '20');
         const response = await api.get(`/admin/products?${params.toString()}`);
-        setProductsList(response.data.data || response.data);
+        const data = response.data.data || response.data;
+        setProductsList(prev => append ? [...prev, ...data] : data);
+        setProductsPage(p);
+        const totalPages = response.data.last_page || response.data.meta?.last_page || 1;
+        setProductsMeta({ last_page: totalPages, current_page: p });
       } else {
         const params = new URLSearchParams();
         if (search) params.append('search', search);
+        params.append('page', p.toString());
+        params.append('per_page', '20');
         const response = await api.get(`/admin/categories?${params.toString()}`);
-        setCategoriesList(response.data.data || response.data);
+        const data = response.data.data || response.data;
+        setCategoriesList(prev => append ? [...prev, ...data] : data);
+        setCategoriesPage(p);
+        const totalPages = response.data.last_page || response.data.meta?.last_page || 1;
+        setCategoriesMeta({ last_page: totalPages, current_page: p });
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -54,8 +68,8 @@ export const ManageProducts: React.FC = () => {
     }
   };
 
-  const visibleProducts = productsList.slice(0, productsLimit);
-  const visibleCategories = categoriesList.slice(0, categoriesLimit);
+  const visibleProducts = productsList;
+  const visibleCategories = categoriesList;
 
   const openModal = (type: any, item?: any) => {
     setSelectedItem(item || null);
@@ -349,12 +363,13 @@ export const ManageProducts: React.FC = () => {
           </div>
           )}
 
-          {productsLimit < productsList.length && (
+          {productsMeta && productsMeta.last_page > productsPage && (
             <div className="p-4 border-t border-border flex justify-center bg-background/20">
               <button 
-                onClick={() => setProductsLimit(prev => prev + 20)}
-                className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102"
+                onClick={() => fetchData(productsPage + 1, true)}
+                className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
+                {loading && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-primary border-r-2 border-transparent"></div>}
                 Load More
               </button>
             </div>
@@ -425,12 +440,13 @@ export const ManageProducts: React.FC = () => {
           </div>
           )}
 
-          {categoriesLimit < categoriesList.length && (
+          {categoriesMeta && categoriesMeta.last_page > categoriesPage && (
             <div className="p-4 border-t border-border flex justify-center bg-background/20">
               <button 
-                onClick={() => setCategoriesLimit(prev => prev + 20)}
-                className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102"
+                onClick={() => fetchData(categoriesPage + 1, true)}
+                className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
+                {loading && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-primary border-r-2 border-transparent"></div>}
                 Load More
               </button>
             </div>

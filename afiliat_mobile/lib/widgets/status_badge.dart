@@ -17,15 +17,11 @@ class StatusBadge extends StatelessWidget {
 
     switch (status) {
       case OrderStatus.pending:
-        backgroundColor = theme.colorScheme.primaryContainer.withValues(
-          alpha: 0.3,
-        );
+        backgroundColor = theme.colorScheme.primaryContainer.withOpacity(0.3);
         textColor = theme.colorScheme.primary;
         break;
       case OrderStatus.delivered:
-        backgroundColor = theme.colorScheme.tertiaryContainer.withValues(
-          alpha: 0.3,
-        );
+        backgroundColor = theme.colorScheme.tertiaryContainer.withOpacity(0.3);
         textColor = theme.colorScheme.tertiary;
         break;
       case OrderStatus.cancelled:

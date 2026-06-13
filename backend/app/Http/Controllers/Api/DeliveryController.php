@@ -22,6 +22,10 @@ class DeliveryController extends Controller
             'code' => $rate->wilaya_code,
             'name' => $rate->wilaya_name,
             'name_ar' => $rate->wilaya_name_ar,
+            'home_price' => (float)$rate->home_price,
+            'desk_price' => (float)$rate->desk_price,
+            'home_active' => (bool)$rate->home_active,
+            'desk_active' => (bool)$rate->desk_active,
             'communes' => $rate->communes->map(fn($c) => [
                 'id' => $c->id,
                 'name' => $c->name,

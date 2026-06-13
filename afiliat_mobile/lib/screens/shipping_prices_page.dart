@@ -201,9 +201,7 @@ class _ShippingPricesPageState extends State<ShippingPricesPage> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.shadowColor.withValues(
-                                  alpha: isDark ? 0.2 : 0.05,
-                                ),
+                                color: theme.shadowColor.withOpacity(isDark ? 0.2 : 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -222,7 +220,7 @@ class _ShippingPricesPageState extends State<ShippingPricesPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.primaryContainer
-                                          .withValues(alpha: 0.1),
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
