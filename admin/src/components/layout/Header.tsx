@@ -1,7 +1,15 @@
 import React from 'react';
-import { Search, Bell, Menu } from 'lucide-react';
+import { Search, Bell, Menu, X } from 'lucide-react';
 
-export const Header: React.FC = () => {
+type HeaderProps = {
+  onMenuClick?: () => void;
+  isMobileMenuOpen?: boolean;
+};
+
+export const Header: React.FC<HeaderProps> = ({
+  onMenuClick,
+  isMobileMenuOpen = false,
+}) => {
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : { name: 'Admin User', role: 'admin' };
   const initials = user.name ? user.name.substring(0, 2).toUpperCase() : 'AD';
@@ -9,8 +17,14 @@ export const Header: React.FC = () => {
   return (
     <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 glass">
       <div className="flex items-center gap-4">
-        <button className="md:hidden text-text-muted hover:text-text">
-          <Menu className="w-6 h-6" />
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={isMobileMenuOpen}
+          className="md:hidden text-text-muted hover:text-text transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
         <div className="relative hidden sm:block">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />

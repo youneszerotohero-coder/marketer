@@ -26,14 +26,29 @@ const navItems = [
   { name: 'Shipping Rates', path: '/shipping-rates', icon: Truck, roles: ['admin'] },
 ];
 
-export const Sidebar: React.FC = () => {
+type SidebarProps = {
+  isMobileMenuOpen?: boolean;
+  onCloseMobileMenu?: () => void;
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({
+  isMobileMenuOpen = false,
+  onCloseMobileMenu,
+}) => {
   const location = useLocation();
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : {};
   const userRole = user?.role || 'admin';
 
   return (
-    <aside className="w-64 bg-surface border-r border-border h-screen sticky top-0 flex flex-col justify-between hidden md:flex">
+    <aside
+      className={cn(
+        "w-64 bg-surface border-r border-border h-screen flex flex-col justify-between",
+        "fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out md:sticky md:top-0 md:z-auto md:translate-x-0 md:flex",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+        "md:translate-x-0"
+      )}
+    >
       <div>
         <div className="h-16 flex items-center px-6 border-b border-border">
           <div className="flex items-center gap-2">
@@ -51,6 +66,7 @@ export const Sidebar: React.FC = () => {
               <NavLink
                 key={item.name}
                 to={item.path}
+                onClick={onCloseMobileMenu}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
                   isActive 
@@ -70,6 +86,7 @@ export const Sidebar: React.FC = () => {
         {userRole === 'admin' && (
           <NavLink 
             to="/settings"
+            onClick={onCloseMobileMenu}
             className={({ isActive }) => cn(
               "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
               isActive 
