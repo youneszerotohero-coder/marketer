@@ -20,13 +20,22 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardPage(),
-    const ShopPage(),
-    const OrdersPage(),
-    const WalletPage(),
-    const ProfilePage(),
-  ];
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return const DashboardPage();
+      case 1:
+        return const ShopPage();
+      case 2:
+        return const OrdersPage();
+      case 3:
+        return const WalletPage();
+      case 4:
+        return const ProfilePage();
+      default:
+        return const DashboardPage();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +49,7 @@ class _MainShellState extends State<MainShell> {
           });
         },
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: _buildPage(_currentIndex),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {

@@ -197,7 +197,7 @@ export const ManageProducts: React.FC = () => {
 
     try {
       const token = localStorage.getItem('access_token');
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
       let url = '';
 
       if (activeTab === 'products') {

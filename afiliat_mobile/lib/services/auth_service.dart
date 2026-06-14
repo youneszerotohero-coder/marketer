@@ -59,6 +59,7 @@ class AuthService {
     try {
       await _api.post('/auth/logout');
     } catch (_) {}
+    _api.clearCache();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
     await prefs.remove('user');

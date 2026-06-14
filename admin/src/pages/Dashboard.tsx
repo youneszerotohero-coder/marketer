@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Truck,
   ShoppingBag,
+  Receipt,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardApi } from '../services/api';
@@ -180,6 +181,12 @@ export const Dashboard: React.FC = () => {
                   <StatCard title="Total Revenue (DZD)" value={`DZD ${fmt(stats?.sales?.revenue ?? 0)}`} icon={TrendingUp} colorClass="bg-primary/10 text-primary" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
+                  <StatCard title="Orders Cost (DZD)" value={`DZD ${fmt(stats?.sales?.orders_cost ?? 0)}`} icon={Receipt} colorClass="bg-amber-500/10 text-amber-500" />
+                </div>
+                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
+                  <StatCard title="Net Profit (DZD)" value={`DZD ${fmt(stats?.sales?.net_profit ?? 0)}`} icon={DollarSign} colorClass="bg-emerald-500/10 text-emerald-500" />
+                </div>
+                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
                   <StatCard title="Total Marketers" value={stats?.users?.marketers ?? 0} icon={Users} colorClass="bg-blue-500/10 text-blue-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
@@ -190,9 +197,6 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
                   <StatCard title="Pending Payouts" value={stats?.pending_payouts ?? 0} icon={CreditCard} colorClass="bg-success/10 text-success" />
-                </div>
-                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Net Profit (DZD)" value={`DZD ${fmt(stats?.sales?.net_profit ?? 0)}`} icon={DollarSign} colorClass="bg-emerald-500/10 text-emerald-500" />
                 </div>
               </>
             )}

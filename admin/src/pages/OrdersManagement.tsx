@@ -92,7 +92,7 @@ export const OrdersManagement: React.FC = () => {
           ...o,
           shipping_method: savedMethods[o.id] || 'delivery_company'
         }));
-        setOrders(prev => append ? [...prev, ...ordersWithMethods] : ordersWithMethods);
+        setOrders((prev: any[]) => append ? [...prev, ...ordersWithMethods] : ordersWithMethods);
         const metaObj = data.meta ?? {
           current_page: data.current_page ?? 1,
           last_page: data.last_page ?? 1,
@@ -139,7 +139,7 @@ export const OrdersManagement: React.FC = () => {
       const { data } = await ordersApi.syncDeliveryStatus(order.id);
       const synced = data.order ?? data;
       setSelectedOrder((prev: any) => prev?.id === order.id ? { ...prev, ...synced } : prev);
-      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, ...synced } : o));
+      setOrders((prev: any[]) => prev.map(o => o.id === order.id ? { ...o, ...synced } : o));
     } catch {
       // Keep existing order details visible if ZR Express is temporarily unavailable.
     } finally {
@@ -169,8 +169,8 @@ export const OrdersManagement: React.FC = () => {
         delivery_type: editDeliveryType,
       });
       const updatedOrder = res.data;
-      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, ...updatedOrder } : o));
-      setSelectedOrder(prev => prev ? { ...prev, ...updatedOrder } : null);
+      setOrders((prev: any[]) => prev.map(o => o.id === selectedOrder.id ? { ...o, ...updatedOrder } : o));
+      setSelectedOrder((prev: any) => prev ? { ...prev, ...updatedOrder } : null);
       setIsEditingAddress(false);
     } catch (err: any) {
       console.error(err);
@@ -188,12 +188,12 @@ export const OrdersManagement: React.FC = () => {
       const dateVal = postponeDateMap[order.id];
       if (!dateVal) {
         // Show date picker — update map to signal user must pick date
-        setPostponeDateMap(prev => ({ ...prev, [order.id]: '' }));
+        setPostponeDateMap((prev: Record<number, string>) => ({ ...prev, [order.id]: '' }));
         return;
       }
       try {
         await ordersApi.updateStatus(order.id, { status: newStatus, postponed_until: dateVal });
-        setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; });
+        setPostponeDateMap((prev: Record<number, string>) => { const m = { ...prev }; delete m[order.id]; return m; });
         loadOrders(page, statusFilter, search);
         if (selectedOrder?.id === order.id) setSelectedOrder({ ...selectedOrder, status: newStatus });
       } catch (e: any) {
@@ -205,7 +205,7 @@ export const OrdersManagement: React.FC = () => {
     try {
       await ordersApi.updateStatus(order.id, { status: newStatus });
       // Clear any pending postpone date if status changed away from reporte
-      setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; });
+      setPostponeDateMap((prev: Record<number, string>) => { const m = { ...prev }; delete m[order.id]; return m; });
       loadOrders(page, statusFilter, search);
       if (selectedOrder?.id === order.id) setSelectedOrder({ ...selectedOrder, status: newStatus });
     } catch (e: any) {
@@ -214,7 +214,7 @@ export const OrdersManagement: React.FC = () => {
   };
 
   const handleShippingMethodChange = (order: any, method: string) => {
-    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, shipping_method: method } : o));
+    setOrders((prev: any[]) => prev.map(o => o.id === order.id ? { ...o, shipping_method: method } : o));
     if (selectedOrder?.id === order.id) {
       setSelectedOrder({ ...selectedOrder, shipping_method: method });
     }
@@ -365,7 +365,7 @@ export const OrdersManagement: React.FC = () => {
                               className="px-3 py-1.5 border border-indigo-300 rounded-lg text-sm bg-surface focus:outline-none focus:border-indigo-500"
                               value={postponeDateMap[order.id] || ''}
                               min={getLocalTodayString()}
-                              onChange={(e) => setPostponeDateMap(prev => ({ ...prev, [order.id]: e.target.value }))}
+                              onChange={(e) => setPostponeDateMap((prev: Record<number, string>) => ({ ...prev, [order.id]: e.target.value }))}
                             />
                             <button
                               onClick={() => handleStatusChange(order, 'reporte')}
@@ -375,7 +375,7 @@ export const OrdersManagement: React.FC = () => {
                               Confirmer le report
                             </button>
                             <button
-                              onClick={() => setPostponeDateMap(prev => { const m = { ...prev }; delete m[order.id]; return m; })}
+                              onClick={() => setPostponeDateMap((prev: Record<number, string>) => { const m = { ...prev }; delete m[order.id]; return m; })}
                               className="px-3 py-1.5 border border-border text-sm text-text-muted rounded-lg hover:bg-background transition-colors"
                             >
                               Annuler

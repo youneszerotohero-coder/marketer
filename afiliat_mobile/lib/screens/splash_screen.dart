@@ -14,7 +14,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -35,13 +34,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -75,6 +67,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       body: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -86,139 +79,41 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             end: Alignment.bottomRight,
           ),
         ),
-        child: Stack(
-          children: [
-            // Decorative background circles
-            Positioned(
-              top: -100,
-              right: -50,
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
               child: Container(
-                width: 300,
-                height: 300,
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -50,
-              left: -100,
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-              ),
-            ),
-            
-            // Main content
-            Center(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                            BoxShadow(
-                              color: Colors.white.withOpacity(0.2),
-                              blurRadius: 10,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/appLogo.jpg',
-                            width: 124,
-                            height: 124,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
                     ),
-                    const SizedBox(height: 40),
-                    SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        children: [
-                          Text(
-                            'Afiliat',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      offset: const Offset(0, 4),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Text(
-                              'Digital Marketing Platform',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-              ),
-            ),
-            
-            // Loading indicator at bottom
-            Positioned(
-              bottom: 60,
-              left: 0,
-              right: 0,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Center(
-                  child: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
-                      strokeWidth: 3,
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.asset(
+                    'assets/appLogo.jpg',
+                    width: 140,
+                    height: 140,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

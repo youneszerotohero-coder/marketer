@@ -11,13 +11,15 @@ services:
       - .:/var/www/html
     environment:
       APP_ENV: local
-      DB_CONNECTION: oracle
-      DB_HOST: host.docker.internal
-      DB_PORT: 1524
-      DB_DATABASE: FREEPDB1
-      DB_SERVICE_NAME: FREEPDB1
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: marketer
       DB_USERNAME: marketer
       DB_PASSWORD: secret
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: sh -c "composer install && php artisan migrate --seed --force && php artisan serve --host=0.0.0.0 --port=8000"
 
   postgres:

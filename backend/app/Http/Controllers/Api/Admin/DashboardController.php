@@ -72,18 +72,23 @@ class DashboardController extends Controller
             ]);
         }
 
+        $revenue = (float) (clone $orderQuery)->where('status', 'delivered')->sum('subtotal');
+        $commissions = (float) (clone $walletQuery)
+            ->whereHas('order', fn($q) => $q->where('status', 'delivered'))
+            ->where('type', 'commission')->where('status', 'approved')->sum('amount');
+        $ordersCost = (float) \App\Models\OrderItem::whereIn('order_id', (clone $orderQuery)->where('status', 'delivered')->pluck('id'))
+            ->join('product_variants', 'order_items.product_variant_id', '=', 'product_variants.id')
+            ->sum(\DB::raw('order_items.quantity * product_variants.purchase_price'));
+        $netProfit = $revenue - $ordersCost - $commissions;
+
         return response()->json([
             'orders' => $ordersStats,
             'chart_data' => $chartData,
             'sales' => [
-                'revenue' => (float) (clone $orderQuery)->where('status', 'delivered')->sum('subtotal'),
-                'commissions' => (float) (clone $walletQuery)
-                    ->whereHas('order', fn($q) => $q->where('status', 'delivered'))
-                    ->where('type', 'commission')->where('status', 'approved')->sum('amount'),
-                'net_profit' => (float) (clone $orderQuery)->where('status', 'delivered')->sum('subtotal')
-                    - (float) (clone $walletQuery)
-                        ->whereHas('order', fn($q) => $q->where('status', 'delivered'))
-                        ->where('type', 'commission')->where('status', 'approved')->sum('amount'),
+                'revenue' => $revenue,
+                'commissions' => $commissions,
+                'orders_cost' => $ordersCost,
+                'net_profit' => $netProfit,
             ],
             'users' => [
                 'marketers' => User::where('role', 'marketer')->count(),
