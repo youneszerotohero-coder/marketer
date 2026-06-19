@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\OrderAdminController;
 use App\Http\Controllers\Api\Admin\ProductAdminController;
 use App\Http\Controllers\Api\Admin\SettingController;
+use App\Http\Controllers\Api\Admin\ShippingRateAdminController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\WithdrawalController;
 use App\Http\Controllers\Api\AuthController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\MarketerStatsController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WalletController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ─── Auth (public) ───────────────────────────────────────────────────────────
@@ -26,11 +28,16 @@ Route::prefix('auth')->group(function () {
 });
 
 // Image Proxy to avoid CORS issues on Flutter Web (CanvasKit)
-Route::get('image', function (\Illuminate\Http\Request $request) {
+Route::get('image', function (Request $request) {
     $path = $request->query('path');
-    if (!$path) abort(400, 'Path is required');
-    $fullPath = storage_path('app/public/' . $path);
-    if (!file_exists($fullPath)) abort(404, 'Image not found');
+    if (! $path) {
+        abort(400, 'Path is required');
+    }
+    $fullPath = storage_path('app/public/'.$path);
+    if (! file_exists($fullPath)) {
+        abort(404, 'Image not found');
+    }
+
     return response()->file($fullPath);
 });
 
@@ -46,7 +53,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('delivery/territories', [DeliveryController::class, 'territories']);
     Route::get('delivery/rates', [DeliveryController::class, 'rates']);
-    Route::get('app/settings', [\App\Http\Controllers\Api\Admin\SettingController::class, 'publicSettings']);
+    Route::get('app/settings', [SettingController::class, 'publicSettings']);
     Route::post('orders/{order}/delivery-status', [DeliveryController::class, 'syncOrder']);
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::get('brands', [BrandController::class, 'index']);
@@ -102,7 +109,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('settings/upload-pdf', [SettingController::class, 'uploadPdf']);
 
         // Shipping Rates management
-        Route::get('shipping-rates', [\App\Http\Controllers\Api\Admin\ShippingRateAdminController::class, 'index']);
-        Route::patch('shipping-rates', [\App\Http\Controllers\Api\Admin\ShippingRateAdminController::class, 'bulkUpdate']);
+        Route::get('shipping-rates', [ShippingRateAdminController::class, 'index']);
+        Route::patch('shipping-rates', [ShippingRateAdminController::class, 'bulkUpdate']);
     });
 });

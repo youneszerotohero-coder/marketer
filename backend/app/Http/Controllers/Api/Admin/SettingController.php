@@ -37,7 +37,7 @@ class SettingController extends Controller
         ]);
 
         $path = $request->file('pdf')->store('pdfs', 'public');
-        $url  = url(Storage::url($path));  // e.g. http://localhost:8000/storage/pdfs/xxx.pdf
+        $url = url(Storage::url($path));  // e.g. http://localhost:8000/storage/pdfs/xxx.pdf
 
         // Persist the URL in settings so the mobile app can read it
         Setting::updateOrCreate(['key' => 'pdf_document_url'], ['value' => $url]);
@@ -63,7 +63,7 @@ class SettingController extends Controller
         ])->all();
 
         foreach ($keys as $key) {
-            if (!isset($settings[$key])) {
+            if (! isset($settings[$key])) {
                 $settings[$key] = null;
             }
         }

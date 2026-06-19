@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryShipment;
 use App\Models\Order;
+use App\Models\ShippingRate;
 use App\Models\User;
 use App\Services\Delivery\DeliveryGateway;
 use App\Services\Wallet\WalletService;
@@ -21,11 +22,11 @@ class OrderAdminController extends Controller
                 ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
                 ->when($request->query('confirmatrice_id'), fn ($q, $id) => $q->where('confirmatrice_id', $id))
                 ->when($request->query('search'), function ($q, $search) {
-                    $q->where(function($sq) use ($search) {
+                    $q->where(function ($sq) use ($search) {
                         $sq->where('reference', 'like', "%{$search}%")
-                           ->orWhere('client_name', 'like', "%{$search}%")
-                           ->orWhere('client_phone', 'like', "%{$search}%")
-                           ->orWhereHas('marketer', fn($mq) => $mq->where('name', 'like', "%{$search}%"));
+                            ->orWhere('client_name', 'like', "%{$search}%")
+                            ->orWhere('client_phone', 'like', "%{$search}%")
+                            ->orWhereHas('marketer', fn ($mq) => $mq->where('name', 'like', "%{$search}%"));
                     });
                 })
                 ->latest()
@@ -40,6 +41,7 @@ class OrderAdminController extends Controller
             'delivery_status' => ['nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string'],
             'postponed_until' => ['nullable', 'date', 'after_or_equal:today'],
+            'return_reason' => ['nullable', 'in:customer_refused,broken_product,wrong_address,other'],
         ]);
 
         if ($data['status'] === 'reporte' && empty($data['postponed_until'])) {
@@ -60,9 +62,10 @@ class OrderAdminController extends Controller
             'delivery_status' => $data['delivery_status'] ?? $order->delivery_status,
             'notes' => $data['notes'] ?? $order->notes,
             'postponed_until' => $data['status'] === 'reporte' ? $data['postponed_until'] : null,
+            'return_reason' => $data['status'] === 'failed' ? ($data['return_reason'] ?? null) : null,
         ], $timestamps));
 
-        if ($order->status === 'shipped' && !$order->tracking_number) {
+        if ($order->status === 'shipped' && ! $order->tracking_number) {
             $shipment = $delivery->createShipment($order);
             $order->update(['tracking_number' => $shipment['tracking_number'], 'delivery_status' => $shipment['status']]);
             DeliveryShipment::create(['order_id' => $order->id] + $shipment);
@@ -96,15 +99,23 @@ class OrderAdminController extends Controller
         ]);
 
         $updateData = [];
-        if (isset($data['client_name'])) $updateData['client_name'] = $data['client_name'];
-        if (isset($data['client_phone'])) $updateData['client_phone'] = $data['client_phone'];
-        if (isset($data['address'])) $updateData['address'] = $data['address'];
-        if (isset($data['notes'])) $updateData['notes'] = $data['notes'];
+        if (isset($data['client_name'])) {
+            $updateData['client_name'] = $data['client_name'];
+        }
+        if (isset($data['client_phone'])) {
+            $updateData['client_phone'] = $data['client_phone'];
+        }
+        if (isset($data['address'])) {
+            $updateData['address'] = $data['address'];
+        }
+        if (isset($data['notes'])) {
+            $updateData['notes'] = $data['notes'];
+        }
 
         $deliveryType = $data['delivery_type'] ?? $order->delivery_type;
         $updateData['delivery_type'] = $deliveryType;
 
-        if (!empty($data['wilaya']) || !empty($data['commune'])) {
+        if (! empty($data['wilaya']) || ! empty($data['commune'])) {
             $wilayaInput = $data['wilaya'] ?? $order->wilaya;
             $communeInput = $data['commune'] ?? $order->commune;
 
@@ -116,7 +127,7 @@ class OrderAdminController extends Controller
                 $name = trim($parts[1]);
             }
 
-            $rateQuery = \App\Models\ShippingRate::query();
+            $rateQuery = ShippingRate::query();
             if ($code) {
                 $rateQuery->where('wilaya_code', $code);
             } else {
@@ -124,7 +135,7 @@ class OrderAdminController extends Controller
             }
             $shippingRate = $rateQuery->first();
 
-            if (!$shippingRate) {
+            if (! $shippingRate) {
                 return response()->json(['message' => "La wilaya sélectionnée n'est pas valide."], 422);
             }
 
@@ -132,10 +143,10 @@ class OrderAdminController extends Controller
             $communeExists = $shippingRate->communes()
                 ->where(function ($q) use ($communeInput) {
                     $q->where('name', $communeInput)
-                      ->orWhere('name_ar', $communeInput);
+                        ->orWhere('name_ar', $communeInput);
                 })->exists();
 
-            if (!$communeExists) {
+            if (! $communeExists) {
                 return response()->json(['message' => "La commune sélectionnée n'appartient pas à la wilaya choisie."], 422);
             }
 
@@ -145,7 +156,7 @@ class OrderAdminController extends Controller
             $shippingFee = $deliveryType === 'home' ? (float) $shippingRate->home_price : (float) $shippingRate->desk_price;
             $updateData['shipping_fee'] = $shippingFee;
             $updateData['total'] = $order->subtotal + $shippingFee;
-        } else if (isset($data['delivery_type'])) {
+        } elseif (isset($data['delivery_type'])) {
             // Recalculate shipping fee based on existing wilaya
             $wilayaInput = $order->wilaya;
             $code = null;
@@ -155,7 +166,7 @@ class OrderAdminController extends Controller
                 $code = trim($parts[0]);
                 $name = trim($parts[1]);
             }
-            $rateQuery = \App\Models\ShippingRate::query();
+            $rateQuery = ShippingRate::query();
             if ($code) {
                 $rateQuery->where('wilaya_code', $code);
             } else {

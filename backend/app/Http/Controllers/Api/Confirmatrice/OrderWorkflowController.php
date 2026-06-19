@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Confirmatrice;
 use App\Http\Controllers\Api\Admin\OrderAdminController;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\Delivery\DeliveryGateway;
+use App\Services\Wallet\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,11 +22,11 @@ class OrderWorkflowController extends Controller
                 })
                 ->whereIn('status', ['pending', 'confirmed'])
                 ->when($request->query('search'), function ($q, $search) {
-                    $q->where(function($sq) use ($search) {
+                    $q->where(function ($sq) use ($search) {
                         $sq->where('reference', 'like', "%{$search}%")
-                           ->orWhere('client_name', 'like', "%{$search}%")
-                           ->orWhere('client_phone', 'like', "%{$search}%")
-                           ->orWhereHas('marketer', fn($mq) => $mq->where('name', 'like', "%{$search}%"));
+                            ->orWhere('client_name', 'like', "%{$search}%")
+                            ->orWhere('client_phone', 'like', "%{$search}%")
+                            ->orWhereHas('marketer', fn ($mq) => $mq->where('name', 'like', "%{$search}%"));
                     });
                 })
                 ->latest()
@@ -42,8 +44,8 @@ class OrderWorkflowController extends Controller
         return $orders->updateStatus(
             $request,
             $order,
-            app(\App\Services\Wallet\WalletService::class),
-            app(\App\Services\Delivery\DeliveryGateway::class)
+            app(WalletService::class),
+            app(DeliveryGateway::class)
         );
     }
 

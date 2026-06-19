@@ -15,6 +15,7 @@ class MockDeliveryGateway implements DeliveryGateway
     public function calculateCost(string $wilaya, string $commune, string $deliveryType = 'home'): float
     {
         $base = str_contains($wilaya, 'Alger') ? 400.0 : 800.0;
+
         return $deliveryType === 'desk' ? $base - 200.0 : $base;
     }
 

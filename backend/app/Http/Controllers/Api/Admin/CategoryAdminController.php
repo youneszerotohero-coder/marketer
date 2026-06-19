@@ -43,7 +43,7 @@ class CategoryAdminController extends Controller
     public function update(Request $request, Category $category): JsonResponse
     {
         $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:255', 'unique:categories,name,' . $category->id],
+            'name' => ['sometimes', 'string', 'max:255', 'unique:categories,name,'.$category->id],
             'parent_id' => ['sometimes', 'nullable', 'exists:categories,id'],
             'image' => ['nullable', 'image', 'max:5120'],
             'status' => ['sometimes', 'in:active,inactive'],

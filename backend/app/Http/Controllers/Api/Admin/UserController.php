@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\OrderItem;
 use App\Models\User;
+use App\Services\Wallet\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -38,7 +41,7 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'email', 'unique:users,email,' . $user->id],
+            'email' => ['sometimes', 'email', 'unique:users,email,'.$user->id],
             'phone' => ['sometimes', 'nullable', 'string', 'max:40'],
             'role' => ['sometimes', 'in:admin,marketer,confirmatrice'],
             'tier' => ['sometimes', 'string', 'max:80'],
@@ -58,7 +61,7 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    public function stats(Request $request, User $user, \App\Services\Wallet\WalletService $wallet): JsonResponse
+    public function stats(Request $request, User $user, WalletService $wallet): JsonResponse
     {
         if ($user->role !== 'marketer') {
             abort(404, 'User is not a marketer');
@@ -66,11 +69,11 @@ class UserController extends Controller
 
         $totalOrders = $user->marketerOrders()->count();
         $deliveredOrders = $user->marketerOrders()->where('status', 'delivered')->count();
-        
-        $topProducts = \App\Models\OrderItem::query()
+
+        $topProducts = OrderItem::query()
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.marketer_id', $user->id)
-            ->select('product_name', \Illuminate\Support\Facades\DB::raw('SUM(order_items.quantity) as sales'))
+            ->select('product_name', DB::raw('SUM(order_items.quantity) as sales'))
             ->groupBy('product_name')
             ->orderByDesc('sales')
             ->limit(5)
@@ -94,14 +97,14 @@ class UserController extends Controller
             ],
             'commissions' => [
                 'unpaid_balance' => $balance['available'],
-                'recent_earnings' => $recentEarnings->map(fn($t) => [
+                'recent_earnings' => $recentEarnings->map(fn ($t) => [
                     'id' => $t->id,
                     'type' => $t->type,
                     'order_reference' => $t->order->reference ?? 'Unknown',
-                    'amount' => $t->type === 'return_fee' ? -((float)$t->amount) : (float)$t->amount,
+                    'amount' => $t->type === 'return_fee' ? -((float) $t->amount) : (float) $t->amount,
                     'date' => clone $t->created_at, // Map to string later in frontend
                 ]),
-            ]
+            ],
         ]);
     }
 }

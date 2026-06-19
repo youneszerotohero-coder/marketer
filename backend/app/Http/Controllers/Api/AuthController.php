@@ -42,7 +42,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password) || $user->status !== 'active') {
+        if (! $user || ! Hash::check($credentials['password'], $user->password) || $user->status !== 'active') {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
             ->where('expires_at', '>', now())
             ->first();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json(['message' => 'Invalid refresh token'], 401);
         }
 
@@ -88,13 +88,13 @@ class AuthController extends Controller
 
         $user->name = $data['name'];
         $user->phone = $data['phone'] ?? null;
-        
+
         $profile = $user->profile ?? [];
         $profile['bank_number'] = $data['bank_number'] ?? null;
         $profile['wilaya'] = $data['wilaya'] ?? null;
         $user->profile = $profile;
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $user->password = $data['password'];
         }
 

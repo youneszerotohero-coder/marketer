@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ProductVariant;
+use App\Models\ShippingRate;
 use App\Services\Delivery\DeliveryGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,10 +20,10 @@ class OrderController extends Controller
             ->with(['items', 'returnFeeTransaction', 'deliveryShipment'])
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
             ->when($request->query('search'), function ($q, $search) {
-                $q->where(function($sq) use ($search) {
+                $q->where(function ($sq) use ($search) {
                     $sq->where('reference', 'like', "%{$search}%")
-                       ->orWhere('client_name', 'like', "%{$search}%")
-                       ->orWhere('client_phone', 'like', "%{$search}%");
+                        ->orWhere('client_name', 'like', "%{$search}%")
+                        ->orWhere('client_phone', 'like', "%{$search}%");
                 });
             })
             ->latest()
@@ -46,7 +47,7 @@ class OrderController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $order = DB::transaction(function () use ($request, $data, $delivery) {
+        $order = DB::transaction(function () use ($request, $data) {
             $subtotal = 0;
             $commission = 0;
             $preparedItems = [];
@@ -83,7 +84,7 @@ class OrderController extends Controller
                 $name = trim($parts[1]);
             }
 
-            $rateQuery = \App\Models\ShippingRate::query();
+            $rateQuery = ShippingRate::query();
             if ($code) {
                 $rateQuery->where('wilaya_code', $code);
             } else {
@@ -91,29 +92,29 @@ class OrderController extends Controller
             }
             $shippingRate = $rateQuery->first();
 
-            if (!$shippingRate) {
+            if (! $shippingRate) {
                 abort(422, "La wilaya sélectionnée n'est pas valide.");
             }
 
-            if (!$shippingRate->is_active) {
+            if (! $shippingRate->is_active) {
                 abort(422, "La livraison vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
             }
 
             $type = $data['delivery_type'];
-            if ($type === 'home' && !$shippingRate->home_active) {
+            if ($type === 'home' && ! $shippingRate->home_active) {
                 abort(422, "La livraison à domicile vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
             }
-            if ($type === 'desk' && !$shippingRate->desk_active) {
+            if ($type === 'desk' && ! $shippingRate->desk_active) {
                 abort(422, "La livraison en point de retrait (Stop Desk) vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
             }
 
             $communeExists = $shippingRate->communes()
                 ->where(function ($q) use ($data) {
                     $q->where('name', $data['commune'])
-                      ->orWhere('name_ar', $data['commune']);
+                        ->orWhere('name_ar', $data['commune']);
                 })->exists();
 
-            if (!$communeExists) {
+            if (! $communeExists) {
                 abort(422, "La commune sélectionnée n'appartient pas à la wilaya choisie.");
             }
 
@@ -181,7 +182,7 @@ class OrderController extends Controller
             $name = trim($parts[1]);
         }
 
-        $rateQuery = \App\Models\ShippingRate::query();
+        $rateQuery = ShippingRate::query();
         if ($code) {
             $rateQuery->where('wilaya_code', $code);
         } else {
@@ -189,29 +190,29 @@ class OrderController extends Controller
         }
         $shippingRate = $rateQuery->first();
 
-        if (!$shippingRate) {
+        if (! $shippingRate) {
             abort(422, "La wilaya sélectionnée n'est pas valide.");
         }
 
-        if (!$shippingRate->is_active) {
+        if (! $shippingRate->is_active) {
             abort(422, "La livraison vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
         }
 
         $type = $data['delivery_type'];
-        if ($type === 'home' && !$shippingRate->home_active) {
+        if ($type === 'home' && ! $shippingRate->home_active) {
             abort(422, "La livraison à domicile vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
         }
-        if ($type === 'desk' && !$shippingRate->desk_active) {
+        if ($type === 'desk' && ! $shippingRate->desk_active) {
             abort(422, "La livraison en point de retrait (Stop Desk) vers la wilaya {$shippingRate->wilaya_name} est actuellement désactivée.");
         }
 
         $communeExists = $shippingRate->communes()
             ->where(function ($q) use ($data) {
                 $q->where('name', $data['commune'])
-                  ->orWhere('name_ar', $data['commune']);
+                    ->orWhere('name_ar', $data['commune']);
             })->exists();
 
-        if (!$communeExists) {
+        if (! $communeExists) {
             abort(422, "La commune sélectionnée n'appartient pas à la wilaya choisie.");
         }
 

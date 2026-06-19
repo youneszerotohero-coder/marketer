@@ -12,7 +12,7 @@ class RoleMiddleware
     {
         $user = auth('api')->user();
 
-        if (!$user || $user->status !== 'active' || !in_array($user->role, $roles, true)) {
+        if (! $user || $user->status !== 'active' || ! in_array($user->role, $roles, true)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

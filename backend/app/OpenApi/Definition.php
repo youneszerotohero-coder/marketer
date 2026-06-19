@@ -28,9 +28,7 @@ class Definition
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]
-    public function products(): void
-    {
-    }
+    public function products(): void {}
 
     #[OA\Post(
         path: '/auth/login',
@@ -41,7 +39,5 @@ class Definition
             new OA\Response(response: 401, description: 'Invalid credentials'),
         ]
     )]
-    public function login(): void
-    {
-    }
+    public function login(): void {}
 }

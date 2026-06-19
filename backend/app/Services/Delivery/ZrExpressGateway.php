@@ -64,6 +64,7 @@ class ZrExpressGateway implements DeliveryGateway
         }
 
         $base = str_contains($wilaya, 'Alger') ? 400.0 : 800.0;
+
         return $deliveryType === 'desk' ? max(0, $base - 200.0) : $base;
     }
 
@@ -159,7 +160,7 @@ class ZrExpressGateway implements DeliveryGateway
             ->timeout(12)
             ->{$method}($url, $payload);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new RuntimeException('ZR Express request failed with status '.$response->status());
         }
 
@@ -181,6 +182,7 @@ class ZrExpressGateway implements DeliveryGateway
     private function firstItem(array $data): ?array
     {
         $items = $this->items($data);
+
         return isset($items[0]) && is_array($items[0]) ? $items[0] : null;
     }
 }
