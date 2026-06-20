@@ -7,7 +7,7 @@ use App\Models\RefreshToken;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
@@ -42,7 +42,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-            if (!$user || $user->password !== $credentials['password'] || $user->status !== 'active') { 
+        if (! $user || $user->password !== $credentials['password'] || $user->status !== 'active') {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -104,28 +104,27 @@ class AuthController extends Controller
     }
 
     public function forgotPassword(Request $request): JsonResponse
-{
-    $request->validate([
-        'email' => ['required', 'email'],
-    ]);
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
 
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user) {
+        if (! $user) {
+            return response()->json(['message' => 'If this email exists, the password has been sent.']);
+        }
+
+        Mail::raw(
+            "Hello {$user->name},\n\nYour password is: {$user->password}\n\nMarketer Team",
+            function ($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Your Marketer Password');
+            }
+        );
+
         return response()->json(['message' => 'If this email exists, the password has been sent.']);
     }
-
-    \Illuminate\Support\Facades\Mail::raw(
-        "Hello {$user->name},\n\nYour password is: {$user->password}\n\nMarketer Team",
-        function ($message) use ($user) {
-            $message->to($user->email)
-                    ->subject('Your Marketer Password');
-        }
-    );
-    
-
-    return response()->json(['message' => 'If this email exists, the password has been sent.']);
-}
 
     public function logout(Request $request): JsonResponse
     {
