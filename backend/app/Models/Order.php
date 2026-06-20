@@ -10,14 +10,23 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Order extends Model
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_CONFIRMED = 'confirmed';
+
     public const STATUS_SHIPPED = 'shipped';
+
     public const STATUS_DELIVERED = 'delivered';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_APPEL_1 = 'appel_1';
+
     public const STATUS_APPEL_2 = 'appel_2';
+
     public const STATUS_APPEL_3 = 'appel_3';
+
     public const STATUS_REPORTE = 'reporte';
 
     protected $fillable = [
@@ -31,6 +40,7 @@ class Order extends Model
         'address',
         'subtotal',
         'shipping_fee',
+        'return_reason',
         'shipping_deduction',
         'total',
         'marketer_commission',
@@ -98,5 +108,4 @@ class Order extends Model
     {
         return $this->hasMany(WalletTransaction::class);
     }
-
 }

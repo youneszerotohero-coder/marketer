@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8005/api';
 
 export const STORAGE_URL = `${BASE_URL}/image?path=`;
 
@@ -37,8 +37,9 @@ export const authApi = {
     api.post('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/me'),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
 };
-
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 export const dashboardApi = {
   getStats: (params?: Record<string, string>) => api.get('/admin/dashboard', { params }),

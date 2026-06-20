@@ -3,6 +3,7 @@
 namespace App\Services\Wallet;
 
 use App\Models\Order;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
@@ -68,11 +69,16 @@ class WalletService
 
     public function createReturnFee(Order $order): ?WalletTransaction
     {
-        if (!in_array($order->status, [Order::STATUS_FAILED])) {
+        if (! in_array($order->status, [Order::STATUS_FAILED])) {
             return null;
         }
 
-        $setting = \App\Models\Setting::where('key', 'return_fee')->first();
+        // Don't charge marketer if product was broken
+        if ($order->return_reason === 'broken_product') {
+            return null;
+        }
+
+        $setting = Setting::where('key', 'return_fee')->first();
         $returnFee = $setting ? (float) $setting->value : 400.0; // Default to 400 if not set
 
         if ($returnFee <= 0) {

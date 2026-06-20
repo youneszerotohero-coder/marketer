@@ -12,25 +12,26 @@ class ShippingRatesSeeder extends Seeder
     public function run(): void
     {
         // 1. Load and decode JSON files using portable paths
-        $wilayasPath = base_path('../Wilaya-Of-Algeria-master/Wilaya_Of_Algeria.json');
-        $communesPath = base_path('../Wilaya-Of-Algeria-master/Commune_Of_Algeria.json');
+        $wilayasPath = base_path('storage/app/data/Wilaya_Of_Algeria.json');
+        $communesPath = base_path('storage/app/data/Commune_Of_Algeria.json');
 
-        if (!File::exists($wilayasPath) || !File::exists($communesPath)) {
+        if (! File::exists($wilayasPath) || ! File::exists($communesPath)) {
             $this->command->error("Wilayas or Communes JSON files not found at: {$wilayasPath} / {$communesPath}");
+
             return;
         }
 
         $wilayas = json_decode(File::get($wilayasPath), true);
         $communes = json_decode(File::get($communesPath), true);
 
-        $this->command->info('Seeding ' . count($wilayas) . ' wilayas...');
+        $this->command->info('Seeding '.count($wilayas).' wilayas...');
 
         // Track mapping of JSON wilaya 'id' -> DB ShippingRate 'id'
         $wilayaMap = [];
 
         foreach ($wilayas as $w) {
             $paddedCode = str_pad($w['code'], 2, '0', STR_PAD_LEFT);
-            
+
             // Default pricing logic
             $homePrice = 800;
             $deskPrice = 600;
@@ -82,9 +83,15 @@ class ShippingRatesSeeder extends Seeder
 
             // Correct any misspelled names from the JSON
             $nameFr = $w['name'];
-            if ($paddedCode === '19') $nameFr = 'Sétif';
-            if ($paddedCode === '20') $nameFr = 'Saïda';
-            if ($paddedCode === '47') $nameFr = 'Ghardaïa';
+            if ($paddedCode === '19') {
+                $nameFr = 'Sétif';
+            }
+            if ($paddedCode === '20') {
+                $nameFr = 'Saïda';
+            }
+            if ($paddedCode === '47') {
+                $nameFr = 'Ghardaïa';
+            }
 
             $rate = ShippingRate::updateOrCreate(
                 ['wilaya_code' => $paddedCode],
@@ -102,7 +109,7 @@ class ShippingRatesSeeder extends Seeder
             $wilayaMap[$w['id']] = $rate->id;
         }
 
-        $this->command->info('Seeding ' . count($communes) . ' communes...');
+        $this->command->info('Seeding '.count($communes).' communes...');
 
         // To make it faster, we can prepare the insert array
         $communeData = [];
@@ -110,7 +117,7 @@ class ShippingRatesSeeder extends Seeder
 
         foreach ($communes as $c) {
             $jsonWilayaId = $c['wilaya_id'];
-            if (!isset($wilayaMap[$jsonWilayaId])) {
+            if (! isset($wilayaMap[$jsonWilayaId])) {
                 continue;
             }
 

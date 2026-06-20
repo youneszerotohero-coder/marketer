@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class ResetPostponedOrders extends Command
 {
     protected $signature = 'orders:reset-postponed';
+
     protected $description = 'Reset postponed (reporté) orders back to pending when their postpone date has passed.';
 
     public function handle(): void

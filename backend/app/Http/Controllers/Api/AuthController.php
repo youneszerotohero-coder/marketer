@@ -7,7 +7,7 @@ use App\Models\RefreshToken;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
@@ -42,7 +42,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password) || $user->status !== 'active') {
+        if (! $user || $user->password !== $credentials['password'] || $user->status !== 'active') {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
             ->where('expires_at', '>', now())
             ->first();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json(['message' => 'Invalid refresh token'], 401);
         }
 
@@ -88,19 +88,42 @@ class AuthController extends Controller
 
         $user->name = $data['name'];
         $user->phone = $data['phone'] ?? null;
-        
+
         $profile = $user->profile ?? [];
         $profile['bank_number'] = $data['bank_number'] ?? null;
         $profile['wilaya'] = $data['wilaya'] ?? null;
         $user->profile = $profile;
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $user->password = $data['password'];
         }
 
         $user->save();
 
         return response()->json($user);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return response()->json(['message' => 'If this email exists, the password has been sent.']);
+        }
+
+        Mail::raw(
+            "Hello {$user->name},\n\nYour password is: {$user->password}\n\nMarketer Team",
+            function ($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Your Marketer Password');
+            }
+        );
+
+        return response()->json(['message' => 'If this email exists, the password has been sent.']);
     }
 
     public function logout(Request $request): JsonResponse

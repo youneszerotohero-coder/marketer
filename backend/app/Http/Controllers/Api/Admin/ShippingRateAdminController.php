@@ -12,6 +12,7 @@ class ShippingRateAdminController extends Controller
     public function index(): JsonResponse
     {
         $rates = ShippingRate::orderBy('wilaya_code')->get();
+
         return response()->json(['data' => $rates]);
     }
 

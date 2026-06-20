@@ -15,8 +15,8 @@ RUN apt-get update \
     && mkdir -p /opt/oracle \
     && curl -fsSL -o /tmp/instantclient-basiclite.zip https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basiclite-linux.x64-23.7.0.25.01.zip \
     && curl -fsSL -o /tmp/instantclient-sdk.zip https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-sdk-linux.x64-23.7.0.25.01.zip \
-    && unzip -q /tmp/instantclient-basiclite.zip -d /opt/oracle \
-    && unzip -q /tmp/instantclient-sdk.zip -d /opt/oracle \
+    && unzip -o -q /tmp/instantclient-basiclite.zip -d /opt/oracle \
+    && unzip -o -q /tmp/instantclient-sdk.zip -d /opt/oracle \
     && rm /tmp/instantclient-basiclite.zip /tmp/instantclient-sdk.zip \
     && ln -s /opt/oracle/instantclient_* /opt/oracle/instantclient \
     && echo /opt/oracle/instantclient > /etc/ld.so.conf.d/oracle-instantclient.conf \

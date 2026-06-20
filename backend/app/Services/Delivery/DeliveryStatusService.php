@@ -7,13 +7,11 @@ use App\Models\Order;
 
 class DeliveryStatusService
 {
-    public function __construct(private readonly DeliveryGateway $delivery)
-    {
-    }
+    public function __construct(private readonly DeliveryGateway $delivery) {}
 
     public function sync(Order $order): Order
     {
-        if (!$order->tracking_number) {
+        if (! $order->tracking_number) {
             return $order->loadMissing('deliveryShipment');
         }
 

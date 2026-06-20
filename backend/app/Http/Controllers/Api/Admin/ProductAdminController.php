@@ -53,7 +53,7 @@ class ProductAdminController extends Controller
                     $path = $file->store('products', 'public');
                     $product->images()->create([
                         'path' => $path,
-                        'sort_order' => $index
+                        'sort_order' => $index,
                     ]);
                     $newPaths[$index] = $path;
                 }
@@ -109,7 +109,7 @@ class ProductAdminController extends Controller
                 $path = $file->store('products', 'public');
                 $product->images()->create([
                     'path' => $path,
-                    'sort_order' => $product->images()->max('sort_order') + 1 + $index
+                    'sort_order' => $product->images()->max('sort_order') + 1 + $index,
                 ]);
                 $newPaths[$index] = $path;
             }
@@ -122,7 +122,7 @@ class ProductAdminController extends Controller
             }
         } elseif ($request->has('main_image_index') && isset($newPaths[$request->input('main_image_index')])) {
             $product->update(['main_image_path' => $newPaths[$request->input('main_image_index')]]);
-        } elseif (!$product->main_image_path && count($newPaths) > 0) {
+        } elseif (! $product->main_image_path && count($newPaths) > 0) {
             $product->update(['main_image_path' => $newPaths[0]]);
         }
 
@@ -135,7 +135,9 @@ class ProductAdminController extends Controller
             $product->variants()->whereNotIn('sku', $incomingSkus)->update(['status' => 'archived']);
 
             foreach ($incomingVariants as $variantData) {
-                if (empty($variantData['sku'])) continue;
+                if (empty($variantData['sku'])) {
+                    continue;
+                }
                 $product->variants()->updateOrCreate(
                     ['sku' => $variantData['sku']],
                     [

@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use App\Services\Delivery\DeliveryGateway;
 use App\Services\Delivery\MockDeliveryGateway;
 use App\Services\Delivery\ZrExpressGateway;
-use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ShippingRate extends Model
 {
@@ -25,7 +26,7 @@ class ShippingRate extends Model
         'desk_active' => 'boolean',
     ];
 
-    public function communes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function communes(): HasMany
     {
         return $this->hasMany(Commune::class, 'shipping_rate_id');
     }

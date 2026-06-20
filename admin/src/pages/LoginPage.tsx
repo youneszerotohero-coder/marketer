@@ -8,6 +8,10 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgot, setShowForgot] = useState(false);
+const [forgotEmail, setForgotEmail] = useState('');
+const [forgotLoading, setForgotLoading] = useState(false);
+const [forgotMessage, setForgotMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +33,19 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleForgotPassword = async () => {
+  setForgotLoading(true);
+  setForgotMessage('');
+  try {
+    await authApi.forgotPassword(forgotEmail);
+    setForgotMessage('Password sent to your email.');
+  } catch (err: any) {
+    setForgotMessage(err.response?.data?.message || 'Something went wrong.');
+  } finally {
+    setForgotLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -95,6 +112,38 @@ export const LoginPage: React.FC = () => {
               )}
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            <button
+              type="button"
+              onClick={() => { setShowForgot(!showForgot); setForgotMessage(''); }}
+              className="w-full text-center text-xs text-primary hover:underline mt-2"
+            >
+              Forgot password?
+            </button>
+
+            {showForgot && (
+              <div className="mt-4 p-4 bg-background border border-border rounded-xl space-y-3">
+                <p className="text-sm font-medium text-text">Enter your email to receive your password</p>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+                  placeholder="your@email.com"
+                />
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotLoading || !forgotEmail}
+                  className="w-full px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
+                >
+                  {forgotLoading ? 'Sending...' : 'Send Password'}
+                </button>
+                {forgotMessage && (
+                  <p className="text-xs text-center text-success">{forgotMessage}</p>
+                )}
+              </div>
+            )}
           </form>
 
           <p className="text-center text-xs text-text-muted mt-6">
