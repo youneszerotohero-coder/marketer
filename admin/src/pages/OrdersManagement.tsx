@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Loader2, RefreshCw, Calendar, LayoutGrid } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Download, Loader2, RefreshCw, Calendar, LayoutGrid, Copy, CheckCircle, XCircle } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
-import { ordersApi, usersApi, deliveryApi, STORAGE_URL } from '../services/api';
+import api, { ordersApi, usersApi, deliveryApi, STORAGE_URL } from '../services/api';
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
@@ -52,6 +52,14 @@ const getLocalTodayString = () => {
   return `${year}-${month}-${day}`;
 };
 
+type ToastType = 'success' | 'error';
+
+interface Toast {
+  id: number;
+  type: ToastType;
+  message: string;
+}
+
 export const OrdersManagement: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +74,9 @@ export const OrdersManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
   const [search, setSearch] = useState('');
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [duplicatingOrderId, setDuplicatingOrderId] = useState<number | null>(null);
+  const toastIdRef = useRef(0);
   // For inline postpone date picker
   const [postponeDateMap, setPostponeDateMap] = useState<Record<number, string>>({});
 
@@ -79,6 +90,12 @@ export const OrdersManagement: React.FC = () => {
 
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
+
+  const addToast = useCallback((type: ToastType, message: string) => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }, []);
 
   const loadOrders = useCallback((p = 1, status = statusFilter, s = search, append = false) => {
     setLoading(true);
@@ -237,8 +254,42 @@ export const OrdersManagement: React.FC = () => {
     }
   };
 
+  const handleDuplicate = async (order: any) => {
+    if (!window.confirm('Are you sure you want to duplicate this order?')) return;
+
+    setDuplicatingOrderId(order.id);
+    try {
+      await api.post(`/admin/orders/${order.id}/duplicate`);
+      addToast('success', 'Order duplicated successfully');
+      loadOrders(page, statusFilter, search);
+    } catch (e: any) {
+      addToast('error', e.response?.data?.message || 'Failed to duplicate order');
+    } finally {
+      setDuplicatingOrderId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Toast Notifications */}
+      <div className="fixed top-6 right-6 z-50 space-y-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white transition-all duration-300 animate-in slide-in-from-right-4 ${
+              t.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+            }`}
+          >
+            {t.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            ) : (
+              <XCircle className="w-4 h-4 flex-shrink-0" />
+            )}
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Orders Management</h1>
@@ -280,11 +331,12 @@ export const OrdersManagement: React.FC = () => {
                   <th className="p-4 font-medium">Total</th>
                   <th className="p-4 font-medium">Shipping Method</th>
                   <th className="p-4 font-medium">Status</th>
+                  {userRole === 'admin' && <th className="p-4 font-medium">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
+                  <tr><td colSpan={userRole === 'admin' ? 9 : 8} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
                 ) : orders.map((order) => (
                   <React.Fragment key={order.id}>
                     <tr onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
@@ -352,11 +404,28 @@ export const OrdersManagement: React.FC = () => {
                           ))}
                         </select>
                       </td>
+                      {userRole === 'admin' && (
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(order)}
+                            disabled={duplicatingOrderId === order.id}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 border border-border bg-surface text-text-muted hover:bg-background rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                          >
+                            {duplicatingOrderId === order.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                            Duplicate
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {/* Postpone date row — appears when admin selects "Reporté" */}
                     {order.id in postponeDateMap && (
                       <tr className="bg-indigo-500/5 border-b border-indigo-500/20" onClick={(e) => e.stopPropagation()}>
-                        <td colSpan={8} className="px-4 py-3">
+                        <td colSpan={userRole === 'admin' ? 9 : 8} className="px-4 py-3">
                           <div className="flex items-center gap-3 flex-wrap">
                             <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
                             <span className="text-sm font-medium text-indigo-600">Date de report requise :</span>

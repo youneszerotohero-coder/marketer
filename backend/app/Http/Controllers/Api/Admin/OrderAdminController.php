@@ -11,6 +11,8 @@ use App\Services\Delivery\DeliveryGateway;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderAdminController extends Controller
 {
@@ -183,6 +185,48 @@ class OrderAdminController extends Controller
         $order->update($updateData);
 
         return response()->json($order->load(['items.variant.product', 'commissionTransaction', 'deliveryShipment']));
+    }
+
+    public function duplicate(Order $order): JsonResponse
+    {
+        $order->load('items');
+
+        $newOrder = DB::transaction(function () use ($order) {
+            do {
+                $reference = 'ORD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
+            } while (Order::where('reference', $reference)->exists());
+
+            $duplicate = Order::create([
+                'reference' => $reference,
+                'client_name' => $order->client_name,
+                'client_phone' => $order->client_phone,
+                'wilaya' => $order->wilaya,
+                'commune' => $order->commune,
+                'address' => $order->address,
+                'delivery_type' => $order->delivery_type,
+                'subtotal' => $order->subtotal,
+                'shipping_fee' => $order->shipping_fee,
+                'total' => $order->total,
+                'marketer_commission' => $order->marketer_commission,
+                'marketer_id' => $order->marketer_id,
+                'notes' => $order->notes,
+                'status' => Order::STATUS_PENDING,
+            ]);
+
+            $duplicate->items()->createMany($order->items->map(fn ($item) => [
+                'product_variant_id' => $item->product_variant_id,
+                'product_name' => $item->product_name,
+                'sku' => $item->sku,
+                'quantity' => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'unit_commission' => $item->unit_commission,
+                'line_total' => $item->line_total,
+            ])->all());
+
+            return $duplicate;
+        });
+
+        return response()->json($newOrder->load(['items.variant.product']), 201);
     }
 
     public function assignConfirmatrice(Request $request, Order $order): JsonResponse

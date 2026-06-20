@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('refresh', [AuthController::class, 'refresh']);
 });
 
@@ -84,6 +85,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Orders
         Route::get('orders', [OrderAdminController::class, 'index']);
+        Route::post('orders/{order}/duplicate', [OrderAdminController::class, 'duplicate']);
         Route::patch('orders/{order}/status', [OrderAdminController::class, 'updateStatus']);
         Route::patch('orders/{order}', [OrderAdminController::class, 'update']);
         Route::patch('orders/{order}/assign-confirmatrice', [OrderAdminController::class, 'assignConfirmatrice']);

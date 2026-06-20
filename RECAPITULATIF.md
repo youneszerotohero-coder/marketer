@@ -56,3 +56,56 @@ Ce document résume l'ensemble des travaux et modifications apportés pour conne
 * **Création de Commande** : Remplacement de la soumission factice par un véritable appel `POST /api/orders` afin que les commandes saisies atterrissent bien dans l'interface de gestion admin.
 * **Page Profil** : Affichage en direct des statistiques (ventes totales, gains, taux de livraison) via `GET /api/marketer/stats`.
 * **Page Portefeuille & Commandes** : Historique et données rechargés à chaque ouverture grâce aux endpoints `wallet` et `orders`.
+
+
+---
+
+## 4. Modifications 
+
+### ✅ Task 1 — Intégration ZR Express API
+- Insertion des credentials ZR Express dans la table `settings` (DB) :
+  - `delivery.provider` = `zr_express`
+  - `zr_express_tenant_id`
+  - `zr_express_secret_key`
+  - `zr_express_base_url`
+  - `zr_express_api_version`
+- Le gateway `ZrExpressGateway.php` lit ces credentials depuis la DB via le modèle `Setting`.
+- Le système bascule automatiquement entre Mock et ZR via `AppServiceProvider.php`.
+- **Note :** L'API ZR Express retourne une erreur 525 (SSL down côté ZR). Le système fonctionne en mode fallback (tarifs hardcodés) jusqu'à résolution côté ZR Express.
+
+### ✅ Task 2 — Ne pas pénaliser le marketer si produit cassé
+- Migration ajoutée : `add_return_reason_to_orders_table`
+  - Nouveau champ `return_reason` (nullable) sur la table `orders`
+  - Valeurs possibles : `customer_refused`, `broken_product`, `wrong_address`, `other`
+- `WalletService::createReturnFee()` modifié : si `return_reason === 'broken_product'`, aucune pénalité n'est appliquée.
+- `OrderAdminController::updateStatus()` modifié :
+  - Accepte le champ `return_reason` dans la validation
+  - Sauvegarde `return_reason` uniquement quand le statut est `failed`
+- `Order::$fillable` mis à jour pour inclure `return_reason`.
+
+### ✅ Task 3 — Duplication de commande 
+- **Backend :** Méthode `duplicate()` ajoutée dans `OrderAdminController.php`
+  - Copie tous les champs de la commande originale
+  - Génère une nouvelle référence unique
+  - Copie tous les `OrderItems` sans décrémenter le stock
+  - Route : `POST /api/admin/orders/{order}/duplicate` (admin only)
+- **Frontend React :** Bouton "Duplicate" déjà présent dans `OrdersManagement.tsx`
+  - Confirmation dialog avant duplication
+  - Toast success/error après l'action
+  - Refresh automatique de la liste
+
+### ✅ Task 4 — Suppression du hashing + Forgot Password
+- **Suppression du hashing :**
+  - `User.php` : suppression de `'password' => 'hashed'` dans `casts()`
+  - `AuthController::login()` : comparaison directe `$user->password === $credentials['password']`
+  - ⚠️ Les mots de passe sont maintenant stockés en plain text (décision client)
+- **Forgot Password :**
+  - Nouvelle méthode `AuthController::forgotPassword()` : envoie le mot de passe en plain text par email
+  - Route publique ajoutée : `POST /api/auth/forgot-password`
+  - Email configuré via Mailtrap SMTP (`.env`)
+  - **Frontend React :** Bouton "Forgot password?" ajouté dans `LoginPage.tsx` avec un formulaire inline
+- **Configuration mail `.env` :**
+  - `MAIL_MAILER=smtp`
+  - `MAIL_HOST=sandbox.smtp.mailtrap.io`
+  - `MAIL_PORT=2525`
+  - Credentials Mailtrap configurés
