@@ -257,6 +257,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final totalSales = _stats?['total_sales']?.toString() ?? '0';
     final pending = _stats?['pending_orders']?.toString() ?? '0';
     final confirmed = _stats?['confirmed_orders']?.toString() ?? '0';
+    final shipped = _stats?['shipped_orders']?.toString() ?? '0';
     final delivered = _stats?['delivered_orders']?.toString() ?? '0';
     final retourFacture = _stats?['retour_facture_orders']?.toString() ?? '0';
     final retourExonere = _stats?['retour_exonere_orders']?.toString() ?? '0';
@@ -281,13 +282,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         _buildAnalyticsCard(
           theme,
-          'Confirmed'.tr,
-          confirmed,
-          Icons.check_circle_outline,
-          const Color(0xFF0F766E),
-        ),
-        _buildAnalyticsCard(
-          theme,
           'Pending Orders'.tr,
           pending,
           Icons.hourglass_empty,
@@ -295,9 +289,23 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         _buildAnalyticsCard(
           theme,
+          'Confirmed'.tr,
+          confirmed,
+          Icons.check_circle_outline,
+          const Color(0xFF0F766E),
+        ),
+        _buildAnalyticsCard(
+          theme,
+          'In Delivery'.tr,
+          shipped,
+          Icons.local_shipping_outlined,
+          const Color(0xFF8B5CF6),
+        ),
+        _buildAnalyticsCard(
+          theme,
           'Delivered'.tr,
           delivered,
-          Icons.local_shipping_outlined,
+          Icons.done_all_outlined,
           const Color(0xFF10B981),
           subText: '${'Delivery Rate'.tr}: $rate',
         ),
