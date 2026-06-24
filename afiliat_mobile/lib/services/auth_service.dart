@@ -54,6 +54,35 @@ class AuthService {
     return data;
   }
 
+  // ─── Forgot Password ──────────────────────────────────────────────────────
+  Future<void> forgotPassword(String email) async {
+    await _api.post(
+      '/auth/forgot-password',
+      body: {'email': email},
+    );
+  }
+
+  // ─── Verify Code ──────────────────────────────────────────────────────────
+  Future<void> verifyCode(String email, String token) async {
+    await _api.post(
+      '/auth/verify-code',
+      body: {'email': email, 'token': token},
+    );
+  }
+
+  // ─── Reset Password ───────────────────────────────────────────────────────
+  Future<void> resetPassword(String email, String token, String password, String passwordConfirmation) async {
+    await _api.post(
+      '/auth/reset-password',
+      body: {
+        'email': email,
+        'token': token,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
+  }
+
   // ─── Logout ───────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {

@@ -19,8 +19,10 @@ class MarketerStatsController extends Controller
         $totalSales = (clone $orders)->count();
         $pendingOrders = (clone $orders)->where('status', Order::STATUS_PENDING)->count();
         $confirmedOrders = (clone $orders)->where('status', Order::STATUS_CONFIRMED)->count();
+        $shippedOrders = (clone $orders)->where('status', Order::STATUS_SHIPPED)->count();
         $deliveredOrders = (clone $orders)->where('status', Order::STATUS_DELIVERED)->count();
-        $failedOrders = (clone $orders)->where('status', Order::STATUS_FAILED)->count();
+        $retourFactureOrders = (clone $orders)->where('status', Order::STATUS_RETURN_CHARGED)->count();
+        $retourExonereOrders = (clone $orders)->where('status', Order::STATUS_RETURN_EXEMPT)->count();
         $cancelledOrders = (clone $orders)->where('status', Order::STATUS_CANCELLED)->count();
 
         $wallet = $wallet->balanceFor($user);
@@ -29,8 +31,10 @@ class MarketerStatsController extends Controller
             'total_sales' => $totalSales,
             'pending_orders' => $pendingOrders,
             'confirmed_orders' => $confirmedOrders,
+            'shipped_orders' => $shippedOrders,
             'delivered_orders' => $deliveredOrders,
-            'failed_orders' => $failedOrders,
+            'retour_facture_orders' => $retourFactureOrders,
+            'retour_exonere_orders' => $retourExonereOrders,
             'cancelled_orders' => $cancelledOrders,
             'delivery_rate' => $totalSales > 0 ? round(($deliveredOrders / $totalSales) * 100, 1) : 0,
             'wallet' => $wallet,

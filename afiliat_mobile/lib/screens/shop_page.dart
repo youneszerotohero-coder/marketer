@@ -112,9 +112,13 @@ class _ShopPageState extends State<ShopPage> {
       if (_priceRange.start > 0) queryParams['min_price'] = _priceRange.start.round().toString();
       if (_priceRange.end < 50000) queryParams['max_price'] = _priceRange.end.round().toString();
       
-      if (_selectedSort == 'Newest') queryParams['sort'] = 'newest';
-      else if (_selectedSort == 'Price: Low to High') queryParams['sort'] = 'price_asc';
-      else if (_selectedSort == 'Price: High to Low') queryParams['sort'] = 'price_desc';
+      if (_selectedSort == 'Newest') {
+        queryParams['sort'] = 'newest';
+      } else if (_selectedSort == 'Price: Low to High') {
+        queryParams['sort'] = 'price_asc';
+      } else if (_selectedSort == 'Price: High to Low') {
+        queryParams['sort'] = 'price_desc';
+      }
 
       final data = await ApiService.instance.get('/products', query: queryParams);
       if (mounted) {
@@ -236,7 +240,7 @@ class _ShopPageState extends State<ShopPage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -267,7 +271,7 @@ class _ShopPageState extends State<ShopPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF97316).withOpacity(0.3),
+                color: const Color(0xFFF97316).withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -332,14 +336,14 @@ class _ShopPageState extends State<ShopPage> {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFF97316).withOpacity(0.3),
+                              color: const Color(0xFFF97316).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
                           ]
                         : [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
@@ -359,7 +363,7 @@ class _ShopPageState extends State<ShopPage> {
                           ? Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                               ),
                             )
                           : null,
@@ -407,14 +411,15 @@ class _ShopPageState extends State<ShopPage> {
         
         final price = defaultVariant != null ? double.tryParse(defaultVariant['sale_price'].toString()) ?? 0.0 : 0.0;
         final commission = defaultVariant != null ? double.tryParse(defaultVariant['commission_value'].toString()) ?? 0.0 : 0.0;
+        final inStock = product['in_stock'] != false; // defaults true if null
 
         return ProductCard(
           brand: brandName,
           rating: '4.5', // Placeholder, API might not have it
           title: title,
           price: 'DZD $price',
-          stockText: 'In Stock'.tr,
-          inStock: true,
+          stockText: inStock ? 'En stock'.tr : 'Rupture de stock'.tr,
+          inStock: inStock,
           commission: '+ DZD $commission',
           imageUrl: imageUrl,
           onTap: () {
@@ -425,6 +430,15 @@ class _ShopPageState extends State<ShopPage> {
           },
           onAddToCart: () {
             if (defaultVariant == null) {
+              return;
+            }
+            if (!inStock) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Product is out of stock'.tr),
+                  backgroundColor: Colors.red,
+                ),
+              );
               return;
             }
             final item = CartItemModel(

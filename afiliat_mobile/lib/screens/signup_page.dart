@@ -16,32 +16,43 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _loading = false;
   String _error = '';
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       setState(() => _error = 'Please fill in all fields.');
       return;
     }
     if (password.length < 8) {
       setState(() => _error = 'Password must be at least 8 characters.');
+      return;
+    }
+    if (password != confirmPassword) {
+      setState(() => _error = 'Passwords do not match.');
       return;
     }
 
@@ -50,7 +61,7 @@ class _SignupPageState extends State<SignupPage> {
       _error = '';
     });
     try {
-      await AuthService.instance.register(name, email, password);
+      await AuthService.instance.register(name, email, password, phone: phone);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const MainShell()),
@@ -106,7 +117,7 @@ class _SignupPageState extends State<SignupPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -129,7 +140,7 @@ class _SignupPageState extends State<SignupPage> {
                       Text(
                         'Sign up to get started'.tr,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                         ),
@@ -153,7 +164,7 @@ class _SignupPageState extends State<SignupPage> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
+                        color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -167,7 +178,7 @@ class _SignupPageState extends State<SignupPage> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.08),
+                            color: Colors.red.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -201,6 +212,17 @@ class _SignupPageState extends State<SignupPage> {
                       ),
                       const SizedBox(height: 20),
                       CustomTextField(
+                        label: 'Phone Number'.tr,
+                        hint: 'Enter your phone number'.tr,
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        prefixIcon: Icon(
+                          Icons.phone_outlined,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
                         label: 'Password'.tr,
                         hint: 'Create a password'.tr,
                         controller: _passwordController,
@@ -218,6 +240,28 @@ class _SignupPageState extends State<SignupPage> {
                           ),
                           onPressed: () => setState(
                             () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
+                        label: 'Confirm Password'.tr,
+                        hint: 'Confirm your password'.tr,
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureConfirmPassword = !_obscureConfirmPassword,
                           ),
                         ),
                       ),

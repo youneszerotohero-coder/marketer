@@ -8,6 +8,15 @@ export const Settings: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [limit, setLimit] = useState(20);
+  const [accountSaving, setAccountSaving] = useState(false);
+  const [accountForm, setAccountForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    passwordConfirmation: '',
+    role: 'confirmatrice',
+    status: 'active'
+  });
 
   const [accountsList, setAccountsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -128,7 +137,65 @@ export const Settings: React.FC = () => {
 
   const openModal = (account?: any) => {
     setSelectedAccount(account || null);
+    if (account) {
+      setAccountForm({
+        name: account.name || '',
+        email: account.email || '',
+        password: '',
+        passwordConfirmation: '',
+        role: account.role || 'confirmatrice',
+        status: account.status || 'active'
+      });
+    } else {
+      setAccountForm({
+        name: '',
+        email: '',
+        password: '',
+        passwordConfirmation: '',
+        role: 'confirmatrice',
+        status: 'active'
+      });
+    }
     setIsModalOpen(true);
+  };
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (accountForm.password && accountForm.password !== accountForm.passwordConfirmation) {
+      alert("Passwords do not match.");
+      return;
+    }
+    setAccountSaving(true);
+    try {
+      const payload: any = {
+        name: accountForm.name,
+        email: accountForm.email,
+        role: accountForm.role,
+        status: accountForm.status.toLowerCase(),
+      };
+      if (accountForm.password) {
+        payload.password = accountForm.password;
+      }
+      
+      if (selectedAccount) {
+        await api.put(`/admin/users/${selectedAccount.id}`, payload);
+      } else {
+        if (!accountForm.password) {
+          alert("Password is required for new accounts.");
+          setAccountSaving(false);
+          return;
+        }
+        await api.post('/admin/users', payload);
+      }
+      setIsModalOpen(false);
+      fetchData();
+      alert("Account saved successfully!");
+    } catch (error: any) {
+      console.error('Failed to save account:', error);
+      alert(error.response?.data?.message || Object.values(error.response?.data?.errors ?? {}).flat().join('\n') || "Failed to save account");
+    } finally {
+      setAccountSaving(false);
+    }
   };
 
   return (
@@ -492,29 +559,61 @@ export const Settings: React.FC = () => {
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedAccount ? "Edit Account" : "Add New Account"}>
-        <form className="space-y-4">
+        <form onSubmit={handleSaveAccount} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text mb-1">Full Name</label>
-            <input type="text" defaultValue={selectedAccount?.name} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="John Doe" />
+            <input 
+              type="text" 
+              value={accountForm.name} 
+              onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })} 
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+              placeholder="John Doe" 
+              required 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1">Email Address</label>
-            <input type="email" defaultValue={selectedAccount?.email} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="john@example.com" />
+            <input 
+              type="email" 
+              value={accountForm.email} 
+              onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })} 
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+              placeholder="john@example.com" 
+              required 
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1">{selectedAccount ? "New Password (Optional)" : "Password"}</label>
-              <input type="password" placeholder="••••••••" className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+              <input 
+                type="password" 
+                value={accountForm.password} 
+                onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })} 
+                placeholder="••••••••" 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+                required={!selectedAccount}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1">Confirm Password</label>
-              <input type="password" placeholder="••••••••" className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+              <input 
+                type="password" 
+                value={accountForm.passwordConfirmation} 
+                onChange={(e) => setAccountForm({ ...accountForm, passwordConfirmation: e.target.value })} 
+                placeholder="••••••••" 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+                required={!!accountForm.password}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1">Role</label>
-              <select defaultValue={selectedAccount?.role || 'confirmatrice'} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
+              <select 
+                value={accountForm.role} 
+                onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value })} 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+              >
                 <option value="admin">Admin</option>
                 <option value="confirmatrice">Confirmatrice</option>
                 <option value="marketer">Marketer</option>
@@ -522,9 +621,13 @@ export const Settings: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1">Status</label>
-              <select defaultValue={selectedAccount?.status || 'Active'} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+              <select 
+                value={accountForm.status} 
+                onChange={(e) => setAccountForm({ ...accountForm, status: e.target.value })} 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
           </div>
@@ -532,11 +635,8 @@ export const Settings: React.FC = () => {
             <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors">
               Cancel
             </button>
-            <button type="button" onClick={() => {
-              // Add API call here later
-              setIsModalOpen(false);
-              fetchData();
-            }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+            <button type="submit" disabled={accountSaving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2">
+              {accountSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               {selectedAccount ? "Save Changes" : "Create Account"}
             </button>
           </div>

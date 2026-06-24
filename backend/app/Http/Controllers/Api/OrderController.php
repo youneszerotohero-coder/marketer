@@ -58,6 +58,10 @@ class OrderController extends Controller
                     abort(422, "Variant SKU {$variant->sku} is not active.");
                 }
 
+                if (!$variant->product->in_stock) {
+                    abort(422, "Le produit {$variant->product->name} est en rupture de stock.");
+                }
+
                 $lineTotal = (float) $variant->sale_price * $item['quantity'];
                 $lineCommission = $variant->commissionFor($item['quantity']);
                 $subtotal += $lineTotal;

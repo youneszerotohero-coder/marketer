@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { authApi } from '../services/api';
+import { Link } from 'react-router-dom';
+
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -63,7 +65,12 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Password</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-text">Password</label>
+                <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:text-primary-hover transition-colors">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}

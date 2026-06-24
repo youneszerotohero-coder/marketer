@@ -5,6 +5,7 @@ import '../widgets/primary_button.dart';
 import 'main_shell.dart';
 import '../l10n/app_translations.dart';
 import 'signup_page.dart';
+import 'forgot_password_page.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 
@@ -97,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -120,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
                       Text(
                         'Sign in to continue to your dashboard'.tr,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                         ),
@@ -144,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
+                        color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -158,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.08),
+                            color: Colors.red.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -201,7 +202,24 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                          ),
+                          child: Text(
+                            'Forgot Password?'.tr,
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       PrimaryButton(
                         text: _loading ? 'Signing in...'.tr : 'Sign In'.tr,
                         onPressed: _login,

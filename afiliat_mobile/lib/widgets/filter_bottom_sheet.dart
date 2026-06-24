@@ -112,9 +112,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: const Color(0xFFF97316),
-              inactiveTrackColor: Colors.orange.withOpacity(0.1),
+              inactiveTrackColor: Colors.orange.withValues(alpha: 0.1),
               thumbColor: const Color(0xFFF97316),
-              overlayColor: const Color(0xFFF97316).withOpacity(0.2),
+              overlayColor: const Color(0xFFF97316).withValues(alpha: 0.2),
               trackHeight: 6,
             ),
             child: RangeSlider(
@@ -155,7 +155,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   });
                 },
                 backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                selectedColor: const Color(0xFFF97316).withOpacity(0.15),
+                selectedColor: const Color(0xFFF97316).withValues(alpha: 0.15),
                 labelStyle: TextStyle(
                   color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -237,7 +237,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 4,
-                shadowColor: const Color(0xFFF97316).withOpacity(0.4),
+                shadowColor: const Color(0xFFF97316).withValues(alpha: 0.4),
               ),
               child: Text(
                 'Apply Filters'.tr,

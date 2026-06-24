@@ -68,7 +68,7 @@ class WalletService
 
     public function createReturnFee(Order $order): ?WalletTransaction
     {
-        if (!in_array($order->status, [Order::STATUS_FAILED])) {
+        if (!in_array($order->status, [Order::STATUS_RETURN_CHARGED])) {
             return null;
         }
 

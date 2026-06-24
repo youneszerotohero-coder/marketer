@@ -8,17 +8,26 @@ import { WalletManagement } from './pages/WalletManagement';
 import { Settings } from './pages/Settings';
 import { LoginPage } from './pages/LoginPage';
 import { ShippingRates } from './pages/ShippingRates';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { VerifyCode } from './pages/VerifyCode';
+import { ResetPassword } from './pages/ResetPassword';
 
 // Guard: redirect to /login if no token stored
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('access_token');
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+  const isAuthenticated = token && token !== 'undefined' && token !== 'null';
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 // Guard: allow only admins
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  let user = null;
+  try {
+    user = userStr && userStr !== 'undefined' && userStr !== 'null' ? JSON.parse(userStr) : null;
+  } catch (e) {
+    user = null;
+  }
   return user?.role === 'admin' ? <>{children}</> : <Navigate to="/" replace />;
 };
 
@@ -27,6 +36,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-code" element={<VerifyCode />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/"
           element={

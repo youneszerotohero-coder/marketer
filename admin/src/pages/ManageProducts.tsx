@@ -189,6 +189,11 @@ export const ManageProducts: React.FC = () => {
            if (idx !== -1) formData.append('main_image_index', idx.toString());
         }
       }
+
+      // in_stock: checkbox sends '1' when checked, nothing when unchecked — normalize to '0' or '1'
+      if (!formData.has('in_stock')) {
+        formData.append('in_stock', '0');
+      }
     } else {
       if (categoryImageFile && !categoryImageDeleted) {
         formData.append('image', categoryImageFile);
@@ -315,6 +320,7 @@ export const ManageProducts: React.FC = () => {
                   <th className="p-4 font-medium">Category & Brand</th>
                   <th className="p-4 font-medium">Price</th>
                   <th className="p-4 font-medium">Commission</th>
+                  <th className="p-4 font-medium">Stock</th>
                   <th className="p-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -341,6 +347,15 @@ export const ManageProducts: React.FC = () => {
                     </td>
                     <td className="p-4 text-sm font-bold text-text">{getProductPrice(product)}</td>
                     <td className="p-4 text-sm font-medium text-success">{getProductCommission(product)}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${
+                        product.in_stock !== false
+                          ? 'bg-success/10 text-success border-success/20'
+                          : 'bg-danger/10 text-danger border-danger/20'
+                      }`}>
+                        {product.in_stock !== false ? 'En stock' : 'Rupture'}
+                      </span>
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors" title="Edit">
@@ -491,6 +506,22 @@ export const ManageProducts: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-text mb-1">Product Name</label>
                 <input type="text" name="name" defaultValue={selectedItem?.name} required className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="e.g. Wireless Headphones" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-background border border-border rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-text">En stock</p>
+                  <p className="text-xs text-text-muted">Afficher le badge disponibilité sur les cartes produit</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="in_stock"
+                    value="1"
+                    defaultChecked={selectedItem?.in_stock !== false}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
+                </label>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text mb-1">Description</label>

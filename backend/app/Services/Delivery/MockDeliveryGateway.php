@@ -52,4 +52,9 @@ class MockDeliveryGateway implements DeliveryGateway
             ['wilaya' => 'Oran', 'home' => 800, 'desk' => 600],
         ];
     }
+
+    public function cancelShipment(string $externalId): void
+    {
+        // Mock cancellation
+    }
 }

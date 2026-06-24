@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\MarketerStatsController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Auth (public) ───────────────────────────────────────────────────────────
@@ -23,6 +24,9 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     Route::post('refresh', [AuthController::class, 'refresh']);
+    Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
+    Route::post('verify-code', [ForgotPasswordController::class, 'verifyCode']);
+    Route::post('reset-password', [ForgotPasswordController::class, 'resetPassword']);
 });
 
 // Image Proxy to avoid CORS issues on Flutter Web (CanvasKit)
@@ -65,6 +69,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('orders', [OrderWorkflowController::class, 'index']);
         Route::patch('orders/{order}/status', [OrderWorkflowController::class, 'updateStatus']);
         Route::patch('orders/{order}', [OrderWorkflowController::class, 'update']);
+        // ZR Express features shared with admin
+        Route::post('orders/bulk-ship', [OrderAdminController::class, 'bulkShip']);
+        Route::post('orders/{order}/delivery-status', [DeliveryController::class, 'syncOrder']);
     });
 
     Route::get('admin/dashboard', DashboardController::class)->middleware('role:admin,confirmatrice');
@@ -76,6 +83,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('users/{user}/stats', [UserController::class, 'stats']);
 
         // Orders
+        Route::post('orders/bulk-ship', [OrderAdminController::class, 'bulkShip']);
+        Route::post('orders/bulk-delete', [OrderAdminController::class, 'bulkDelete']);
+        Route::delete('orders/{order}', [OrderAdminController::class, 'destroy']);
         Route::get('orders', [OrderAdminController::class, 'index']);
         Route::patch('orders/{order}/status', [OrderAdminController::class, 'updateStatus']);
         Route::patch('orders/{order}', [OrderAdminController::class, 'update']);

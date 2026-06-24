@@ -15,6 +15,11 @@ class Product extends Model
         'description',
         'main_image_path',
         'status',
+        'in_stock',
+    ];
+
+    protected $casts = [
+        'in_stock' => 'boolean',
     ];
 
     public function category(): BelongsTo

@@ -37,12 +37,12 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -87,7 +87,7 @@ class ProductCard extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withOpacity(0.3),
+                              Colors.black.withValues(alpha: 0.3),
                               Colors.transparent,
                             ],
                           ),
@@ -110,7 +110,7 @@ class ProductCard extends StatelessWidget {
                             BoxShadow(
                               color: const Color(
                                 0xFFF97316,
-                              ).withOpacity(0.3),
+                              ).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -137,21 +137,41 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Add to Cart Button
+                    // Stock Badge at top-left
                     Positioned(
-                      top: 6,
-                      left: 6,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.add_shopping_cart,
-                          color: Colors.white,
-                          size: 20,
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        tooltip: 'Add to Cart'.tr,
-                        onPressed: onAddToCart,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black.withOpacity(0.3),
-                          padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: inStock
+                              ? const Color(0xFF065F46).withValues(alpha: 0.85)
+                              : const Color(0xFF9B1C1C).withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              inStock
+                                  ? Icons.check_circle_outline
+                                  : Icons.cancel_outlined,
+                              color: Colors.white,
+                              size: 10,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              stockText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -233,7 +253,7 @@ class ProductCard extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: onTap,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF97316),
+                                backgroundColor: inStock ? const Color(0xFFF97316) : Colors.grey[600],
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(
@@ -244,7 +264,7 @@ class ProductCard extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                'Buy now'.tr,
+                                inStock ? 'Buy now'.tr : 'Rupture'.tr,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
@@ -255,17 +275,18 @@ class ProductCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withOpacity(0.1),
+                              color: inStock
+                                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.add_shopping_cart_rounded,
                                 size: 18,
-                                color: Color(0xFFF97316),
+                                color: inStock ? const Color(0xFFF97316) : Colors.grey,
                               ),
-                              onPressed: onAddToCart,
+                              onPressed: inStock ? onAddToCart : null,
                               tooltip: 'Add to Cart'.tr,
                             ),
                           ),

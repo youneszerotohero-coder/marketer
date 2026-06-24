@@ -20,7 +20,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -37,6 +38,12 @@ export const authApi = {
     api.post('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/me'),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+  verifyCode: (email: string, token: string) =>
+    api.post('/auth/verify-code', { email, token }),
+  resetPassword: (data: Record<string, any>) =>
+    api.post('/auth/reset-password', data),
 };
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
@@ -83,7 +90,7 @@ export const ordersApi = {
     const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
     return api.get(`${prefix}/orders`, { params });
   },
-  updateStatus: (id: number, data: { status: string; notes?: string; postponed_until?: string }) => {
+  updateStatus: (id: number, data: { status: string; notes?: string; postponed_until?: string; shipping_method?: string }) => {
     const userStr = localStorage.getItem('user');
     const role = userStr ? JSON.parse(userStr).role : 'admin';
     const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
@@ -100,6 +107,14 @@ export const ordersApi = {
       confirmatrice_id: confirmatriceId,
     }),
   syncDeliveryStatus: (id: number) => api.post(`/orders/${id}/delivery-status`),
+  bulkShip: (ids: number[]) => {
+    const userStr = localStorage.getItem('user');
+    const role = userStr ? JSON.parse(userStr).role : 'admin';
+    const prefix = role === 'confirmatrice' ? '/confirmatrice' : '/admin';
+    return api.post(`${prefix}/orders/bulk-ship`, { ids });
+  },
+  bulkDelete: (ids: number[]) => api.post('/admin/orders/bulk-delete', { ids }),
+  delete: (id: number) => api.delete(`/admin/orders/${id}`),
 };
 
 // ─── Delivery / ZR Express ──────────────────────────────────────────────────

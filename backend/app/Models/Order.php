@@ -14,6 +14,8 @@ class Order extends Model
     public const STATUS_SHIPPED = 'shipped';
     public const STATUS_DELIVERED = 'delivered';
     public const STATUS_FAILED = 'failed';
+    public const STATUS_RETURN_CHARGED = 'retour_facture';
+    public const STATUS_RETURN_EXEMPT = 'retour_exonere';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_APPEL_1 = 'appel_1';
     public const STATUS_APPEL_2 = 'appel_2';

@@ -40,7 +40,8 @@ class DashboardController extends Controller
             'confirmed' => (clone $orderQuery)->where('status', 'confirmed')->count(),
             'shipped' => (clone $orderQuery)->where('status', 'shipped')->count(),
             'delivered' => (clone $orderQuery)->where('status', 'delivered')->count(),
-            'failed' => (clone $orderQuery)->where('status', 'failed')->count(),
+            'retour_facture' => (clone $orderQuery)->where('status', 'retour_facture')->count(),
+            'retour_exonere' => (clone $orderQuery)->where('status', 'retour_exonere')->count(),
             'cancelled' => (clone $orderQuery)->where('status', 'cancelled')->count(),
         ];
 
@@ -61,7 +62,7 @@ class DashboardController extends Controller
                 'name' => \Carbon\Carbon::parse($date)->format('M d'),
                 'total' => $dayOrders->count(),
                 'delivered' => $dayOrders->where('status', 'delivered')->count(),
-                'failed' => $dayOrders->whereIn('status', ['failed', 'cancelled'])->count(),
+                'retours' => $dayOrders->whereIn('status', ['retour_facture', 'retour_exonere', 'cancelled'])->count(),
             ];
         })->values()->sortBy('name')->values();
 

@@ -19,7 +19,8 @@ class _OrdersPageState extends State<OrdersPage> {
     'Confirmed'.tr,
     'Shipped'.tr,
     'Delivered'.tr,
-    'Failed'.tr,
+    'Retour Facturé'.tr,
+    'Retour Exonéré'.tr,
     'Cancelled'.tr,
   ];
 
@@ -29,7 +30,8 @@ class _OrdersPageState extends State<OrdersPage> {
     'confirmed',
     'shipped',
     'delivered',
-    'failed',
+    'retour_facture',
+    'retour_exonere',
     'cancelled',
   ];
 
@@ -171,19 +173,21 @@ class _OrdersPageState extends State<OrdersPage> {
         });
       }
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.message;
           _loading = false;
           _isLoadingMore = false;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'Failed to load orders.';
           _loading = false;
           _isLoadingMore = false;
         });
+      }
     }
   }
 
@@ -210,15 +214,17 @@ class _OrdersPageState extends State<OrdersPage> {
     try {
       await ApiService.instance.post('/orders/$orderId/cancel');
       _loadOrders();
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Order cancelled successfully'.tr)),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error cancelling order'.tr)));
+      }
     }
   }
 
@@ -377,6 +383,8 @@ class _OrdersPageState extends State<OrdersPage> {
         theme.colorScheme.tertiary,
       ],
       'failed': [const Color(0xFFFFE4E4), const Color(0xFFBA1A1A)],
+      'retour_facture': [const Color(0xFFFFE4E4), const Color(0xFFBA1A1A)],
+      'retour_exonere': [const Color(0xFFFEF3C7), const Color(0xFFD97706)],
       'cancelled': [
         theme.colorScheme.surfaceContainerHighest,
         theme.colorScheme.onSurfaceVariant,
@@ -402,7 +410,7 @@ class _OrdersPageState extends State<OrdersPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -497,7 +505,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                if (status == 'failed')
+                if (status == 'retour_facture')
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -516,7 +524,28 @@ class _OrdersPageState extends State<OrdersPage> {
                       ),
                     ),
                   )
-                else if (commission != null &&
+                else if (status == 'retour_exonere')
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1FAE5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Exonéré ✓',
+                      style: TextStyle(
+                        color: Color(0xFF065F46),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                else if (status != 'cancelled' &&
+                    status != 'failed' &&
+                    commission != null &&
                     double.tryParse(commission.toString())! > 0)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -524,7 +553,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiaryContainer.withOpacity(0.4),
+                      color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -625,6 +654,8 @@ class _OrdersPageState extends State<OrdersPage> {
         theme.colorScheme.tertiary,
       ],
       'failed': [const Color(0xFFFFE4E4), const Color(0xFFBA1A1A)],
+      'retour_facture': [const Color(0xFFFFE4E4), const Color(0xFFBA1A1A)],
+      'retour_exonere': [const Color(0xFFFEF3C7), const Color(0xFFD97706)],
       'cancelled': [
         theme.colorScheme.surfaceContainerHighest,
         theme.colorScheme.onSurfaceVariant,
@@ -767,7 +798,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       theme.colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
                 child: ListView.separated(
@@ -776,7 +807,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   itemCount: items.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                   itemBuilder: (context, idx) {
                     final item = items[idx];
@@ -842,12 +873,40 @@ class _OrdersPageState extends State<OrdersPage> {
                   valueColor: primaryColor,
                 ),
                 _buildSummaryRow(
-                  'Expected Profit'.tr,
-                  'DZD ${order['marketer_commission'] ?? 0}',
+                  (status == 'delivered'
+                          ? 'Profit Earned'
+                          : (status == 'retour_facture' ||
+                                  status == 'retour_exonere' ||
+                                  status == 'cancelled' ||
+                                  status == 'failed')
+                              ? 'Profit'
+                              : 'Expected Profit')
+                      .tr,
+                  'DZD ${(status == 'retour_facture' || status == 'retour_exonere' || status == 'cancelled' || status == 'failed') ? 0 : (order['marketer_commission'] ?? 0)}',
                   theme,
                   isBold: true,
                   valueColor: theme.colorScheme.tertiary,
                 ),
+                if (status == 'retour_facture') ...[
+                  const Divider(),
+                  _buildSummaryRow(
+                    'Frais de retour'.tr,
+                    '-DZD ${order['return_fee_transaction']?['amount'] ?? 400}',
+                    theme,
+                    isBold: true,
+                    valueColor: const Color(0xFFBA1A1A),
+                  ),
+                ],
+                if (status == 'retour_exonere') ...[
+                  const Divider(),
+                  _buildSummaryRow(
+                    'Frais de retour'.tr,
+                    'Exonéré ✓',
+                    theme,
+                    isBold: true,
+                    valueColor: const Color(0xFF065F46),
+                  ),
+                ],
               ]),
 
               // 4. Tracking & Notes
@@ -1006,7 +1065,7 @@ class _OrdersPageState extends State<OrdersPage> {
             theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(children: children),
@@ -1027,7 +1086,7 @@ class _OrdersPageState extends State<OrdersPage> {
           Icon(
             icon,
             size: 20,
-            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1123,6 +1182,8 @@ class _OrdersPageState extends State<OrdersPage> {
   void _showEditOrderSheet(Map<String, dynamic> order) {
     final clientNameController = TextEditingController(text: order['client_name']);
     final clientPhoneController = TextEditingController(text: order['client_phone']);
+    final addressController = TextEditingController(text: order['address']);
+    final notesController = TextEditingController(text: order['notes']);
     String selectedWilaya = order['wilaya'] ?? wilayas.first;
     String deliveryType = order['delivery_type'] ?? 'home';
 
@@ -1156,19 +1217,25 @@ class _OrdersPageState extends State<OrdersPage> {
                   'client_phone': clientPhoneController.text.trim(),
                   'wilaya': selectedWilaya,
                   'commune': selectedCommune,
+                  'address': addressController.text.trim(),
                   'delivery_type': deliveryType,
+                  'notes': notesController.text.trim(),
                 });
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadOrders();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Order updated successfully!'.tr)),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Error updating order'.tr)),
                 );
               } finally {
-                setSheetState(() => isSubmitting = false);
+                if (context.mounted) {
+                  setSheetState(() => isSubmitting = false);
+                }
               }
             }
 
@@ -1225,7 +1292,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedWilaya,
+                      initialValue: selectedWilaya,
                       isExpanded: true,
                       items: wilayas.map((w) => DropdownMenuItem(value: w, child: Text(w, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) {
@@ -1244,7 +1311,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedCommune,
+                      initialValue: selectedCommune,
                       isExpanded: true,
                       items: currentCommunes.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) => setSheetState(() => selectedCommune = val),
@@ -1254,37 +1321,55 @@ class _OrdersPageState extends State<OrdersPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    TextField(
+                      controller: addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Address'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesController,
+                      decoration: InputDecoration(
+                        labelText: 'Notes'.tr,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
                     Text('Delivery Type'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: RadioListTile<String>(
-                              title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
-                              value: 'home',
-                              groupValue: deliveryType,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Theme.of(context).colorScheme.primary,
-                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                    RadioGroup<String>(
+                      groupValue: deliveryType,
+                      onChanged: (val) => setSheetState(() => deliveryType = val!),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: RadioListTile<String>(
+                                title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
+                                value: 'home',
+                                contentPadding: EdgeInsets.zero,
+                                activeColor: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: RadioListTile<String>(
-                              title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
-                              value: 'desk',
-                              groupValue: deliveryType,
-                              contentPadding: EdgeInsets.zero,
-                              activeColor: Theme.of(context).colorScheme.primary,
-                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: RadioListTile<String>(
+                                title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
+                                value: 'desk',
+                                contentPadding: EdgeInsets.zero,
+                                activeColor: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text('Order Summary'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),

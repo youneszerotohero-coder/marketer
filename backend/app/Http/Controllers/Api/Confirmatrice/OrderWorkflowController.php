@@ -13,12 +13,12 @@ class OrderWorkflowController extends Controller
     public function index(Request $request): JsonResponse
     {
         return response()->json(
-            Order::with(['items.variant.product', 'marketer'])
+            Order::with(['items.variant.product', 'marketer', 'confirmatrice', 'deliveryShipment'])
                 ->where(function ($query) use ($request) {
                     $query->whereNull('confirmatrice_id')
                         ->orWhere('confirmatrice_id', $request->user()->id);
                 })
-                ->whereIn('status', ['pending', 'confirmed'])
+                ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
                 ->when($request->query('search'), function ($q, $search) {
                     $q->where(function($sq) use ($search) {
                         $sq->where('reference', 'like', "%{$search}%")

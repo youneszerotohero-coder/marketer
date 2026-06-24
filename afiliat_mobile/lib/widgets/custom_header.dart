@@ -51,10 +51,10 @@ class CustomHeader extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF97316).withOpacity(0.12),
+                      color: const Color(0xFFF97316).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFFF97316).withOpacity(0.35),
+                        color: const Color(0xFFF97316).withValues(alpha: 0.35),
                         width: 1.5,
                       ),
                     ),

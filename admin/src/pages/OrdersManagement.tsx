@@ -8,7 +8,8 @@ const STATUS_STYLES: Record<string, string> = {
   confirmed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   shipped: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   delivered: 'bg-success/10 text-success border-success/20',
-  failed: 'bg-danger/10 text-danger border-danger/20',
+  retour_facture: 'bg-rose-600/10 text-rose-700 border-rose-600/20',
+  retour_exonere: 'bg-orange-600/10 text-orange-700 border-orange-600/20',
   cancelled: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
   appel_1: 'bg-orange-400/10 text-orange-500 border-orange-400/20',
   appel_2: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
@@ -21,7 +22,8 @@ const STATUS_LABELS: Record<string, string> = {
   confirmed: 'Confirmed',
   shipped: 'Shipped',
   delivered: 'Delivered',
-  failed: 'Failed',
+  retour_facture: 'Retour Facturé',
+  retour_exonere: 'Retour Exonéré',
   cancelled: 'Cancelled',
   appel_1: 'Appel 1',
   appel_2: 'Appel 2',
@@ -30,7 +32,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ALL_STATUSES = [
-  'pending', 'confirmed', 'shipped', 'delivered', 'failed', 'cancelled',
+  'pending', 'confirmed', 'shipped', 'delivered', 'retour_facture', 'retour_exonere', 'cancelled',
   'appel_1', 'appel_2', 'appel_3', 'reporte'
 ];
 
@@ -70,12 +72,22 @@ export const OrdersManagement: React.FC = () => {
   const [postponeDateMap, setPostponeDateMap] = useState<Record<number, string>>({});
 
   const [territories, setTerritories] = useState<any[]>([]);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [editClientName, setEditClientName] = useState('');
+  const [editClientPhone, setEditClientPhone] = useState('');
   const [editWilaya, setEditWilaya] = useState('');
   const [editCommune, setEditCommune] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [editDeliveryType, setEditDeliveryType] = useState<'home' | 'desk'>('home');
+  const [editNotes, setEditNotes] = useState('');
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressError, setAddressError] = useState('');
+
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [search, statusFilter, page]);
 
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
@@ -124,10 +136,14 @@ export const OrdersManagement: React.FC = () => {
     setSelectedOrder(order);
     setSelectedConfirmatrice(order.confirmatrice_id ? String(order.confirmatrice_id) : '');
     setActionModal(type);
-    setIsEditingAddress(false);
+    setIsEditingOrder(false);
+    setEditClientName(order?.client_name ?? '');
+    setEditClientPhone(order?.client_phone ?? '');
     setEditWilaya(order?.wilaya ?? '');
     setEditCommune(order?.commune ?? '');
+    setEditAddress(order?.address ?? '');
     setEditDeliveryType(order?.delivery_type ?? 'home');
+    setEditNotes(order?.notes ?? '');
     setAddressError('');
     if (type === 'view') syncDeliveryStatus(order);
   };
@@ -158,25 +174,114 @@ export const OrdersManagement: React.FC = () => {
     );
   };
 
-  const handleSaveAddress = async () => {
+  const handleSaveOrderDetails = async () => {
     if (!selectedOrder) return;
     setIsSavingAddress(true);
     setAddressError('');
     try {
       const res = await ordersApi.update(selectedOrder.id, {
+        client_name: editClientName,
+        client_phone: editClientPhone,
         wilaya: editWilaya,
         commune: editCommune,
+        address: editAddress,
         delivery_type: editDeliveryType,
+        notes: editNotes,
       });
       const updatedOrder = res.data;
       setOrders((prev: any[]) => prev.map(o => o.id === selectedOrder.id ? { ...o, ...updatedOrder } : o));
       setSelectedOrder((prev: any) => prev ? { ...prev, ...updatedOrder } : null);
-      setIsEditingAddress(false);
+      setIsEditingOrder(false);
     } catch (err: any) {
       console.error(err);
-      setAddressError(err.response?.data?.message || 'Failed to update address');
+      setAddressError(err.response?.data?.message || 'Failed to update order details');
     } finally {
       setIsSavingAddress(false);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ?")) return;
+    setActionLoading(true);
+    try {
+      await ordersApi.delete(orderId);
+      alert("Commande supprimée avec succès.");
+      setActionModal(null);
+      loadOrders(page, statusFilter, search);
+    } catch (e: any) {
+      alert(e.response?.data?.message || "Échec de la suppression de la commande.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkShip = async () => {
+    if (selectedIds.length === 0) return;
+
+    // Filter out orders with self_shipping
+    const validIds: number[] = [];
+    const selfShippingOrders: any[] = [];
+    for (const id of selectedIds) {
+      const order = orders.find(o => o.id === id);
+      if (order?.shipping_method === 'self_shipping') {
+        selfShippingOrders.push(order);
+      } else {
+        validIds.push(id);
+      }
+    }
+
+    if (selfShippingOrders.length > 0 && validIds.length === 0) {
+      alert("Toutes les commandes sélectionnées ont pour méthode de livraison 'Self Shipping'. Aucune commande n'a été envoyée à ZR Express.");
+      return;
+    }
+
+    let confirmMsg = `Voulez-vous envoyer les ${validIds.length} commandes sélectionnées à ZR Express ?`;
+    if (selfShippingOrders.length > 0) {
+      confirmMsg += `\n(Note : ${selfShippingOrders.length} commande(s) avec 'Self Shipping' seront exclues)`;
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const res = await ordersApi.bulkShip(validIds);
+      const { success_count, errors } = res.data;
+      let msg = `${success_count} commande(s) envoyée(s) avec succès.`;
+      const errKeys = Object.keys(errors);
+      if (errKeys.length > 0) {
+        msg += `\nÉchecs : ${errKeys.length} commande(s).`;
+        console.error('Bulk ship errors:', errors);
+      }
+      alert(msg);
+      setSelectedIds([]);
+      loadOrders(page, statusFilter, search);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Une erreur est survenue lors de l\'envoi en masse.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Voulez-vous supprimer les ${selectedIds.length} commandes sélectionnées ?`)) return;
+    setActionLoading(true);
+    try {
+      const res = await ordersApi.bulkDelete(selectedIds);
+      const { success_count, errors } = res.data;
+      let msg = `${success_count} commande(s) supprimée(s) avec succès.`;
+      const errKeys = Object.keys(errors);
+      if (errKeys.length > 0) {
+        msg += `\nImpossible de supprimer ${errKeys.length} commande(s) car elles sont déjà en livraison.`;
+        console.error('Bulk delete errors:', errors);
+      }
+      alert(msg);
+      setSelectedIds([]);
+      loadOrders(page, statusFilter, search);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Une erreur est survenue lors de la suppression en masse.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -192,7 +297,7 @@ export const OrdersManagement: React.FC = () => {
         return;
       }
       try {
-        await ordersApi.updateStatus(order.id, { status: newStatus, postponed_until: dateVal });
+        await ordersApi.updateStatus(order.id, { status: newStatus, postponed_until: dateVal, shipping_method: order.shipping_method });
         setPostponeDateMap((prev: Record<number, string>) => { const m = { ...prev }; delete m[order.id]; return m; });
         loadOrders(page, statusFilter, search);
         if (selectedOrder?.id === order.id) setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -203,7 +308,7 @@ export const OrdersManagement: React.FC = () => {
     }
 
     try {
-      await ordersApi.updateStatus(order.id, { status: newStatus });
+      await ordersApi.updateStatus(order.id, { status: newStatus, shipping_method: order.shipping_method });
       // Clear any pending postpone date if status changed away from reporte
       setPostponeDateMap((prev: Record<number, string>) => { const m = { ...prev }; delete m[order.id]; return m; });
       loadOrders(page, statusFilter, search);
@@ -237,6 +342,22 @@ export const OrdersManagement: React.FC = () => {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(orders.map(o => o.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(x => x !== id));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -263,6 +384,30 @@ export const OrdersManagement: React.FC = () => {
           </select>
         </div>
 
+        {selectedIds.length > 0 && (
+          <div className="p-3 bg-primary/5 border-b border-border flex items-center justify-between px-4 animate-fadeIn">
+            <span className="text-xs font-semibold text-primary">
+              {selectedIds.length} commande(s) sélectionnée(s)
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBulkShip}
+                disabled={actionLoading}
+                className="px-3 py-1.5 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                Envoyer à ZR Express
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={actionLoading}
+                className="px-3 py-1.5 bg-danger hover:bg-danger/90 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
         ) : error ? (
@@ -272,6 +417,14 @@ export const OrdersManagement: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
+                  <th className="p-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={orders.length > 0 && selectedIds.length === orders.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   <th className="p-4 font-medium">Order ID</th>
                   <th className="p-4 font-medium">Date</th>
                   <th className="p-4 font-medium">Product</th>
@@ -284,10 +437,18 @@ export const OrdersManagement: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
+                  <tr><td colSpan={9} className="p-8 text-center text-sm text-text-muted">No orders found.</td></tr>
                 ) : orders.map((order) => (
                   <React.Fragment key={order.id}>
                     <tr onClick={() => openModal('view', order)} className="hover:bg-background/50 transition-colors cursor-pointer">
+                      <td className="p-4 w-10" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(order.id)}
+                          onChange={(e) => handleSelectOne(order.id, e.target.checked)}
+                          className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-4 text-sm font-bold text-text">{order.reference}</td>
                       <td className="p-4 text-sm text-text-muted">
                         <div>{new Date(order.created_at).toLocaleDateString()}</div>
@@ -356,7 +517,7 @@ export const OrdersManagement: React.FC = () => {
                     {/* Postpone date row — appears when admin selects "Reporté" */}
                     {order.id in postponeDateMap && (
                       <tr className="bg-indigo-500/5 border-b border-indigo-500/20" onClick={(e) => e.stopPropagation()}>
-                        <td colSpan={8} className="px-4 py-3">
+                        <td colSpan={9} className="px-4 py-3">
                           <div className="flex items-center gap-3 flex-wrap">
                             <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
                             <span className="text-sm font-medium text-indigo-600">Date de report requise :</span>
@@ -410,50 +571,84 @@ export const OrdersManagement: React.FC = () => {
 
       {/* View Order Modal */}
       <Modal isOpen={actionModal === 'view'} onClose={() => setActionModal(null)} title={`Order — ${selectedOrder?.reference}`}>
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           <div className="grid grid-cols-2 gap-4">
-            <div><p className="text-xs text-text-muted mb-1">Customer</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_name}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Phone</p><p className="text-sm font-semibold text-text">{selectedOrder?.client_phone}</p></div>
-            <div className="col-span-2 border border-border/60 bg-background/20 p-3 rounded-xl">
-              <p className="text-xs font-bold text-text-muted mb-1.5 uppercase tracking-wider">Address & Delivery Details</p>
-              {isEditingAddress ? (
+            <div className="col-span-2 border border-border/60 bg-background/20 p-4 rounded-xl space-y-4">
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Order & Customer Details</p>
+              {isEditingOrder ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <select
-                      value={editWilaya}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEditWilaya(val);
-                        const terr = getSelectedTerritory(val);
-                        if (terr && terr.communes && terr.communes.length > 0) {
-                          setEditCommune(terr.communes[0].name);
-                        } else {
-                          setEditCommune('');
-                        }
-                      }}
-                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary"
-                    >
-                      <option value="">Select Wilaya</option>
-                      {territories.map((t) => (
-                        <option key={t.code} value={`${t.code} - ${t.name}`}>
-                          {t.code} - {t.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Client Name</label>
+                    <input
+                      type="text"
+                      value={editClientName}
+                      onChange={(e) => setEditClientName(e.target.value)}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
 
-                    <select
-                      value={editCommune}
-                      onChange={(e) => setEditCommune(e.target.value)}
-                      disabled={!editWilaya}
-                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary disabled:opacity-50"
-                    >
-                      <option value="">Select Commune</option>
-                      {(getSelectedTerritory(editWilaya)?.communes ?? []).map((c: any) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Client Phone</label>
+                    <input
+                      type="text"
+                      value={editClientPhone}
+                      onChange={(e) => setEditClientPhone(e.target.value)}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Wilaya</label>
+                      <select
+                        value={editWilaya}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditWilaya(val);
+                          const terr = getSelectedTerritory(val);
+                          if (terr && terr.communes && terr.communes.length > 0) {
+                            setEditCommune(terr.communes[0].name);
+                          } else {
+                            setEditCommune('');
+                          }
+                        }}
+                        className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium"
+                      >
+                        <option value="">Select Wilaya</option>
+                        {territories.map((t) => (
+                          <option key={t.code} value={`${t.code} - ${t.name}`}>
+                            {t.code} - {t.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Commune</label>
+                      <select
+                        value={editCommune}
+                        onChange={(e) => setEditCommune(e.target.value)}
+                        disabled={!editWilaya}
+                        className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium disabled:opacity-50"
+                      >
+                        <option value="">Select Commune</option>
+                        {(getSelectedTerritory(editWilaya)?.communes ?? []).map((c: any) => (
+                          <option key={c.id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Detailed Address</label>
+                    <textarea
+                      value={editAddress}
+                      onChange={(e) => setEditAddress(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium"
+                    />
                   </div>
 
                   {editWilaya && (() => {
@@ -469,7 +664,6 @@ export const OrdersManagement: React.FC = () => {
                           Delivery Type
                         </label>
                         <div className="grid grid-cols-2 gap-2">
-                          {/* Home Delivery Card */}
                           <div
                             onClick={() => homeActive && setEditDeliveryType('home')}
                             className={`flex flex-col p-2 rounded-lg border-2 transition-all cursor-pointer select-none ${
@@ -497,7 +691,6 @@ export const OrdersManagement: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Stop Desk Card */}
                           <div
                             onClick={() => deskActive && setEditDeliveryType('desk')}
                             className={`flex flex-col p-2 rounded-lg border-2 transition-all cursor-pointer select-none ${
@@ -526,7 +719,6 @@ export const OrdersManagement: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Pricing Calculator Preview */}
                         <div className="bg-background/60 p-2.5 rounded-lg border border-border space-y-1">
                           <div className="flex justify-between text-xs text-text-muted">
                             <span>Subtotal:</span>
@@ -549,19 +741,29 @@ export const OrdersManagement: React.FC = () => {
                     );
                   })()}
 
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Order Notes</label>
+                    <textarea
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm p-2 bg-background border border-border rounded-lg text-text focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
+
                   {addressError && <p className="text-xs text-danger">{addressError}</p>}
 
                   <div className="flex gap-2 justify-end">
                     <button
-                      onClick={() => setIsEditingAddress(false)}
+                      onClick={() => setIsEditingOrder(false)}
                       disabled={isSavingAddress}
                       className="px-3 py-1.5 text-xs border border-border text-text-muted hover:bg-background rounded-lg font-medium"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={handleSaveAddress}
-                      disabled={isSavingAddress || !editWilaya || !editCommune}
+                      onClick={handleSaveOrderDetails}
+                      disabled={isSavingAddress || !editWilaya || !editCommune || !editClientName || !editClientPhone}
                       className="px-3 py-1.5 text-xs bg-primary text-white hover:bg-primary-hover rounded-lg font-semibold flex items-center gap-1"
                     >
                       {isSavingAddress ? 'Saving...' : 'Save Changes'}
@@ -569,42 +771,72 @@ export const OrdersManagement: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-text">
-                        {selectedOrder?.wilaya} / {selectedOrder?.commune}
-                      </p>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        Delivery Type: <span className="font-semibold text-text capitalize">{selectedOrder?.delivery_type === 'desk' ? 'Stopdesk' : 'To Home'}</span>
-                      </p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Client Name & Phone</p>
+                        <p className="text-sm font-semibold text-text font-medium">
+                          {selectedOrder?.client_name} ({selectedOrder?.client_phone})
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Wilaya & Commune</p>
+                        <p className="text-sm font-semibold text-text font-medium">
+                          {selectedOrder?.wilaya} / {selectedOrder?.commune}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Address</p>
+                        <p className="text-sm font-semibold text-text font-medium">
+                          {selectedOrder?.address || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Delivery Type</p>
+                        <p className="text-sm font-semibold text-text capitalize font-medium">
+                          {selectedOrder?.delivery_type === 'desk' ? 'Stopdesk' : 'To Home'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Notes</p>
+                        <p className="text-sm text-text font-semibold italic">
+                          {selectedOrder?.notes || '—'}
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setEditWilaya(selectedOrder?.wilaya ?? '');
-                        setEditCommune(selectedOrder?.commune ?? '');
-                        setEditDeliveryType(selectedOrder?.delivery_type ?? 'home');
-                        setIsEditingAddress(true);
-                        setAddressError('');
-                      }}
-                      className="text-primary hover:text-primary-hover text-xs font-semibold underline"
-                    >
-                      Edit Address
-                    </button>
+                    {selectedOrder?.status !== 'delivered' && selectedOrder?.status !== 'retour_facture' && selectedOrder?.status !== 'retour_exonere' && selectedOrder?.status !== 'cancelled' && (
+                      <button
+                        onClick={() => {
+                          setEditClientName(selectedOrder?.client_name ?? '');
+                          setEditClientPhone(selectedOrder?.client_phone ?? '');
+                          setEditWilaya(selectedOrder?.wilaya ?? '');
+                          setEditCommune(selectedOrder?.commune ?? '');
+                          setEditAddress(selectedOrder?.address ?? '');
+                          setEditDeliveryType(selectedOrder?.delivery_type ?? 'home');
+                          setEditNotes(selectedOrder?.notes ?? '');
+                          setIsEditingOrder(true);
+                          setAddressError('');
+                        }}
+                        className="text-primary hover:text-primary-hover text-xs font-semibold underline shrink-0"
+                      >
+                        Edit Order Info
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
-            <div><p className="text-xs text-text-muted mb-1">Subtotal</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.subtotal ?? 0)}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Shipping Fee</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.shipping_fee ?? 0)}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Shipping Method</p><p className="text-sm font-semibold text-text">{selectedOrder?.shipping_method === 'self_shipping' ? 'Self Shipping' : 'ZR Express'}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Tracking Number</p><p className="text-sm font-semibold text-text">{selectedOrder?.tracking_number ?? '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Subtotal</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.subtotal ?? 0)}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Shipping Fee</p><p className="text-sm font-semibold text-text">{fmt(selectedOrder?.shipping_fee ?? 0)}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Total</p><p className="text-sm font-bold text-primary">{fmt(selectedOrder?.total ?? 0)}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Commission</p><p className="text-sm font-bold text-success">{fmt(selectedOrder?.marketer_commission ?? 0)}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Marketer</p><p className="text-sm font-semibold text-text">{selectedOrder?.marketer?.name ?? '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Shipping Method</p><p className="text-sm font-semibold text-text">{selectedOrder?.shipping_method === 'self_shipping' ? 'Self Shipping' : 'ZR Express'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Tracking Number</p><p className="text-sm font-semibold text-text">{selectedOrder?.tracking_number ?? '—'}</p></div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-xs text-text-muted">ZR Status</p>
+                <p className="text-xs text-text-muted font-semibold uppercase tracking-wider">ZR Status</p>
                 {selectedOrder?.tracking_number && (
                   <button onClick={() => syncDeliveryStatus(selectedOrder)} className="text-primary hover:text-primary-hover" title="Refresh ZR Express status">
                     <RefreshCw className={`w-3.5 h-3.5 ${trackingLoading ? 'animate-spin' : ''}`} />
@@ -613,11 +845,11 @@ export const OrdersManagement: React.FC = () => {
               </div>
               <p className="text-sm font-semibold text-text">{selectedOrder?.delivery_status ?? '—'}</p>
             </div>
-            <div><p className="text-xs text-text-muted mb-1">Current Location</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_current_location ?? '—'}</p></div>
-            <div><p className="text-xs text-text-muted mb-1">Last ZR Sync</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_last_synced_at ? new Date(selectedOrder.delivery_last_synced_at).toLocaleString() : '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Current Location</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_current_location ?? '—'}</p></div>
+            <div><p className="text-xs text-text-muted mb-1 font-semibold uppercase tracking-wider">Last ZR Sync</p><p className="text-sm font-semibold text-text">{selectedOrder?.delivery_last_synced_at ? new Date(selectedOrder.delivery_last_synced_at).toLocaleString() : '—'}</p></div>
             {selectedOrder?.status === 'reporte' && selectedOrder?.postponed_until && (
               <div className="col-span-2">
-                <p className="text-xs text-indigo-500 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Reporté jusqu'au</p>
+                <p className="text-xs text-indigo-500 mb-1 flex items-center gap-1 font-semibold uppercase tracking-wider"><Calendar className="w-3 h-3" /> Reporté jusqu'au</p>
                 <p className="text-sm font-semibold text-indigo-600">{formatDateOnly(selectedOrder.postponed_until)}</p>
               </div>
             )}
@@ -658,9 +890,20 @@ export const OrdersManagement: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-border flex justify-between items-center">
-            <div>
-              <p className="text-xs text-text-muted">Confirmatrice</p>
-              <p className="text-sm font-semibold text-text">{selectedOrder?.confirmatrice?.name ?? 'Not Assigned'}</p>
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-xs text-text-muted">Confirmatrice</p>
+                <p className="text-sm font-semibold text-text">{selectedOrder?.confirmatrice?.name ?? 'Not Assigned'}</p>
+              </div>
+              {userRole === 'admin' && selectedOrder?.status !== 'delivered' && selectedOrder?.status !== 'retour_facture' && selectedOrder?.status !== 'retour_exonere' && (
+                <button
+                  onClick={() => handleDeleteOrder(selectedOrder.id)}
+                  disabled={actionLoading}
+                  className="px-3 py-1.5 bg-danger/10 text-danger hover:bg-danger/25 rounded-lg text-xs font-semibold transition-colors ml-4"
+                >
+                  Supprimer la commande
+                </button>
+              )}
             </div>
             {userRole === 'admin' && (
               <button onClick={() => setActionModal('assign')} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors">

@@ -63,10 +63,10 @@ class AppTheme {
           elevation: 0,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surfaceContainerLowest,
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -87,7 +87,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryContainer),
         ),
-        hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withOpacity(0.5)),
+        hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -163,10 +163,10 @@ class AppTheme {
           elevation: 0,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppDarkColors.surfaceContainerLowest,
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -187,7 +187,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppDarkColors.primaryContainer),
         ),
-        hintStyle: TextStyle(color: AppDarkColors.onSurfaceVariant.withOpacity(0.5)),
+        hintStyle: TextStyle(color: AppDarkColors.onSurfaceVariant.withValues(alpha: 0.5)),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

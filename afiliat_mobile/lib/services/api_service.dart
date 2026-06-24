@@ -6,13 +6,24 @@ import '../main.dart';
 import '../l10n/app_translations.dart';
 import '../screens/login_page.dart';
 
+import 'package:flutter/foundation.dart';
+
 class ApiService {
-  // Use 10.0.2.2 for Android emulator (maps to host's localhost)
-  // Use localhost for web (flutter run -d chrome)
-  static const String _baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://164.92.178.58/api',
-  );
+  static String get _baseUrl {
+    const envUrl = String.fromEnvironment('API_URL');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    if (kIsWeb) {
+      return 'http://localhost:8000/api';
+    }
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        return 'http://10.0.2.2:8000/api';
+      }
+    } catch (_) {}
+    return 'http://localhost:8000/api';
+  }
 
   static ApiService? _instance;
   ApiService._();
@@ -143,21 +154,26 @@ class ApiService {
 
   dynamic _parse(http.Response res) {
     if (res.statusCode == 401) {
-      clearCache();
-      SharedPreferences.getInstance().then((prefs) {
-        prefs.remove('access_token');
-        prefs.remove('user');
-      });
-      if (mainNavigatorKey.currentContext != null) {
-        Navigator.of(mainNavigatorKey.currentContext!).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
+      final path = res.request?.url.path ?? '';
+      final isAuthRoute = path.contains('/auth/');
+
+      if (!isAuthRoute) {
+        clearCache();
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.remove('access_token');
+          prefs.remove('user');
+        });
+        if (mainNavigatorKey.currentContext != null) {
+          Navigator.of(mainNavigatorKey.currentContext!).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
+        }
+        throw ApiException(
+          _translateMessage('Session expired. Please login again.'),
+          401,
         );
       }
-      throw ApiException(
-        _translateMessage('Session expired. Please login again.'),
-        401,
-      );
     }
 
     dynamic body;

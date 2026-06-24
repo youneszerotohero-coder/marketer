@@ -48,27 +48,3 @@ class CustomBottomNav extends StatelessWidget {
   }
 }
 
-class _ActiveIcon extends StatelessWidget {
-  final IconData icon;
-
-  const _ActiveIcon({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon),
-        const SizedBox(height: 4),
-        Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
-    );
-  }
-}

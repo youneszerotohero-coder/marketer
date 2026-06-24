@@ -126,11 +126,12 @@ class _ProductDetailsState extends State<ProductDetails> {
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -257,7 +258,8 @@ class _ProductDetailsState extends State<ProductDetails> {
   double get _commissionNum => _defaultVariant != null
       ? double.parse(_defaultVariant!['commission_value'].toString())
       : 0.0;
-  int get _stock => 999999;
+  bool get _inStock => _product != null && _product!['in_stock'] != false;
+  int get _stock => _inStock ? 999999 : 0;
 
   String get _productTotalPrice {
     final total = _priceNum * quantity;
@@ -378,7 +380,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: primaryColor.withOpacity(0.8),
+                            color: primaryColor.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -451,10 +453,10 @@ class _ProductDetailsState extends State<ProductDetails> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: primaryColor.withOpacity(0.1),
+                                      color: primaryColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: primaryColor.withOpacity(0.2),
+                                        color: primaryColor.withValues(alpha: 0.2),
                                       ),
                                     ),
                                     child: Row(
@@ -471,6 +473,48 @@ class _ProductDetailsState extends State<ProductDetails> {
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                             color: primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _inStock
+                                          ? const Color(0xFF065F46).withValues(alpha: 0.1)
+                                          : const Color(0xFF9B1C1C).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: _inStock
+                                            ? const Color(0xFF065F46).withValues(alpha: 0.2)
+                                            : const Color(0xFF9B1C1C).withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _inStock
+                                              ? Icons.check_circle_outline
+                                              : Icons.cancel_outlined,
+                                          size: 14,
+                                          color: _inStock
+                                              ? const Color(0xFF065F46)
+                                              : const Color(0xFF9B1C1C),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _inStock ? 'En stock'.tr : 'Rupture de stock'.tr,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: _inStock
+                                                ? const Color(0xFF065F46)
+                                                : const Color(0xFF9B1C1C),
                                           ),
                                         ),
                                       ],
@@ -498,8 +542,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                               child: Row(
                                 children: [
                                   _buildQtyButton(theme, Icons.remove, () {
-                                    if (quantity > 1)
+                                    if (quantity > 1) {
                                       setState(() => quantity--);
+                                    }
                                   }),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -514,8 +559,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                                     ),
                                   ),
                                   _buildQtyButton(theme, Icons.add, () {
-                                    if (quantity < _stock)
+                                    if (quantity < _stock) {
                                       setState(() => quantity++);
+                                    }
                                   }),
                                 ],
                               ),
@@ -538,74 +584,76 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 8.0,
-                        children: (_product!['variants'] as List).map((
-                          variant,
-                        ) {
-                          final isSelected =
-                              _defaultVariant?['id'] == variant['id'];
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _defaultVariant = variant;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? primaryColor.withOpacity(0.1)
-                                    : theme.colorScheme.surfaceContainerHighest,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? primaryColor
-                                      : Colors.transparent,
-                                  width: 2,
+                      RadioGroup<int>(
+                        groupValue: _defaultVariant?['id'],
+                        onChanged: (val) {
+                          setState(() {
+                            _defaultVariant = (_product!['variants'] as List).firstWhere((v) => v['id'] == val);
+                          });
+                        },
+                        child: Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          children: (_product!['variants'] as List).map((
+                            variant,
+                          ) {
+                            final isSelected =
+                                _defaultVariant?['id'] == variant['id'];
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _defaultVariant = variant;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Radio<int>(
-                                    value: variant['id'],
-                                    groupValue: _defaultVariant?['id'],
-                                    onChanged: (val) {
-                                      setState(() {
-                                        _defaultVariant = variant;
-                                      });
-                                    },
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    activeColor: primaryColor,
-                                    visualDensity: const VisualDensity(
-                                      horizontal: -4,
-                                      vertical: -4,
-                                    ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? primaryColor.withValues(alpha: 0.1)
+                                      : theme.colorScheme.surfaceContainerHighest,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? primaryColor
+                                        : Colors.transparent,
+                                    width: 2,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    variant['sku']?.toString() ?? 'Option',
-                                    style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      color: isSelected
-                                          ? primaryColor
-                                          : theme.colorScheme.onSurface,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Radio<int>(
+                                      value: variant['id'],
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      activeColor: primaryColor,
+                                      visualDensity: const VisualDensity(
+                                        horizontal: -4,
+                                        vertical: -4,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      variant['sku']?.toString() ?? 'Option',
+                                      style: TextStyle(
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isSelected
+                                            ? primaryColor
+                                            : theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        }).toList(),
+                            );
+                          }).toList(),
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -657,7 +705,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                 color: theme.colorScheme.surfaceContainerLowest,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -828,7 +876,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 8,
-                            shadowColor: primaryColor.withOpacity(0.4),
+                            shadowColor: primaryColor.withValues(alpha: 0.4),
                           ),
                           child: _submitting
                               ? const SizedBox(
@@ -840,7 +888,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                                   ),
                                 )
                               : Text(
-                                  'Buy Now'.tr,
+                                  _inStock ? 'Buy Now'.tr : 'Rupture de stock'.tr,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -901,7 +949,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1015,41 +1063,41 @@ class _ProductDetailsState extends State<ProductDetails> {
           const SizedBox(height: 20),
           _buildInputField(
             label: 'DELIVERY TYPE'.tr,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: RadioListTile<String>(
-                      title: Text(
-                        'A Domicile'.tr,
-                        style: const TextStyle(fontSize: 14),
+            child: RadioGroup<String>(
+              groupValue: _deliveryType,
+              onChanged: (val) => setState(() => _deliveryType = val!),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: RadioListTile<String>(
+                        title: Text(
+                          'A Domicile'.tr,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        value: 'home',
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: Theme.of(context).colorScheme.primary,
                       ),
-                      value: 'home',
-                      groupValue: _deliveryType,
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: RadioListTile<String>(
-                      title: Text(
-                        'Stop Desk'.tr,
-                        style: const TextStyle(fontSize: 14),
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: RadioListTile<String>(
+                        title: Text(
+                          'Stop Desk'.tr,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        value: 'desk',
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: Theme.of(context).colorScheme.primary,
                       ),
-                      value: 'desk',
-                      groupValue: _deliveryType,
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => setState(() => _deliveryType = val!),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -1096,7 +1144,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         hintStyle: TextStyle(
           color: Theme.of(
             context,
-          ).colorScheme.onSurfaceVariant.withOpacity(0.6),
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
           fontSize: 14,
         ),
         filled: true,
@@ -1132,7 +1180,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
-      value: value,
+      initialValue: value,
 
       icon: Icon(
         Icons.keyboard_arrow_down_rounded,

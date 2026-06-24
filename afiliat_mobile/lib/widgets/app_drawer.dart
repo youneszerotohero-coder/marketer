@@ -255,7 +255,7 @@ class _AppDrawerState extends State<AppDrawer> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         value: isDarkMode,
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           themeModeNotifier.value =
                               value ? ThemeMode.dark : ThemeMode.light;
@@ -278,7 +278,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         secondary: Icon(Icons.language,
                             color: theme.colorScheme.onSurfaceVariant),
                         value: isArabic,
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           localeNotifier.value =
                               value ? const Locale('ar') : const Locale('fr');
@@ -395,7 +395,7 @@ class _AppDrawerState extends State<AppDrawer> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark
-                    ? theme.dividerColor.withOpacity(0.5)
+                    ? theme.dividerColor.withValues(alpha: 0.5)
                     : Colors.grey.shade200,
               ),
             ),
@@ -405,7 +405,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -437,7 +437,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         item['subtitle'] as String,
                         style: TextStyle(
                           fontSize: 9,
-                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -477,14 +477,14 @@ class _AppDrawerState extends State<AppDrawer> {
               shape: BoxShape.circle,
               border: Border.all(
                 color: isDark
-                    ? theme.dividerColor.withOpacity(0.5)
+                    ? theme.dividerColor.withValues(alpha: 0.5)
                     : Colors.grey.shade200,
               ),
             ),
             child: Center(
               child: FaIcon(
                 item['icon'],
-                color: isDark ? color : color.withOpacity(0.85),
+                color: isDark ? color : color.withValues(alpha: 0.85),
                 size: 14,
               ),
             ),
@@ -520,7 +520,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                 ),
                 Wrap(
@@ -545,7 +545,7 @@ class _AppDrawerState extends State<AppDrawer> {
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
         ),
       ),
     );
@@ -563,7 +563,7 @@ class _AppDrawerState extends State<AppDrawer> {
       margin: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: isSelected
-            ? theme.colorScheme.primaryContainer.withOpacity(0.1)
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,

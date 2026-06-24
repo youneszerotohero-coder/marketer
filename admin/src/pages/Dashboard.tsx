@@ -3,7 +3,7 @@ import {
   TrendingUp,
   Users,
   Package,
-  XCircle,
+  RotateCcw,
   CreditCard,
   MoreHorizontal,
   ChevronLeft,
@@ -17,8 +17,11 @@ import {
   Truck,
   ShoppingBag,
   Receipt,
+  XCircle,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+
 import { dashboardApi } from '../services/api';
 
 const getDates = (period: string, custom: { start: string, end: string }) => {
@@ -172,7 +175,13 @@ export const Dashboard: React.FC = () => {
                   <StatCard title="Delivered Orders" value={stats?.orders?.delivered ?? 0} icon={ShoppingBag} colorClass="bg-success/10 text-success" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Failed/Cancelled" value={(stats?.orders?.failed ?? 0) + (stats?.orders?.cancelled ?? 0)} icon={XCircle} colorClass="bg-danger/10 text-danger" />
+                  <StatCard title="Retour Facturé" value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
+                </div>
+                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
+                  <StatCard title="Retour Exonéré" value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
+                </div>
+                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
+                  <StatCard title="Cancelled" value={stats?.orders?.cancelled ?? 0} icon={XCircle} colorClass="bg-danger/10 text-danger" />
                 </div>
               </>
             ) : (
@@ -193,7 +202,10 @@ export const Dashboard: React.FC = () => {
                   <StatCard title="Active Products" value={stats?.products ?? 0} icon={Package} colorClass="bg-purple-500/10 text-purple-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Failed Orders" value={stats?.orders?.failed ?? 0} icon={XCircle} colorClass="bg-danger/10 text-danger" />
+                  <StatCard title="Retour Facturé" value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
+                </div>
+                <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
+                  <StatCard title="Retour Exonéré" value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
                   <StatCard title="Pending Payouts" value={stats?.pending_payouts ?? 0} icon={CreditCard} colorClass="bg-success/10 text-success" />

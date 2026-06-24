@@ -36,10 +36,11 @@ class OrderAdminController extends Controller
     public function updateStatus(Request $request, Order $order, WalletService $wallet, DeliveryGateway $delivery): JsonResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:pending,confirmed,shipped,delivered,failed,cancelled,appel_1,appel_2,appel_3,reporte'],
+            'status' => ['required', 'in:pending,confirmed,shipped,delivered,retour_facture,retour_exonere,cancelled,appel_1,appel_2,appel_3,reporte'],
             'delivery_status' => ['nullable', 'string', 'max:80'],
             'notes' => ['nullable', 'string'],
             'postponed_until' => ['nullable', 'date', 'after_or_equal:today'],
+            'shipping_method' => ['nullable', 'string'],
         ]);
 
         if ($data['status'] === 'reporte' && empty($data['postponed_until'])) {
@@ -51,7 +52,7 @@ class OrderAdminController extends Controller
             'confirmed' => ['confirmed_at' => now()],
             'shipped' => ['shipped_at' => now()],
             'delivered' => ['delivered_at' => now()],
-            'failed' => ['failed_at' => now()],
+            Order::STATUS_RETURN_CHARGED, Order::STATUS_RETURN_EXEMPT => ['failed_at' => now()],
             default => [],
         };
 
@@ -63,9 +64,12 @@ class OrderAdminController extends Controller
         ], $timestamps));
 
         if ($order->status === 'shipped' && !$order->tracking_number) {
-            $shipment = $delivery->createShipment($order);
-            $order->update(['tracking_number' => $shipment['tracking_number'], 'delivery_status' => $shipment['status']]);
-            DeliveryShipment::create(['order_id' => $order->id] + $shipment);
+            $shippingMethod = $data['shipping_method'] ?? null;
+            if ($shippingMethod !== 'self_shipping') {
+                $shipment = $delivery->createShipment($order);
+                $order->update(['tracking_number' => $shipment['tracking_number'], 'delivery_status' => $shipment['status']]);
+                DeliveryShipment::create(['order_id' => $order->id] + $shipment);
+            }
         }
 
         if ($order->status === Order::STATUS_DELIVERED) {
@@ -74,7 +78,7 @@ class OrderAdminController extends Controller
             $wallet->cancelCommission($order);
         }
 
-        if (in_array($order->status, [Order::STATUS_FAILED])) {
+        if ($order->status === Order::STATUS_RETURN_CHARGED) {
             $wallet->createReturnFee($order);
         } else {
             $wallet->cancelReturnFee($order);
@@ -83,7 +87,7 @@ class OrderAdminController extends Controller
         return response()->json($order->load(['items.variant.product', 'commissionTransaction', 'deliveryShipment']));
     }
 
-    public function update(Request $request, Order $order): JsonResponse
+    public function update(Request $request, Order $order, DeliveryGateway $delivery): JsonResponse
     {
         $data = $request->validate([
             'client_name' => ['nullable', 'string', 'max:255'],
@@ -94,6 +98,38 @@ class OrderAdminController extends Controller
             'delivery_type' => ['nullable', 'in:home,desk'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        $hasTracking = !empty($order->tracking_number);
+        $externalId = null;
+
+        if ($hasTracking) {
+            try {
+                $tracking = $delivery->track($order->tracking_number);
+                $zrStatus = $tracking['status'] ?? 'unknown';
+            } catch (\Exception $e) {
+                $zrStatus = $order->delivery_status;
+            }
+
+            $deliveryStates = [
+                'confirme_au_bureau',
+                'dispatch',
+                'vers_wilaya',
+                'en_livraison',
+                'sortie_en_livraison',
+                'livre',
+                'encaisse',
+                'recouvert',
+                'en_retour',
+                'retourne',
+                'reinjecte_stock'
+            ];
+
+            if (in_array($zrStatus, $deliveryStates)) {
+                return response()->json(['message' => 'La commande est déjà en cours de livraison et ne peut plus être modifiée.'], 422);
+            }
+
+            $externalId = $order->deliveryShipment->external_id ?? $order->tracking_number;
+        }
 
         $updateData = [];
         if (isset($data['client_name'])) $updateData['client_name'] = $data['client_name'];
@@ -128,7 +164,7 @@ class OrderAdminController extends Controller
                 return response()->json(['message' => "La wilaya sélectionnée n'est pas valide."], 422);
             }
 
-            // Let's check commune exists
+            // Check commune exists
             $communeExists = $shippingRate->communes()
                 ->where(function ($q) use ($communeInput) {
                     $q->where('name', $communeInput)
@@ -169,9 +205,178 @@ class OrderAdminController extends Controller
             }
         }
 
+        // Cancel shipment if old one exists
+        if ($hasTracking && $externalId) {
+            try {
+                $delivery->cancelShipment($externalId);
+            } catch (\Exception $e) {
+                // Ignore if not found or failed
+            }
+            $order->deliveryShipment()->delete();
+        }
+
         $order->update($updateData);
 
+        // Recreate shipment with updated details
+        if ($hasTracking) {
+            $shipment = $delivery->createShipment($order);
+            $order->update([
+                'tracking_number' => $shipment['tracking_number'],
+                'delivery_status' => $shipment['status']
+            ]);
+            DeliveryShipment::create(['order_id' => $order->id] + $shipment);
+        }
+
         return response()->json($order->load(['items.variant.product', 'commissionTransaction', 'deliveryShipment']));
+    }
+
+    public function destroy(Order $order, DeliveryGateway $delivery): JsonResponse
+    {
+        if (!empty($order->tracking_number)) {
+            try {
+                $tracking = $delivery->track($order->tracking_number);
+                $zrStatus = $tracking['status'] ?? 'unknown';
+            } catch (\Exception $e) {
+                $zrStatus = $order->delivery_status;
+            }
+
+            $deliveryStates = [
+                'confirme_au_bureau',
+                'dispatch',
+                'vers_wilaya',
+                'en_livraison',
+                'sortie_en_livraison',
+                'livre',
+                'encaisse',
+                'recouvert',
+                'en_retour',
+                'retourne',
+                'reinjecte_stock'
+            ];
+
+            if (in_array($zrStatus, $deliveryStates)) {
+                return response()->json(['message' => 'La commande est déjà en cours de livraison et ne peut pas être supprimée.'], 422);
+            }
+
+            $externalId = $order->deliveryShipment->external_id ?? $order->tracking_number;
+            try {
+                $delivery->cancelShipment($externalId);
+            } catch (\Exception $e) {
+                // Ignore
+            }
+            $order->deliveryShipment()->delete();
+        }
+
+        // Clean up database records
+        $order->items()->delete();
+        \App\Models\WalletTransaction::where('order_id', $order->id)->delete();
+        $order->delete();
+
+        return response()->json(['message' => 'Commande supprimée avec succès.']);
+    }
+
+    public function bulkShip(Request $request, DeliveryGateway $delivery): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:orders,id'],
+        ]);
+
+        $successCount = 0;
+        $errors = [];
+
+        $orders = Order::whereIn('id', $data['ids'])->get();
+
+        foreach ($orders as $order) {
+            if ($order->tracking_number) {
+                $errors[$order->id] = "La commande a déjà un numéro de suivi.";
+                continue;
+            }
+
+            try {
+                $shipment = $delivery->createShipment($order);
+
+                $order->update([
+                    'status' => Order::STATUS_SHIPPED,
+                    'shipped_at' => now(),
+                    'tracking_number' => $shipment['tracking_number'],
+                    'delivery_status' => $shipment['status'],
+                    'delivery_last_synced_at' => now(),
+                ]);
+
+                DeliveryShipment::create(['order_id' => $order->id] + $shipment);
+                $successCount++;
+            } catch (\Exception $e) {
+                $errors[$order->id] = $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'success_count' => $successCount,
+            'errors' => $errors,
+        ]);
+    }
+
+    public function bulkDelete(Request $request, DeliveryGateway $delivery): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:orders,id'],
+        ]);
+
+        $successCount = 0;
+        $errors = [];
+
+        $orders = Order::whereIn('id', $data['ids'])->get();
+
+        $deliveryStates = [
+            'confirme_au_bureau',
+            'dispatch',
+            'vers_wilaya',
+            'en_livraison',
+            'sortie_en_livraison',
+            'livre',
+            'encaisse',
+            'recouvert',
+            'en_retour',
+            'retourne',
+            'reinjecte_stock'
+        ];
+
+        foreach ($orders as $order) {
+            if (!empty($order->tracking_number)) {
+                try {
+                    $tracking = $delivery->track($order->tracking_number);
+                    $zrStatus = $tracking['status'] ?? 'unknown';
+                } catch (\Exception $e) {
+                    $zrStatus = $order->delivery_status;
+                }
+
+                if (in_array($zrStatus, $deliveryStates)) {
+                    $errors[$order->id] = "La commande est déjà en cours de livraison (Statut ZR: {$zrStatus}) et ne peut pas être supprimée.";
+                    continue;
+                }
+
+                $externalId = $order->deliveryShipment->external_id ?? $order->tracking_number;
+                try {
+                    $delivery->cancelShipment($externalId);
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+                $order->deliveryShipment()->delete();
+            }
+
+            // Clean up DB records
+            $order->items()->delete();
+            \App\Models\WalletTransaction::where('order_id', $order->id)->delete();
+            $order->delete();
+            $successCount++;
+        }
+
+        return response()->json([
+            'success_count' => $successCount,
+            'errors' => $errors,
+        ]);
     }
 
     public function assignConfirmatrice(Request $request, Order $order): JsonResponse

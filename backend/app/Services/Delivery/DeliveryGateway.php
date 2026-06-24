@@ -15,4 +15,6 @@ interface DeliveryGateway
     public function territories(): array;
 
     public function rates(): array;
+
+    public function cancelShipment(string $externalId): void;
 }
