@@ -118,6 +118,7 @@ class AppTranslations {
       'Delivery Rate': 'Taux de livraison',
       'Failed to load dashboard data.': 'Échec du chargement des données du tableau de bord.',
       'Total Earned': 'Total gagné',
+      'In Delivery': 'En cours de livraison',
 
       // Withdrawal UX
       'Request Withdrawal': 'Demander un retrait',
@@ -438,6 +439,7 @@ class AppTranslations {
       'Delivery Rate': 'نسبة التوصيل',
       'Failed to load dashboard data.': 'فشل تحميل بيانات لوحة التحكم.',
       'Total Earned': 'إجمالي الأرباح',
+      'In Delivery': 'قيد التوصيل',
 
       // Withdrawal UX
       'Request Withdrawal': 'طلب سحب',
