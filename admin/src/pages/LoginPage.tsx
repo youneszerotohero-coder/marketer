@@ -123,9 +123,7 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <p className="text-center text-xs text-text-muted mt-6">
-            {t('auth.defaultCredentials')}: <span className="font-mono text-text">admin@marketer.local</span> / <span className="font-mono text-text">password</span>
-          </p>
+
         </div>
       </div>
     </div>

@@ -399,6 +399,8 @@ class AppTranslations {
       'Invalid credentials': 'بيانات الدخول غير صحيحة',
       'Forbidden': 'غير مسموح',
       'Unauthenticated.': 'غير مسجل الدخول.',
+      'Confirm Password': 'تأكيد كلمة المرور',
+      'Confirm your password': 'أكد كلمة المرور',
 
       // Profile Page
       'ANALYTICS OVERVIEW': 'نظرة عامة على الإحصائيات',

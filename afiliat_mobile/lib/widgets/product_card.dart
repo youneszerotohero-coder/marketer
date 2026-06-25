@@ -119,11 +119,6 @@ class ProductCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.monetization_on_outlined,
-                              color: Colors.white,
-                              size: 12,
-                            ),
                             const SizedBox(width: 4),
                             Text(
                               commission,

@@ -5,6 +5,7 @@ import { Outlet } from 'react-router-dom';
 
 export const AdminLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -20,10 +21,17 @@ export const AdminLayout: React.FC = () => {
       <Sidebar
         isMobileMenuOpen={isMobileMenuOpen}
         onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
+        isCollapsed={isSidebarCollapsed}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
-          onMenuClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          onMenuClick={() => {
+            if (window.innerWidth < 768) {
+              setIsMobileMenuOpen((prev) => !prev);
+            } else {
+              setIsSidebarCollapsed((prev) => !prev);
+            }
+          }}
           isMobileMenuOpen={isMobileMenuOpen}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">

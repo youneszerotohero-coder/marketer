@@ -10,7 +10,6 @@ import {
   ChevronRight,
   DollarSign,
   Calendar,
-  Download,
   Loader2,
   Clock,
   CheckCircle,
@@ -132,17 +131,22 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {selectedPeriod === 'Custom' && (
-            <div className="flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-1.5 shadow-sm">
-              <input type="date" value={customRange.start} onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })} className="bg-transparent text-xs text-text outline-none" />
-              <span className="text-xs text-text-muted font-medium">{t('dashboard.to')}</span>
-              <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="bg-transparent text-xs text-text outline-none" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="date"
+                value={customRange.start}
+                onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
+                className="bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-primary shadow-sm cursor-pointer"
+              />
+              <span className="text-xs text-text-muted font-semibold">{t('dashboard.to')}</span>
+              <input
+                type="date"
+                value={customRange.end}
+                onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
+                className="bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-primary shadow-sm cursor-pointer"
+              />
             </div>
           )}
-
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer">
-            <Download className="w-4 h-4" />
-            {t('dashboard.downloadReport')}
-          </button>
         </div>
       </div>
 

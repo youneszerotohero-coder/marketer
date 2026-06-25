@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 type HeaderProps = {
@@ -30,18 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onMenuClick}
           aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isMobileMenuOpen}
-          className="md:hidden text-text-muted hover:text-text transition-colors"
+          className="text-text-muted hover:text-text transition-colors"
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <div className="relative hidden sm:block">
-          <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input 
-            type="text" 
-            placeholder={t('header.searchPlaceholder')}
-            className="ps-10 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors w-64 lg:w-96"
-          />
-        </div>
       </div>
       
       <div className="flex items-center gap-4">
@@ -62,11 +54,6 @@ export const Header: React.FC<HeaderProps> = ({
             العربية
           </button>
         </div>
-
-        <button className="relative p-2 text-text-muted hover:text-text transition-colors rounded-full hover:bg-background">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full border border-surface"></span>
-        </button>
         
         <div className="flex items-center gap-3 ps-4 border-s border-border">
           <div className="hidden md:block text-end">

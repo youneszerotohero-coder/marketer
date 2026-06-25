@@ -39,7 +39,7 @@ export const translations = {
       wallet: "Portefeuille",
       shippingRates: "Tarifs de livraison",
       settings: "Paramètres",
-      title: "Afiliat Admin"
+      title: "Arbahi Admin"
     },
     header: {
       searchPlaceholder: "Rechercher...",
@@ -332,7 +332,7 @@ export const translations = {
       notesLabel: "Notes",
       amountLabel: "MONTANT",
       statusLabel: "Statut :",
-      receiptFooterText1: "Ce reçu est généré automatiquement par le système Afiliat.",
+      receiptFooterText1: "Ce reçu est généré automatiquement par le système Arbahi.",
       receiptFooterText2: "Conservez ce document pour vos archives.",
       printPdfBtn: "Imprimer / Télécharger PDF",
       approveConfirm: "Voulez-vous vraiment approuver ?",
@@ -471,7 +471,7 @@ export const translations = {
       wallet: "المحفظة",
       shippingRates: "أسعار الشحن",
       settings: "الإعدادات",
-      title: "أفيلت أدمن"
+      title: "أرباحي أدمن"
     },
     header: {
       searchPlaceholder: "بحث...",
@@ -764,7 +764,7 @@ export const translations = {
       notesLabel: "ملاحظات",
       amountLabel: "المبلغ الإجمالي",
       statusLabel: "الحالة:",
-      receiptFooterText1: "تم إنشاء هذا الوصل تلقائيًا بواسطة نظام أفيلت.",
+      receiptFooterText1: "تم إنشاء هذا الوصل تلقائيًا بواسطة نظام أرباحي.",
       receiptFooterText2: "يرجى الاحتفاظ بهذا المستند في الأرشيف الخاص بك.",
       printPdfBtn: "طباعة / تحميل بصيغة PDF",
       approveConfirm: "هل أنت متأكد من الموافقة على طلب السحب ودفع المبلغ؟",

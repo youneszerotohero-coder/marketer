@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Download, Loader2, RefreshCw, Calendar, LayoutGrid } from 'lucide-react';
+import { Search, Loader2, RefreshCw, Calendar, LayoutGrid } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { ordersApi, usersApi, deliveryApi, STORAGE_URL } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
@@ -355,9 +355,7 @@ export const OrdersManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-text">{t('orders.title')}</h1>
           <p className="text-sm text-text-muted mt-1">{t('orders.subtitle')}</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-text-muted hover:bg-background transition-colors cursor-pointer">
-          <Download className="w-4 h-4" /> {t('orders.exportCsv')}
-        </button>
+
       </div>
 
       <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -889,25 +887,16 @@ export const OrdersManagement: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-border flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xs text-text-muted">{t('orders.confirmatriceLabel')}</p>
-                <p className="text-sm font-semibold text-text">{selectedOrder?.confirmatrice?.name ?? t('common.notAssigned')}</p>
-              </div>
-              {userRole === 'admin' && selectedOrder?.status !== 'delivered' && selectedOrder?.status !== 'retour_facture' && selectedOrder?.status !== 'retour_exonere' && (
-                <button
-                  onClick={() => handleDeleteOrder(selectedOrder.id)}
-                  disabled={actionLoading}
-                  className="px-3 py-1.5 bg-danger/10 text-danger hover:bg-danger/25 rounded-lg text-xs font-semibold transition-colors ml-4 cursor-pointer"
-                >
-                  {t('orders.deleteOrderBtn')}
-                </button>
-              )}
-            </div>
-            {userRole === 'admin' && (
-              <button onClick={() => setActionModal('assign')} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors cursor-pointer">
-                {selectedOrder?.confirmatrice ? t('orders.reassignAgent') : t('orders.assignAgent')}
+            {userRole === 'admin' && selectedOrder?.status !== 'delivered' && selectedOrder?.status !== 'retour_facture' && selectedOrder?.status !== 'retour_exonere' ? (
+              <button
+                onClick={() => handleDeleteOrder(selectedOrder.id)}
+                disabled={actionLoading}
+                className="px-3 py-1.5 bg-danger/10 text-danger hover:bg-danger/25 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                {t('orders.deleteOrderBtn')}
               </button>
+            ) : (
+              <div />
             )}
           </div>
         </div>
