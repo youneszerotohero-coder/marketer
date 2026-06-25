@@ -118,7 +118,7 @@ class OrderWorkflowTest extends TestCase
             'tracking_number' => 'ZR-TEST-201',
         ]);
 
-        // Mock gateway track method to return retourne with situation appel_sans_reponse
+        // Mock gateway track method to return retourne with history situation having 'comment' => 'faux commande'
         $gateway = $this->createMock(\App\Services\Delivery\DeliveryGateway::class);
         $gateway->method('track')->willReturn([
             'tracking_number' => 'ZR-TEST-201',
@@ -129,14 +129,31 @@ class OrderWorkflowTest extends TestCase
                     'id' => '123',
                     'name' => 'retourne',
                 ],
-                'situation' => 'appel_sans_reponse',
+                'history' => [
+                    [
+                        'id' => 'hist-1',
+                        'newState' => [
+                            'id' => '46e1217e-90bb-43f1-b924-a78b4b74e64f',
+                            'name' => 'retourne',
+                            'description' => 'Retourné',
+                        ],
+                        'comment' => '',
+                        'situations' => [
+                            [
+                                'id' => 'sit-1',
+                                'comment' => 'faux commande',
+                                'slug' => 'commande_anullee',
+                            ]
+                        ]
+                    ]
+                ]
             ],
         ]);
 
         $service = new DeliveryStatusService($gateway);
         $service->sync($order);
 
-        // Assert status updated to 'retour_exonere' due to situation
+        // Assert status updated to 'retour_exonere' due to situation comment in history
         $this->assertEquals('retour_exonere', $order->fresh()->status);
         $this->assertDatabaseMissing('wallet_transactions', [
             'order_id' => $order->id,

@@ -139,9 +139,30 @@ class ZrExpressGateway implements DeliveryGateway
         $data = $this->request('get', "/parcels/{$trackingNumber}");
         $parcel = $this->firstItem($data) ?? $data;
 
+        $statusVal = $parcel['state'] ?? $parcel['status'] ?? $parcel['currentState'] ?? 'unknown';
+        if (is_array($statusVal)) {
+            $statusVal = $statusVal['name'] ?? $statusVal['slug'] ?? $statusVal['status'] ?? 'unknown';
+        }
+        $statusStr = (string) $statusVal;
+
+        $history = [];
+        $parcelId = $parcel['id'] ?? $parcel['parcelId'] ?? null;
+        if ($parcelId && in_array($statusStr, ['en_retour', 'retourne', 'reinjecte_stock', 'commande_annulee'])) {
+            try {
+                $history = $this->request('get', "/parcels/{$parcelId}/state-history");
+            } catch (\Throwable $e) {
+                Log::warning('Failed to fetch state history for parcel', [
+                    'parcel_id' => $parcelId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $parcel['history'] = $history;
+
         return [
             'tracking_number' => $trackingNumber,
-            'status' => (string) ($parcel['state'] ?? $parcel['status'] ?? $parcel['currentState'] ?? 'unknown'),
+            'status' => $statusStr,
             'location' => (string) ($parcel['currentLocation'] ?? $parcel['location'] ?? $parcel['hub']['name'] ?? $parcel['territory']['name'] ?? ''),
             'synced_at' => now()->toISOString(),
             'raw' => $parcel,

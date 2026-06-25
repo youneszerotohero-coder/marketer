@@ -92,36 +92,71 @@ class DeliveryStatusService
             return false;
         }
 
-        $json = json_encode($raw);
+        // 1. If we have history, check comments and situations in the history transitions
+        if (!empty($raw['history']) && is_array($raw['history'])) {
+            foreach ($raw['history'] as $transition) {
+                $commentsToCheck = [];
+                
+                if (!empty($transition['comment'])) {
+                    $commentsToCheck[] = $transition['comment'];
+                }
+                
+                if (!empty($transition['situations']) && is_array($transition['situations'])) {
+                    foreach ($transition['situations'] as $sit) {
+                        if (!empty($sit['comment'])) {
+                            $commentsToCheck[] = $sit['comment'];
+                        }
+                        if (!empty($sit['slug'])) {
+                            $commentsToCheck[] = $sit['slug'];
+                        }
+                        if (!empty($sit['name'])) {
+                            $commentsToCheck[] = $sit['name'];
+                        }
+                    }
+                }
 
-        // Keywords for: Ne répond pas 3 / appel sans réponse
-        $hasNoAnswer = false;
-        if (
-            str_contains($json, 'appel_sans_reponse') ||
-            str_contains($json, 'sans_reponse') ||
-            str_contains($json, 'ne_repond_pas_3') ||
-            str_contains($json, 'ne_repond_pas3') ||
-            str_contains($json, 'sans reponse') ||
-            str_contains($json, 'ne répond pas 3') ||
-            str_contains($json, 'ne repond pas 3')
-        ) {
-            $hasNoAnswer = true;
+                foreach ($commentsToCheck as $text) {
+                    if ($this->matchesExemptKeywords($text)) {
+                        return true;
+                    }
+                }
+            }
         }
 
-        // Keywords for: produit endommagé / damaged
-        $hasDamaged = false;
-        if (
-            str_contains($json, 'produit_endommage') ||
-            str_contains($json, 'produit_endommagee') ||
-            str_contains($json, 'produit endommagé') ||
-            str_contains($json, 'produit endommage') ||
-            str_contains($json, 'endommage') ||
-            str_contains($json, 'damaged')
-        ) {
-            $hasDamaged = true;
-        }
+        // 2. Fallback: check the rest of the raw payload (excluding description/notes/orderedProducts/history to avoid false matches)
+        $fallbackData = $raw;
+        unset($fallbackData['description'], $fallbackData['notes'], $fallbackData['orderedProducts'], $fallbackData['history']);
+        
+        $json = json_encode($fallbackData);
+        return $this->matchesExemptKeywords($json);
+    }
 
-        return $hasNoAnswer || $hasDamaged;
+    private function matchesExemptKeywords(string $text): bool
+    {
+        $text = mb_strtolower($text, 'UTF-8');
+
+        // Keywords for: faux commande (fake order)
+        $hasFakeOrder = (
+            str_contains($text, 'faux_commande') ||
+            str_contains($text, 'fausse_commande') ||
+            str_contains($text, 'faux commande') ||
+            str_contains($text, 'fausse commande')
+        );
+
+        // Keywords for: produit endommagé / damaged / endomager
+        $hasDamaged = (
+            str_contains($text, 'produit_endommage') ||
+            str_contains($text, 'produit_endommagee') ||
+            str_contains($text, 'produit endommagé') ||
+            str_contains($text, 'produit endommage') ||
+            str_contains($text, 'endommage') ||
+            str_contains($text, 'damaged') ||
+            str_contains($text, 'endomager') ||
+            str_contains($text, 'produit_endomager') ||
+            str_contains($text, 'produit endomager')
+        );
+
+        return $hasFakeOrder || $hasDamaged;
     }
 
     private function hasPostponedSituation(?array $raw): bool
