@@ -240,7 +240,7 @@ class _ShopPageState extends State<ShopPage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Colors.black.withOpacity(0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -271,7 +271,7 @@ class _ShopPageState extends State<ShopPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                color: const Color(0xFFF97316).withOpacity(0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -336,14 +336,14 @@ class _ShopPageState extends State<ShopPage> {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFF97316).withValues(alpha: 0.3),
+                              color: const Color(0xFFF97316).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
                           ]
                         : [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: Colors.black.withOpacity(0.05),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             )
@@ -363,7 +363,7 @@ class _ShopPageState extends State<ShopPage> {
                           ? Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: Colors.black.withOpacity(0.2),
                               ),
                             )
                           : null,

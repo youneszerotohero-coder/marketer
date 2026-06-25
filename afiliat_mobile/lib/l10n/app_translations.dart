@@ -77,6 +77,8 @@ class AppTranslations {
       'The code must be exactly 6 digits.': 'Le code doit comporter exactement 6 chiffres.',
       'Password must be at least 8 characters.': 'Le mot de passe doit contenir au moins 8 caractères.',
       'Passwords do not match.': 'Les mots de passe ne correspondent pas.',
+      'Please enter your email address.': 'Veuillez saisir votre adresse e-mail.',
+      'A new verification code has been sent.': 'Un nouveau code de vérification a été envoyé.',
       'Success': 'Succès',
       'Your password has been reset successfully. Please sign in again.': 'Votre mot de passe a été réinitialisé avec succès. Veuillez vous connecter à nouveau.',
 
@@ -461,6 +463,8 @@ class AppTranslations {
       'rejected': 'مرفوض',
       'pending': 'قيد الانتظار',
       'confirmed': 'مؤكد',
+      'shipped': 'تم الشحن',
+      'delivered': 'تم التوصيل',
       'failed': 'فشل التوصيل',
       'retour_facture': 'إرجاع مفوتر',
       'retour_exonere': 'إرجاع معفى',
@@ -477,7 +481,7 @@ class AppTranslations {
       'CANCELLED': 'ملغى',
 
       // Stock & Dashboard (AR)
-      'En stock': 'متوفر في المخزون',
+      'En stock': 'متوفر ',
       'Rupture de stock': 'نفذ المخزون',
       'Exonéré ✓': 'معفى ✓',
       'Retour Facturé': 'إرجاع مفوتر',
@@ -662,6 +666,8 @@ class AppTranslations {
       'Confirm new password': 'تأكيد كلمة المرور الجديدة',
       'Resetting...': 'جاري إعادة التعيين...',
       'The code must be exactly 6 digits.': 'يجب أن يتكون الرمز من 6 أرقام بالضبط.',
+      'Please enter your email address.': 'يرجى إدخال بريدك الإلكتروني.',
+      'A new verification code has been sent.': 'تم إرسال رمز تحقق جديد.',
       'Passwords do not match.': 'كلمات المرور غير متطابقة.',
       'Success': 'نجاح',
       'Your password has been reset successfully. Please sign in again.': 'تم إعادة تعيين كلمة المرور بنجاح. يرجى تسجيل الدخول مرة أخرى.',

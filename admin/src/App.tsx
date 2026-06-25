@@ -11,6 +11,7 @@ import { ShippingRates } from './pages/ShippingRates';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { VerifyCode } from './pages/VerifyCode';
 import { ResetPassword } from './pages/ResetPassword';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Guard: redirect to /login if no token stored
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,31 +34,33 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/verify-code" element={<VerifyCode />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="marketers" element={<AdminRoute><ManageMarketers /></AdminRoute>} />
-          <Route path="products" element={<AdminRoute><ManageProducts /></AdminRoute>} />
-          <Route path="orders" element={<OrdersManagement />} />
-          <Route path="wallet" element={<AdminRoute><WalletManagement /></AdminRoute>} />
-          <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
-          <Route path="shipping-rates" element={<AdminRoute><ShippingRates /></AdminRoute>} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-code" element={<VerifyCode />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="marketers" element={<AdminRoute><ManageMarketers /></AdminRoute>} />
+            <Route path="products" element={<AdminRoute><ManageProducts /></AdminRoute>} />
+            <Route path="orders" element={<OrdersManagement />} />
+            <Route path="wallet" element={<AdminRoute><WalletManagement /></AdminRoute>} />
+            <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
+            <Route path="shipping-rates" element={<AdminRoute><ShippingRates /></AdminRoute>} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

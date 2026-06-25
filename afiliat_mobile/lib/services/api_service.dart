@@ -15,14 +15,14 @@ class ApiService {
       return envUrl;
     }
     if (kIsWeb) {
-      return 'http://localhost:8000/api';
+      return 'http://164.92.178.58/api';
     }
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
-        return 'http://10.0.2.2:8000/api';
+        return 'http://164.92.178.58/api';
       }
     } catch (_) {}
-    return 'http://localhost:8000/api';
+    return 'http://164.92.178.58/api';
   }
 
   static ApiService? _instance;

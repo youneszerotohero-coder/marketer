@@ -117,7 +117,7 @@ class _SignupPageState extends State<SignupPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -140,7 +140,7 @@ class _SignupPageState extends State<SignupPage> {
                       Text(
                         'Sign up to get started'.tr,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                         ),
@@ -164,7 +164,7 @@ class _SignupPageState extends State<SignupPage> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
+                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -178,7 +178,7 @@ class _SignupPageState extends State<SignupPage> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.08),
+                            color: Colors.red.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Archive, LayoutGrid, Upload, X, Star } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import api, { STORAGE_URL } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export const ManageProducts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -25,6 +26,7 @@ export const ManageProducts: React.FC = () => {
   const [categoryImageDeleted, setCategoryImageDeleted] = useState(false);
   const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
   const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     api.get('/admin/categories').then(res => setAllCategories(res.data.data || res.data));
@@ -158,7 +160,6 @@ export const ManageProducts: React.FC = () => {
       if (activeTab === 'products') {
         await api.patch(`/admin/products/${selectedItem.id}/archive`);
       } else {
-        // Categories typically deleted
         await api.delete(`/admin/categories/${selectedItem.id}`);
       }
       setActionModal(null);
@@ -239,46 +240,57 @@ export const ManageProducts: React.FC = () => {
 
   const getProductPrice = (product: any) => {
     if (product.variants && product.variants.length > 0) {
-      return `$${product.variants[0].sale_price}`;
+      return `DZD ${product.variants[0].sale_price}`;
     }
     return 'N/A';
   };
 
   const getProductCommission = (product: any) => {
     if (product.variants && product.variants.length > 0) {
-      return `$${product.variants[0].commission_value}`;
+      return `DZD ${product.variants[0].commission_value}`;
     }
     return 'N/A';
+  };
+
+  const getModalTitle = () => {
+    if (actionModal === 'edit') {
+      return activeTab === 'products' ? t('products.editProductTitle') : t('products.editCategoryTitle');
+    }
+    return activeTab === 'products' ? t('products.addProductTitle') : t('products.addCategoryTitle');
+  };
+
+  const getArchiveModalTitle = () => {
+    return activeTab === 'products' ? t('products.archiveProductTitle') : t('products.archiveCategoryTitle');
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Manage Products</h1>
-          <p className="text-sm text-text-muted mt-1">Add new products, edit details, and manage categories.</p>
+          <h1 className="text-2xl font-bold text-text">{t('products.title')}</h1>
+          <p className="text-sm text-text-muted mt-1">{t('products.subtitle')}</p>
         </div>
         <button 
           onClick={() => openModal('add')}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          {activeTab === 'products' ? 'Add Product' : 'Add Category'}
+          {activeTab === 'products' ? t('products.addProduct') : t('products.addCategory')}
         </button>
       </div>
 
       <div className="flex border-b border-border">
         <button 
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'products' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'products' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
-          Products List
+          {t('products.tabProductsList')}
         </button>
         <button 
           onClick={() => setActiveTab('categories')}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'categories' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'categories' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
-          Categories
+          {t('products.tabCategories')}
         </button>
       </div>
 
@@ -286,21 +298,21 @@ export const ManageProducts: React.FC = () => {
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
             <div className="relative flex-1 min-w-[250px]">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input 
                 type="text" 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by product name, SKU or brand..." 
-                className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
+                placeholder={t('products.searchProducts')} 
+                className="w-full ps-10 pe-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
               />
             </div>
             <select 
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium focus:outline-none focus:border-primary transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium focus:outline-none focus:border-primary transition-colors outline-none cursor-pointer"
             >
-              <option value="">All Categories</option>
+              <option value="">{t('products.allCategories')}</option>
               {allCategories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -313,15 +325,15 @@ export const ManageProducts: React.FC = () => {
             </div>
           ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">Product</th>
-                  <th className="p-4 font-medium">Category & Brand</th>
-                  <th className="p-4 font-medium">Price</th>
-                  <th className="p-4 font-medium">Commission</th>
-                  <th className="p-4 font-medium">Stock</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
+                  <th className="p-4 font-medium text-start">{t('products.tableProduct')}</th>
+                  <th className="p-4 font-medium text-start">{t('products.tableCategoryBrand')}</th>
+                  <th className="p-4 font-medium text-start">{t('products.tablePrice')}</th>
+                  <th className="p-4 font-medium text-start">{t('products.tableCommission')}</th>
+                  <th className="p-4 font-medium text-start">{t('products.tableStock')}</th>
+                  <th className="p-4 font-medium text-end">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -353,15 +365,15 @@ export const ManageProducts: React.FC = () => {
                           ? 'bg-success/10 text-success border-success/20'
                           : 'bg-danger/10 text-danger border-danger/20'
                       }`}>
-                        {product.in_stock !== false ? 'En stock' : 'Rupture'}
+                        {product.in_stock !== false ? t('products.inStock') : t('products.outOfStock')}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors" title="Edit">
+                    <td className="p-4 text-end">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openModal('archive', product)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors" title="Archive">
+                        <button onClick={() => openModal('archive', product)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title="Archive">
                           <Archive className="w-4 h-4" />
                         </button>
                       </div>
@@ -370,7 +382,7 @@ export const ManageProducts: React.FC = () => {
                 ))}
                 {visibleProducts.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-text-muted">No products found.</td>
+                    <td colSpan={6} className="p-4 text-center text-text-muted">{t('products.noProducts')}</td>
                   </tr>
                 )}
               </tbody>
@@ -385,7 +397,7 @@ export const ManageProducts: React.FC = () => {
                 className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
                 {loading && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-primary border-r-2 border-transparent"></div>}
-                Load More
+                {t('common.loadMore')}
               </button>
             </div>
           )}
@@ -394,13 +406,13 @@ export const ManageProducts: React.FC = () => {
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
             <div className="relative flex-1 min-w-[250px]">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input 
                 type="text" 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search categories..." 
-                className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
+                placeholder={t('products.searchCategories')} 
+                className="w-full ps-10 pe-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -411,11 +423,11 @@ export const ManageProducts: React.FC = () => {
             </div>
           ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">Category Name</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
+                  <th className="p-4 font-medium text-start">{t('products.categoryName')}</th>
+                  <th className="p-4 font-medium text-end">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -433,12 +445,12 @@ export const ManageProducts: React.FC = () => {
                         <p className="text-sm font-semibold text-text">{category.name}</p>
                       </div>
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal('edit', category)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors" title="Edit">
+                    <td className="p-4 text-end">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openModal('edit', category)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openModal('archive', category)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors" title="Delete">
+                        <button onClick={() => openModal('archive', category)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title="Delete">
                           <Archive className="w-4 h-4" />
                         </button>
                       </div>
@@ -447,7 +459,7 @@ export const ManageProducts: React.FC = () => {
                 ))}
                 {visibleCategories.length === 0 && (
                   <tr>
-                    <td colSpan={2} className="p-4 text-center text-text-muted">No categories found.</td>
+                    <td colSpan={2} className="p-4 text-center text-text-muted">{t('products.noCategories')}</td>
                   </tr>
                 )}
               </tbody>
@@ -462,7 +474,7 @@ export const ManageProducts: React.FC = () => {
                 className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
                 {loading && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-primary border-r-2 border-transparent"></div>}
-                Load More
+                {t('common.loadMore')}
               </button>
             </div>
           )}
@@ -472,13 +484,13 @@ export const ManageProducts: React.FC = () => {
       <Modal 
         isOpen={actionModal === 'add' || actionModal === 'edit'} 
         onClose={() => setActionModal(null)} 
-        title={actionModal === 'edit' ? `Edit ${activeTab === 'products' ? 'Product' : 'Category'}` : `Add New ${activeTab === 'products' ? 'Product' : 'Category'}`}
+        title={getModalTitle()}
       >
         <form className="space-y-4" onSubmit={handleSave}>
           {activeTab === 'products' ? (
             <>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Product Images</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.productImages')}</label>
                 <div className="grid grid-cols-4 gap-4 mb-2">
                   {productImages.map((img, idx) => {
                     if (img.isDeleted) return null;
@@ -501,16 +513,16 @@ export const ManageProducts: React.FC = () => {
                     <Plus className="w-6 h-6 text-text-muted" />
                   </div>
                 </div>
-                <p className="text-xs text-text-muted">Click on the star to set as main image. Max 5MB per image.</p>
+                <p className="text-xs text-text-muted">{t('products.imagesInstructions')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Product Name</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.productName')}</label>
                 <input type="text" name="name" defaultValue={selectedItem?.name} required className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="e.g. Wireless Headphones" />
               </div>
               <div className="flex items-center justify-between p-3 bg-background border border-border rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-text">En stock</p>
-                  <p className="text-xs text-text-muted">Afficher le badge disponibilité sur les cartes produit</p>
+                  <p className="text-sm font-medium text-text">{t('products.inStock')}</p>
+                  <p className="text-xs text-text-muted">{t('products.inStockToggleLabel')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -524,39 +536,39 @@ export const ManageProducts: React.FC = () => {
                 </label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Description</label>
-                <textarea name="description" defaultValue={selectedItem?.description} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary min-h-[80px]" placeholder="Brief product description..."></textarea>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.description')}</label>
+                <textarea name="description" defaultValue={selectedItem?.description} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary min-h-[80px]" placeholder={t('products.descriptionPlaceholder')}></textarea>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-text">Product Variants</h3>
-                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }])} className="text-xs text-primary hover:underline font-medium">
-                    + Add Variant
+                  <h3 className="text-sm font-bold text-text">{t('products.variantsTitle')}</h3>
+                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }])} className="text-xs text-primary hover:underline font-medium cursor-pointer">
+                    {t('products.addVariant')}
                   </button>
                 </div>
                 
                 {productVariants.map((v, i) => (
                   <div key={v.sku || i} className="p-4 border border-border rounded-xl bg-background/30 relative">
                     {productVariants.length > 1 && (
-                      <button type="button" onClick={() => setProductVariants(productVariants.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 p-1 text-danger hover:bg-danger/10 rounded-md">
+                      <button type="button" onClick={() => setProductVariants(productVariants.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 p-1 text-danger hover:bg-danger/10 rounded-md cursor-pointer">
                         <X className="w-4 h-4" />
                       </button>
                     )}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2 sm:col-span-1">
-                        <label className="block text-xs font-medium text-text mb-1">SKU / Option (e.g. RED-M)</label>
+                        <label className="block text-xs font-medium text-text mb-1">{t('products.skuLabel')}</label>
                         <input type="text" name={`variants[${i}][sku]`} defaultValue={v.sku} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="e.g. RED-M" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-text mb-1">Purchase Price</label>
+                        <label className="block text-xs font-medium text-text mb-1">{t('products.purchasePrice')}</label>
                         <input type="number" step="0.01" name={`variants[${i}][purchase_price]`} defaultValue={v.purchase_price} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="50.00" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-text mb-1">Selling Price</label>
+                        <label className="block text-xs font-medium text-text mb-1">{t('products.sellingPrice')}</label>
                         <input type="number" step="0.01" name={`variants[${i}][sale_price]`} defaultValue={v.sale_price} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="99.00" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-text mb-1">Commission</label>
+                        <label className="block text-xs font-medium text-text mb-1">{t('products.commission')}</label>
                         <input type="number" step="0.01" name={`variants[${i}][commission_value]`} defaultValue={v.commission_value} required className="w-full px-3 py-1.5 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="10" />
                         <input type="hidden" name={`variants[${i}][commission_type]`} value="fixed" />
                       </div>
@@ -565,9 +577,9 @@ export const ManageProducts: React.FC = () => {
                 ))}
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Category</label>
-                <select name="category_id" defaultValue={selectedItem?.category_id || ''} required className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-                  <option value="" disabled>Select Category</option>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.categoryLabel')}</label>
+                <select name="category_id" defaultValue={selectedItem?.category_id || ''} required className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary outline-none cursor-pointer">
+                  <option value="" disabled>{t('products.selectCategory')}</option>
                   {allCategories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -577,11 +589,11 @@ export const ManageProducts: React.FC = () => {
           ) : (
             <>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Category Image</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.categoryImage')}</label>
                 {categoryImagePreview && !categoryImageDeleted ? (
                   <div className="relative inline-block border-2 border-border rounded-xl overflow-hidden group">
                      <img src={categoryImagePreview} className="w-24 h-24 object-cover" />
-                     <button type="button" onClick={() => setCategoryImageDeleted(true)} className="absolute top-1 right-1 p-1 bg-black/50 rounded-md text-white hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button type="button" onClick={() => setCategoryImageDeleted(true)} className="absolute top-1 right-1 p-1 bg-black/50 rounded-md text-white hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                         <X className="w-4 h-4" />
                      </button>
                   </div>
@@ -589,55 +601,57 @@ export const ManageProducts: React.FC = () => {
                   <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-background/50 transition-colors cursor-pointer group relative">
                     <input type="file" accept="image/*" onChange={handleCategoryImgChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     <Upload className="w-5 h-5 text-primary" />
-                    <p className="mt-3 text-sm font-medium text-text">Click to upload image</p>
+                    <p className="mt-3 text-sm font-medium text-text">{t('products.clickToUpload')}</p>
                   </div>
                 )}
                 <input type="hidden" name="delete_image" value={categoryImageDeleted ? '1' : '0'} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Category Name</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('products.categoryName')}</label>
                 <input type="text" name="name" defaultValue={selectedItem?.name} required className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="e.g. Electronics" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Parent Category</label>
-                  <select name="parent_id" defaultValue={selectedItem?.parent_id || ''} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-                    <option value="">None (Top Level)</option>
+                  <label className="block text-sm font-medium text-text mb-1">{t('products.parentCategory')}</label>
+                  <select name="parent_id" defaultValue={selectedItem?.parent_id || ''} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary outline-none cursor-pointer">
+                    <option value="">{t('products.noneTopLevel')}</option>
                     {allCategories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text mb-1">Status</label>
-                  <select name="status" defaultValue={selectedItem?.status || 'active'} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                  <label className="block text-sm font-medium text-text mb-1">{t('common.status')}</label>
+                  <select name="status" defaultValue={selectedItem?.status || 'active'} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary outline-none cursor-pointer">
+                    <option value="active">{t('common.active')}</option>
+                    <option value="inactive">{t('common.inactive')}</option>
                   </select>
                 </div>
               </div>
             </>
           )}
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
-            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors">
-              Cancel
+            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors cursor-pointer">
+              {t('common.cancel')}
             </button>
-            <button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
-              {actionModal === 'edit' ? 'Save Changes' : `Save ${activeTab === 'products' ? 'Product' : 'Category'}`}
+            <button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors cursor-pointer">
+              {actionModal === 'edit' ? t('common.saveChanges') : t('common.save')}
             </button>
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={actionModal === 'archive'} onClose={() => setActionModal(null)} title={`Archive ${activeTab === 'products' ? 'Product' : 'Category'}`}>
+      <Modal isOpen={actionModal === 'archive'} onClose={() => setActionModal(null)} title={getArchiveModalTitle()}>
         <div className="space-y-4">
-          <p className="text-sm text-text">Are you sure you want to archive <strong>{selectedItem?.name}</strong>? This will hide it from the marketer application.</p>
+          <p className="text-sm text-text">
+            {t('products.archiveConfirm', { name: selectedItem?.name })}
+          </p>
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
-            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors">
-              Cancel
+            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors cursor-pointer">
+              {t('common.cancel')}
             </button>
-            <button type="button" onClick={handleArchive} className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:bg-danger/90 transition-colors">
-              Archive
+            <button type="button" onClick={handleArchive} className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:bg-danger/90 transition-colors cursor-pointer">
+              {t('products.archiveBtn')}
             </button>
           </div>
         </div>

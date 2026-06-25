@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, ArrowLeft, RefreshCw } from 'lucide-react';
+import { KeyRound, ArrowLeft, RefreshCw, Globe } from 'lucide-react';
 import { authApi } from '../services/api';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 export const VerifyCode: React.FC = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
   const navigate = useNavigate();
+  const { t, language, setLanguage } = useLanguage();
 
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ export const VerifyCode: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (token.length !== 6) {
-      setError('Le code de validation doit comporter exactement 6 chiffres.');
+      setError(t('auth.codeLengthError'));
       return;
     }
 
@@ -44,7 +46,7 @@ export const VerifyCode: React.FC = () => {
       await authApi.verifyCode(email, token);
       navigate(`/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Le code saisi est incorrect ou a expiré.');
+      setError(err.response?.data?.message || t('auth.codeInvalidError'));
     } finally {
       setLoading(false);
     }
@@ -58,26 +60,44 @@ export const VerifyCode: React.FC = () => {
     setSuccess('');
     try {
       await authApi.forgotPassword(email);
-      setSuccess('Un nouveau code de validation a été envoyé.');
+      setSuccess(t('auth.codeSentSuccess'));
       setCountdown(30);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors du renvoi du code.');
+      setError(err.response?.data?.message || t('auth.codeResendError'));
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      {/* Floating Language Switcher */}
+      <div className="absolute top-4 end-4 flex items-center gap-1.5 bg-surface border border-border px-3 py-1.5 rounded-xl shadow-sm">
+        <Globe className="w-4 h-4 text-text-muted" />
+        <button
+          onClick={() => setLanguage('fr')}
+          className={`text-xs font-semibold px-2 py-0.5 rounded-md transition-colors ${language === 'fr' ? 'bg-primary text-white' : 'text-text-muted hover:text-text'}`}
+        >
+          FR
+        </button>
+        <span className="text-border">|</span>
+        <button
+          onClick={() => setLanguage('ar')}
+          className={`text-xs font-semibold px-2 py-0.5 rounded-md transition-colors ${language === 'ar' ? 'bg-primary text-white font-cairo' : 'text-text-muted hover:text-text font-cairo'}`}
+        >
+          العربية
+        </button>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
             <KeyRound className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-text">Validation du code</h1>
+          <h1 className="text-2xl font-bold text-text">{t('auth.verifyTitle')}</h1>
           <p className="text-sm text-text-muted mt-1">
-            Saisissez le code à 6 chiffres envoyé à <span className="font-semibold text-text">{email}</span>
+            {t('auth.verifySub')} <span className="font-semibold text-text">{email}</span>
           </p>
         </div>
 
@@ -96,7 +116,7 @@ export const VerifyCode: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Code de validation (6 chiffres)</label>
+              <label className="block text-sm font-medium text-text mb-1.5">{t('auth.validationCodeLabel')}</label>
               <input
                 type="text"
                 maxLength={6}
@@ -111,14 +131,14 @@ export const VerifyCode: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <KeyRound className="w-4 h-4" />
               )}
-              {loading ? 'Validation en cours...' : 'Valider le code'}
+              {loading ? t('auth.validating') : t('auth.validateBtn')}
             </button>
           </form>
 
@@ -128,19 +148,19 @@ export const VerifyCode: React.FC = () => {
               type="button"
               onClick={handleResend}
               disabled={countdown > 0 || resending}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover disabled:text-text-muted transition-colors disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-hover disabled:text-text-muted transition-colors disabled:cursor-not-allowed cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
-              {countdown > 0 ? `Renvoyer le code (${countdown}s)` : 'Renvoyer le code'}
+              {countdown > 0 ? t('auth.resendCodeCountdown', { countdown }) : t('auth.resendCode')}
             </button>
           </div>
 
           <div className="mt-6 text-center border-t border-border pt-5">
             <Link
               to="/forgot-password"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-text-muted hover:text-text transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-text-muted hover:text-text transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Modifier l'adresse e-mail
+              <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" /> {t('auth.changeEmail')}
             </Link>
           </div>
         </div>

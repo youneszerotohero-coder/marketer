@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../screens/cart_page.dart';
 import '../screens/shipping_prices_page.dart';
+import '../screens/login_page.dart';
+import '../services/auth_service.dart';
 import '../main.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
@@ -123,7 +125,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Afiliat',
+                    'Arbahi',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -255,7 +257,7 @@ class _AppDrawerState extends State<AppDrawer> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         value: isDarkMode,
-                        activeThumbColor: theme.colorScheme.primary,
+                        activeColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           themeModeNotifier.value =
                               value ? ThemeMode.dark : ThemeMode.light;
@@ -278,7 +280,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         secondary: Icon(Icons.language,
                             color: theme.colorScheme.onSurfaceVariant),
                         value: isArabic,
-                        activeThumbColor: theme.colorScheme.primary,
+                        activeColor: theme.colorScheme.primary,
                         onChanged: (value) {
                           localeNotifier.value =
                               value ? const Locale('ar') : const Locale('fr');
@@ -286,6 +288,21 @@ class _AppDrawerState extends State<AppDrawer> {
                       );
                     },
                   ),
+                  const SizedBox(height: 12),
+                  _buildNavItem(context, theme,
+                      icon: Icons.logout,
+                      label: 'Log Out'.tr,
+                      isSelected: false,
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await AuthService.instance.logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const LoginPage()),
+                            (route) => false,
+                          );
+                        }
+                      }),
 
                   const SizedBox(height: 24),
                   _buildSectionTitle('HELP & SUPPORT'.tr, theme),
@@ -395,7 +412,7 @@ class _AppDrawerState extends State<AppDrawer> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark
-                    ? theme.dividerColor.withValues(alpha: 0.5)
+                    ? theme.dividerColor.withOpacity(0.5)
                     : Colors.grey.shade200,
               ),
             ),
@@ -405,7 +422,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -437,7 +454,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         item['subtitle'] as String,
                         style: TextStyle(
                           fontSize: 9,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -477,14 +494,14 @@ class _AppDrawerState extends State<AppDrawer> {
               shape: BoxShape.circle,
               border: Border.all(
                 color: isDark
-                    ? theme.dividerColor.withValues(alpha: 0.5)
+                    ? theme.dividerColor.withOpacity(0.5)
                     : Colors.grey.shade200,
               ),
             ),
             child: Center(
               child: FaIcon(
                 item['icon'],
-                color: isDark ? color : color.withValues(alpha: 0.85),
+                color: isDark ? color : color.withOpacity(0.85),
                 size: 14,
               ),
             ),
@@ -520,7 +537,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                   ),
                 ),
                 Wrap(
@@ -545,7 +562,7 @@ class _AppDrawerState extends State<AppDrawer> {
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
         ),
       ),
     );
@@ -563,7 +580,7 @@ class _AppDrawerState extends State<AppDrawer> {
       margin: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: isSelected
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
+            ? theme.colorScheme.primaryContainer.withOpacity(0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,

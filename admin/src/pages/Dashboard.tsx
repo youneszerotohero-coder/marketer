@@ -20,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+import { useLanguage } from '../context/LanguageContext';
 
 import { dashboardApi } from '../services/api';
 
@@ -71,8 +71,6 @@ const StatCard = ({ title, value, icon: Icon, trend, colorClass }: any) => (
   </div>
 );
 
-const fmt = (n: number) => new Intl.NumberFormat('fr-DZ').format(Math.round(n));
-
 export const Dashboard: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('Last 30 Days');
@@ -80,9 +78,13 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { t } = useLanguage();
 
   const userStr = localStorage.getItem('user');
   const userRole = userStr ? JSON.parse(userStr).role : 'admin';
+
+  const fmt = (n: number | string) =>
+    'DZD ' + new Intl.NumberFormat('fr-DZ').format(Math.round(Number(n)));
 
   useEffect(() => {
     setLoading(true);
@@ -92,9 +94,9 @@ export const Dashboard: React.FC = () => {
     if (end_date) params.end_date = end_date;
     dashboardApi.getStats(params)
       .then(({ data }) => setStats(data))
-      .catch(() => setError('Failed to load dashboard data.'))
+      .catch(() => setError(t('dashboard.failedToLoad')))
       .finally(() => setLoading(false));
-  }, [selectedPeriod, customRange]);
+  }, [selectedPeriod, customRange, t]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -109,8 +111,8 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Overview</h1>
-          <p className="text-sm text-text-muted mt-1">Real-time platform insights and sales performance.</p>
+          <h1 className="text-2xl font-bold text-text">{t('dashboard.title')}</h1>
+          <p className="text-sm text-text-muted mt-1">{t('dashboard.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-2 shadow-sm">
@@ -118,28 +120,28 @@ export const Dashboard: React.FC = () => {
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-transparent text-sm font-medium text-text outline-none cursor-pointer pr-2"
+              className="bg-transparent text-sm font-medium text-text outline-none cursor-pointer pe-2"
             >
-              <option value="Today">Today</option>
-              <option value="Yesterday">Yesterday</option>
-              <option value="Last 7 Days">Last 7 Days</option>
-              <option value="Last 30 Days">Last 30 Days</option>
-              <option value="This Month">This Month</option>
-              <option value="Custom">Custom Range</option>
+              <option value="Today">{t('dashboard.today')}</option>
+              <option value="Yesterday">{t('dashboard.yesterday')}</option>
+              <option value="Last 7 Days">{t('dashboard.last7days')}</option>
+              <option value="Last 30 Days">{t('dashboard.last30days')}</option>
+              <option value="This Month">{t('dashboard.thisMonth')}</option>
+              <option value="Custom">{t('dashboard.customRange')}</option>
             </select>
           </div>
 
           {selectedPeriod === 'Custom' && (
             <div className="flex items-center gap-2 bg-surface border border-border rounded-xl px-3 py-1.5 shadow-sm">
               <input type="date" value={customRange.start} onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })} className="bg-transparent text-xs text-text outline-none" />
-              <span className="text-xs text-text-muted font-medium">to</span>
+              <span className="text-xs text-text-muted font-medium">{t('dashboard.to')}</span>
               <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="bg-transparent text-xs text-text outline-none" />
             </div>
           )}
 
           <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer">
             <Download className="w-4 h-4" />
-            Download Report
+            {t('dashboard.downloadReport')}
           </button>
         </div>
       </div>
@@ -160,55 +162,55 @@ export const Dashboard: React.FC = () => {
             {userRole === 'confirmatrice' ? (
               <>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Total Orders" value={stats?.orders?.total ?? 0} icon={Package} colorClass="bg-primary/10 text-primary" />
+                  <StatCard title={t('dashboard.totalOrders')} value={stats?.orders?.total ?? 0} icon={Package} colorClass="bg-primary/10 text-primary" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Pending Orders" value={stats?.orders?.pending ?? 0} icon={Clock} colorClass="bg-yellow-500/10 text-yellow-500" />
+                  <StatCard title={t('dashboard.pendingOrders')} value={stats?.orders?.pending ?? 0} icon={Clock} colorClass="bg-yellow-500/10 text-yellow-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Confirmed Orders" value={stats?.orders?.confirmed ?? 0} icon={CheckCircle} colorClass="bg-blue-500/10 text-blue-500" />
+                  <StatCard title={t('dashboard.confirmedOrders')} value={stats?.orders?.confirmed ?? 0} icon={CheckCircle} colorClass="bg-blue-500/10 text-blue-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Shipped Orders" value={stats?.orders?.shipped ?? 0} icon={Truck} colorClass="bg-purple-500/10 text-purple-500" />
+                  <StatCard title={t('dashboard.shippedOrders')} value={stats?.orders?.shipped ?? 0} icon={Truck} colorClass="bg-purple-500/10 text-purple-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Delivered Orders" value={stats?.orders?.delivered ?? 0} icon={ShoppingBag} colorClass="bg-success/10 text-success" />
+                  <StatCard title={t('dashboard.deliveredOrders')} value={stats?.orders?.delivered ?? 0} icon={ShoppingBag} colorClass="bg-success/10 text-success" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Retour Facturé" value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
+                  <StatCard title={t('dashboard.retourFacture')} value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Retour Exonéré" value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
+                  <StatCard title={t('dashboard.retourExonere')} value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Cancelled" value={stats?.orders?.cancelled ?? 0} icon={XCircle} colorClass="bg-danger/10 text-danger" />
+                  <StatCard title={t('dashboard.cancelled')} value={stats?.orders?.cancelled ?? 0} icon={XCircle} colorClass="bg-danger/10 text-danger" />
                 </div>
               </>
             ) : (
               <>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Total Revenue (DZD)" value={`DZD ${fmt(stats?.sales?.revenue ?? 0)}`} icon={TrendingUp} colorClass="bg-primary/10 text-primary" />
+                  <StatCard title={t('dashboard.totalRevenue')} value={fmt(stats?.sales?.revenue ?? 0)} icon={TrendingUp} colorClass="bg-primary/10 text-primary" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Orders Cost (DZD)" value={`DZD ${fmt(stats?.sales?.orders_cost ?? 0)}`} icon={Receipt} colorClass="bg-amber-500/10 text-amber-500" />
+                  <StatCard title={t('dashboard.ordersCost')} value={fmt(stats?.sales?.orders_cost ?? 0)} icon={Receipt} colorClass="bg-amber-500/10 text-amber-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Net Profit (DZD)" value={`DZD ${fmt(stats?.sales?.net_profit ?? 0)}`} icon={DollarSign} colorClass="bg-emerald-500/10 text-emerald-500" />
+                  <StatCard title={t('dashboard.netProfit')} value={fmt(stats?.sales?.net_profit ?? 0)} icon={DollarSign} colorClass="bg-emerald-500/10 text-emerald-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Total Marketers" value={stats?.users?.marketers ?? 0} icon={Users} colorClass="bg-blue-500/10 text-blue-500" />
+                  <StatCard title={t('dashboard.totalMarketers')} value={stats?.users?.marketers ?? 0} icon={Users} colorClass="bg-blue-500/10 text-blue-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Active Products" value={stats?.products ?? 0} icon={Package} colorClass="bg-purple-500/10 text-purple-500" />
+                  <StatCard title={t('dashboard.activeProducts')} value={stats?.products ?? 0} icon={Package} colorClass="bg-purple-500/10 text-purple-500" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Retour Facturé" value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
+                  <StatCard title={t('dashboard.retourFacture')} value={stats?.orders?.retour_facture ?? 0} icon={RotateCcw} colorClass="bg-rose-600/10 text-rose-700" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Retour Exonéré" value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
+                  <StatCard title={t('dashboard.retourExonere')} value={stats?.orders?.retour_exonere ?? 0} icon={RotateCcw} colorClass="bg-orange-500/10 text-orange-600" />
                 </div>
                 <div className="min-w-[280px] sm:min-w-[300px] flex-1 snap-start">
-                  <StatCard title="Pending Payouts" value={stats?.pending_payouts ?? 0} icon={CreditCard} colorClass="bg-success/10 text-success" />
+                  <StatCard title={t('dashboard.pendingPayouts')} value={stats?.pending_payouts ?? 0} icon={CreditCard} colorClass="bg-success/10 text-success" />
                 </div>
               </>
             )}
@@ -223,7 +225,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className={`bg-surface rounded-2xl border border-border p-6 shadow-sm ${userRole === 'admin' ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-text">Orders Analytics</h2>
+            <h2 className="text-lg font-bold text-text">{t('dashboard.ordersAnalytics')}</h2>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -238,7 +240,7 @@ export const Dashboard: React.FC = () => {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#5F5E5E', fontSize: 12 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#5F5E5E', fontSize: 12 }} dx={-10} />
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                <Area type="monotone" dataKey="total" name="Total Orders" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorOrders)" />
+                <Area type="monotone" dataKey="total" name={t('dashboard.totalOrders')} stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorOrders)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -247,8 +249,8 @@ export const Dashboard: React.FC = () => {
         {userRole === 'admin' && (
           <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-text">Top Performers</h2>
-              <button className="text-text-muted hover:text-primary transition-colors">
+              <h2 className="text-lg font-bold text-text">{t('dashboard.topPerformers')}</h2>
+              <button className="text-text-muted hover:text-primary transition-colors cursor-pointer">
                 <MoreHorizontal className="w-5 h-5" />
               </button>
             </div>
@@ -265,14 +267,14 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-text">{m.name}</p>
-                          <p className="text-xs text-text-muted">{m.delivered_orders_count ?? 0} delivered</p>
+                          <p className="text-xs text-text-muted">{m.delivered_orders_count ?? 0} {t('dashboard.deliveredCount')}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className={`text-sm font-bold ${m.net_balance >= 0 ? 'text-success' : 'text-danger'}`}>
-                          DZD {fmt(m.net_balance ?? 0)}
+                          {fmt(m.net_balance ?? 0)}
                         </p>
-                        <p className="text-xs text-text-muted">Balance</p>
+                        <p className="text-xs text-text-muted">{t('dashboard.balance')}</p>
                       </div>
                     </div>
                   ))}

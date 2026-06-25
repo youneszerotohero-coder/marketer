@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Edit, Ban, Loader2, CheckCircle, Activity, DollarSign } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { usersApi } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export const ManageMarketers: React.FC = () => {
   const [marketers, setMarketers] = useState<any[]>([]);
@@ -16,6 +17,7 @@ export const ManageMarketers: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const { t } = useLanguage();
 
   // Form state
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', status: 'active' });
@@ -35,9 +37,9 @@ export const ManageMarketers: React.FC = () => {
         setMeta(metaObj);
         setPage(p);
       })
-      .catch(() => setError('Failed to load marketers.'))
+      .catch(() => setError(t('marketers.failedToLoad')))
       .finally(() => setLoading(false));
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => { loadMarketers(1, false); }, [loadMarketers]);
 
@@ -99,24 +101,24 @@ export const ManageMarketers: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Manage Marketers</h1>
-          <p className="text-sm text-text-muted mt-1">View, edit, and manage marketer accounts.</p>
+          <h1 className="text-2xl font-bold text-text">{t('marketers.title')}</h1>
+          <p className="text-sm text-text-muted mt-1">{t('marketers.subtitle')}</p>
         </div>
-        <button onClick={() => openModal('add')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20">
-          <Plus className="w-4 h-4" /> Add Marketer
+        <button onClick={() => openModal('add')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer">
+          <Plus className="w-4 h-4" /> {t('marketers.addMarketer')}
         </button>
       </div>
 
       <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
           <div className="relative flex-1 min-w-[250px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input type="text" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input type="text" placeholder={t('marketers.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full ps-10 pe-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
           </div>
           <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); }} className="bg-surface border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
+            <option value="">{t('marketers.allStatus')}</option>
+            <option value="active">{t('common.active')}</option>
+            <option value="suspended">{t('common.suspended')}</option>
           </select>
         </div>
 
@@ -126,19 +128,19 @@ export const ManageMarketers: React.FC = () => {
           <div className="p-6 text-sm text-danger">{error}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">Marketer</th>
-                  <th className="p-4 font-medium">Phone</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Tier</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
+                  <th className="p-4 font-medium text-start">{t('marketers.tableMarketer')}</th>
+                  <th className="p-4 font-medium text-start">{t('marketers.tablePhone')}</th>
+                  <th className="p-4 font-medium text-start">{t('marketers.tableStatus')}</th>
+                  <th className="p-4 font-medium text-start">{t('marketers.tableTier')}</th>
+                  <th className="p-4 font-medium text-end">{t('marketers.tableActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-sm text-text-muted">No marketers found.</td></tr>
+                  <tr><td colSpan={5} className="p-8 text-center text-sm text-text-muted">{t('marketers.noMarketers')}</td></tr>
                 ) : filtered.map((m) => (
                   <tr key={m.id} className="hover:bg-background/50 transition-colors group">
                     <td className="p-4">
@@ -153,20 +155,20 @@ export const ManageMarketers: React.FC = () => {
                     <td className="p-4 text-sm text-text-muted">{m.phone ?? '—'}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${m.status === 'active' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
-                        {m.status}
+                        {m.status === 'active' ? t('common.active') : t('common.suspended')}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-text-muted">{m.tier ?? '—'}</td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal('performance', m)} className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="Performance">
+                    <td className="p-4 text-end">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openModal('performance', m)} className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer" title="Performance">
                           <Activity className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openModal('commissions', m)} className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors" title="Commissions">
+                        <button onClick={() => openModal('commissions', m)} className="p-1.5 text-text-muted hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer" title="Commissions">
                           <DollarSign className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openModal('edit', m)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors" title="Edit"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => openModal('suspend', m)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors" title={m.status === 'active' ? 'Suspend' : 'Activate'}>
+                        <button onClick={() => openModal('edit', m)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => openModal('suspend', m)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title={m.status === 'active' ? 'Suspend' : 'Activate'}>
                           {m.status === 'active' ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </button>
                       </div>
@@ -186,85 +188,84 @@ export const ManageMarketers: React.FC = () => {
               className="flex items-center gap-2 px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-40"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Load More
+              {t('common.loadMore')}
             </button>
           </div>
         )}
       </div>
 
       {/* Add / Edit Modal */}
-      <Modal isOpen={actionModal === 'add' || actionModal === 'edit'} onClose={() => setActionModal(null)} title={actionModal === 'edit' ? 'Edit Marketer' : 'Add New Marketer'}>
+      <Modal isOpen={actionModal === 'add' || actionModal === 'edit'} onClose={() => setActionModal(null)} title={actionModal === 'edit' ? t('marketers.editTitle') : t('marketers.addTitle')}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-text mb-1">{t('marketers.fullName')}</label>
             <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="Ahmed Benali" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Email</label>
+            <label className="block text-sm font-medium text-text mb-1">{t('marketers.email')}</label>
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="ahmed@example.com" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text mb-1">{actionModal === 'edit' ? 'New Password (optional)' : 'Password'}</label>
+              <label className="block text-sm font-medium text-text mb-1">{actionModal === 'edit' ? t('marketers.newPasswordOptional') : t('marketers.password')}</label>
               <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="••••••••" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Phone</label>
+              <label className="block text-sm font-medium text-text mb-1">{t('marketers.phone')}</label>
               <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" placeholder="+213..." />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-border">
-            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2">
+            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm cursor-pointer">{t('common.cancel')}</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 cursor-pointer">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {actionModal === 'edit' ? 'Save Changes' : 'Create Marketer'}
+              {actionModal === 'edit' ? t('common.saveChanges') : t('marketers.createBtn')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Suspend / Activate Modal */}
-      <Modal isOpen={actionModal === 'suspend'} onClose={() => setActionModal(null)} title={selectedMarketer?.status === 'active' ? 'Suspend Marketer' : 'Activate Marketer'}>
+      <Modal isOpen={actionModal === 'suspend'} onClose={() => setActionModal(null)} title={selectedMarketer?.status === 'active' ? t('marketers.suspendTitle') : t('marketers.activateTitle')}>
         <div className="space-y-4">
           <p className="text-sm text-text">
-            Are you sure you want to <strong>{selectedMarketer?.status === 'active' ? 'suspend' : 'activate'}</strong> <strong>{selectedMarketer?.name}</strong>?
-            {selectedMarketer?.status === 'active' && ' They will lose access to their dashboard.'}
+            {t(selectedMarketer?.status === 'active' ? 'marketers.suspendConfirm' : 'marketers.activateConfirm', { name: selectedMarketer?.name })}
           </p>
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm">Cancel</button>
-            <button type="button" onClick={handleSuspend} disabled={saving} className={`px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2 ${selectedMarketer?.status === 'active' ? 'bg-danger hover:bg-danger/90' : 'bg-success hover:bg-success/90'}`}>
+            <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm cursor-pointer">{t('common.cancel')}</button>
+            <button type="button" onClick={handleSuspend} disabled={saving} className={`px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2 cursor-pointer ${selectedMarketer?.status === 'active' ? 'bg-danger hover:bg-danger/90' : 'bg-success hover:bg-success/90'}`}>
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {selectedMarketer?.status === 'active' ? 'Suspend Account' : 'Activate Account'}
+              {selectedMarketer?.status === 'active' ? t('marketers.suspendAccountBtn') : t('marketers.activateAccountBtn')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Performance Modal */}
-      <Modal isOpen={actionModal === 'performance'} onClose={() => setActionModal(null)} title={`${selectedMarketer?.name} - Performance`}>
+      <Modal isOpen={actionModal === 'performance'} onClose={() => setActionModal(null)} title={t('marketers.performanceTitle', { name: selectedMarketer?.name })}>
         {statsLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
         ) : stats ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                <div className="p-4 bg-background border border-border rounded-xl">
-                 <p className="text-xs text-text-muted mb-1">Total Orders</p>
+                 <p className="text-xs text-text-muted mb-1">{t('marketers.totalOrders')}</p>
                  <p className="text-xl font-bold text-text">{stats.performance.total_orders}</p>
                </div>
                <div className="p-4 bg-background border border-border rounded-xl">
-                 <p className="text-xs text-text-muted mb-1">Conversion Rate</p>
+                 <p className="text-xs text-text-muted mb-1">{t('marketers.conversionRate')}</p>
                  <p className="text-xl font-bold text-success">{stats.performance.conversion_rate}%</p>
                </div>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-text mb-3">Top Products</h3>
+              <h3 className="text-sm font-bold text-text mb-3">{t('marketers.topProducts')}</h3>
               <div className="space-y-2">
                  {stats.performance.top_products.length === 0 ? (
-                   <p className="text-sm text-text-muted">No sales yet.</p>
+                   <p className="text-sm text-text-muted">{t('marketers.noSales')}</p>
                  ) : stats.performance.top_products.map((p: any, i: number) => (
                    <div key={i} className="flex justify-between text-sm p-2 bg-background rounded-lg">
                      <span>{p.product_name}</span>
-                     <span className="font-medium text-text">{p.sales} Sales</span>
+                     <span className="font-medium text-text">{t('marketers.salesCount', { count: p.sales })}</span>
                    </div>
                  ))}
               </div>
@@ -276,30 +277,30 @@ export const ManageMarketers: React.FC = () => {
       </Modal>
 
       {/* Commissions Modal */}
-      <Modal isOpen={actionModal === 'commissions'} onClose={() => setActionModal(null)} title={`${selectedMarketer?.name} - Commissions`}>
+      <Modal isOpen={actionModal === 'commissions'} onClose={() => setActionModal(null)} title={t('marketers.commissionsTitle', { name: selectedMarketer?.name })}>
         {statsLoading ? (
            <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
         ) : stats ? (
           <div className="space-y-4">
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl flex justify-between items-center">
               <div>
-                <p className="text-xs text-primary font-medium mb-1">Unpaid Balance</p>
+                <p className="text-xs text-primary font-medium mb-1">{t('marketers.unpaidBalance')}</p>
                 <p className="text-2xl font-bold text-primary">DZD {stats.commissions.unpaid_balance}</p>
               </div>
-              <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">
-                Pay Now
+              <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm cursor-pointer">
+                {t('marketers.payNow')}
               </button>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-text mb-3">Recent Earnings</h3>
+              <h3 className="text-sm font-bold text-text mb-3">{t('marketers.recentEarnings')}</h3>
               <div className="space-y-2">
                  {stats.commissions.recent_earnings.length === 0 ? (
-                   <p className="text-sm text-text-muted">No recent earnings.</p>
+                   <p className="text-sm text-text-muted">{t('marketers.noRecentEarnings')}</p>
                  ) : stats.commissions.recent_earnings.map((e: any) => (
                    <div key={e.id} className="flex justify-between text-sm p-3 border border-border rounded-lg">
                      <div>
                        <p className="font-medium text-text">
-                         {e.type === 'return_fee' ? 'Return Fee' : 'Order'} #{e.order_reference}
+                         {e.type === 'return_fee' ? t('marketers.returnFeeEarning') : t('marketers.orderEarning')} #{e.order_reference}
                        </p>
                        <p className="text-xs text-text-muted">{new Date(e.date).toLocaleString()}</p>
                      </div>

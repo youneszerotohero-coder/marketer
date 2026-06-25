@@ -11,8 +11,8 @@
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "php-open-source-saver/jwt-auth": "^2.8",
+        "symfony/brevo-mailer": "^7.0",
         "symfony/http-client": "7.0",
-        "symfony/postmark-mailer": "7.0",
         "yajra/laravel-oci8": "^11"
     },
     "require-dev": {

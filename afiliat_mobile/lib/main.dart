@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
           builder: (context, currentThemeMode, _) {
             return MaterialApp(
               navigatorKey: mainNavigatorKey,
-              title: 'Afiliat',
+              title: 'Arbahi',
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: currentThemeMode,

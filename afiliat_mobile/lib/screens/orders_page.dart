@@ -373,8 +373,8 @@ class _OrdersPageState extends State<OrdersPage> {
     final status = order['status'] as String? ?? 'pending';
     final statusColors = {
       'pending': [
-        theme.colorScheme.primaryContainer,
-        theme.colorScheme.primary,
+        const Color(0xFFFFEDD5),
+        const Color(0xFFEA580C),
       ],
       'confirmed': [const Color(0xFFDCFCE7), const Color(0xFF16A34A)],
       'shipped': [const Color(0xFFEDE9FE), const Color(0xFF7C3AED)],
@@ -410,7 +410,7 @@ class _OrdersPageState extends State<OrdersPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -553,7 +553,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4),
+                      color: theme.colorScheme.tertiaryContainer.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -644,8 +644,8 @@ class _OrdersPageState extends State<OrdersPage> {
 
     final statusColors = {
       'pending': [
-        theme.colorScheme.primaryContainer,
-        theme.colorScheme.primary,
+        const Color(0xFFFFEDD5),
+        const Color(0xFFEA580C),
       ],
       'confirmed': [const Color(0xFFDCFCE7), const Color(0xFF16A34A)],
       'shipped': [const Color(0xFFEDE9FE), const Color(0xFF7C3AED)],
@@ -798,7 +798,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       theme.colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
                   ),
                 ),
                 child: ListView.separated(
@@ -807,7 +807,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   itemCount: items.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
                   ),
                   itemBuilder: (context, idx) {
                     final item = items[idx];
@@ -1065,7 +1065,7 @@ class _OrdersPageState extends State<OrdersPage> {
             theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
         ),
       ),
       child: Column(children: children),
@@ -1086,7 +1086,7 @@ class _OrdersPageState extends State<OrdersPage> {
           Icon(
             icon,
             size: 20,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1292,7 +1292,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedWilaya,
+                      value: selectedWilaya,
                       isExpanded: true,
                       items: wilayas.map((w) => DropdownMenuItem(value: w, child: Text(w, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) {
@@ -1311,7 +1311,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedCommune,
+                      value: selectedCommune,
                       isExpanded: true,
                       items: currentCommunes.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
                       onChanged: (val) => setSheetState(() => selectedCommune = val),
@@ -1341,35 +1341,35 @@ class _OrdersPageState extends State<OrdersPage> {
                     const SizedBox(height: 12),
                     Text('Delivery Type'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    RadioGroup<String>(
-                      groupValue: deliveryType,
-                      onChanged: (val) => setSheetState(() => deliveryType = val!),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: RadioListTile<String>(
-                                title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
-                                value: 'home',
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: Theme.of(context).colorScheme.primary,
-                              ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: RadioListTile<String>(
+                              title: Text('A Domicile'.tr, style: const TextStyle(fontSize: 14)),
+                              value: 'home',
+                              groupValue: deliveryType,
+                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                              contentPadding: EdgeInsets.zero,
+                              activeColor: Theme.of(context).colorScheme.primary,
                             ),
                           ),
-                          Expanded(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: RadioListTile<String>(
-                                title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
-                                value: 'desk',
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: Theme.of(context).colorScheme.primary,
-                              ),
+                        ),
+                        Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: RadioListTile<String>(
+                              title: Text('Stop Desk'.tr, style: const TextStyle(fontSize: 14)),
+                              value: 'desk',
+                              groupValue: deliveryType,
+                              onChanged: (val) => setSheetState(() => deliveryType = val!),
+                              contentPadding: EdgeInsets.zero,
+                              activeColor: Theme.of(context).colorScheme.primary,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Text('Order Summary'.tr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),

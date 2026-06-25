@@ -37,12 +37,12 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -87,7 +87,7 @@ class ProductCard extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withValues(alpha: 0.3),
+                              Colors.black.withOpacity(0.3),
                               Colors.transparent,
                             ],
                           ),
@@ -110,7 +110,7 @@ class ProductCard extends StatelessWidget {
                             BoxShadow(
                               color: const Color(
                                 0xFFF97316,
-                              ).withValues(alpha: 0.3),
+                              ).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -148,8 +148,8 @@ class ProductCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: inStock
-                              ? const Color(0xFF065F46).withValues(alpha: 0.85)
-                              : const Color(0xFF9B1C1C).withValues(alpha: 0.85),
+                              ? const Color(0xFF065F46).withOpacity(0.85)
+                              : const Color(0xFF9B1C1C).withOpacity(0.85),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -276,8 +276,8 @@ class ProductCard extends StatelessWidget {
                           Container(
                             decoration: BoxDecoration(
                               color: inStock
-                                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                                  ? theme.colorScheme.primaryContainer.withOpacity(0.1)
+                                  : Colors.grey.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: IconButton(

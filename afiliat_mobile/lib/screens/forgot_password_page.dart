@@ -41,7 +41,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       await AuthService.instance.forgotPassword(email);
       if (!mounted) return;
 
-      // Navigate to verification screen and pass the email
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => VerifyCodePage(email: email),
@@ -63,112 +62,133 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF97316).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.mail_outline_rounded,
-                      color: Color(0xFFF97316),
-                      size: 32,
-                    ),
+            // Premium Header Block
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.mail_outline_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Forgot Password'.tr,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enter your email address to receive a 6-digit code'.tr,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Forgot Password'.tr,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enter your email address to receive a 6-digit code'.tr,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
-
             // Form Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Container(
-                padding: const EdgeInsets.all(28.0),
-                decoration: BoxDecoration(
-                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_error.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _error.tr,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 13,
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Container(
+                  padding: const EdgeInsets.all(28.0),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_error.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _error.tr,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
+                      CustomTextField(
+                        label: 'Email Address'.tr,
+                        hint: 'Enter your email'.tr,
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    CustomTextField(
-                      label: 'Email Address'.tr,
-                      hint: 'Enter your email'.tr,
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      prefixIcon: Icon(
-                        Icons.email_outlined,
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 32),
+                      PrimaryButton(
+                        text: _loading ? 'Sending code...'.tr : 'Send Code'.tr,
+                        onPressed: _submit,
+                        isLoading: _loading,
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                    PrimaryButton(
-                      text: _loading ? 'Sending code...'.tr : 'Send Code'.tr,
-                      onPressed: _submit,
-                      isLoading: _loading,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -239,7 +259,6 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
       await AuthService.instance.verifyCode(widget.email, code);
       if (!mounted) return;
 
-      // Navigate to Reset Password Page with verified code/email
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ResetPasswordPage(email: widget.email, token: code),
@@ -284,159 +303,182 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF97316).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.key_outlined,
-                      color: Color(0xFFF97316),
-                      size: 32,
-                    ),
+            // Premium Header Block
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.key_outlined,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Verify Code'.tr,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${'Enter the 6-digit code sent to'.tr} ${widget.email}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Verify Code'.tr,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${'Enter the 6-digit code sent to'.tr} ${widget.email}',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Container(
-                padding: const EdgeInsets.all(28.0),
-                decoration: BoxDecoration(
-                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_error.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _error.tr,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 13,
+            // Form Card
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Container(
+                  padding: const EdgeInsets.all(28.0),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_error.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _error.tr,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
-                      ),
-                    if (_success.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _success.tr,
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontSize: 13,
+                      if (_success.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _success.tr,
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
+                      CustomTextField(
+                        label: 'Verification Code'.tr,
+                        hint: '6-digit code'.tr,
+                        controller: _codeController,
+                        keyboardType: TextInputType.number,
+                        prefixIcon: Icon(
+                          Icons.numbers_outlined,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    CustomTextField(
-                      label: 'Verification Code'.tr,
-                      hint: '6-digit code'.tr,
-                      controller: _codeController,
-                      keyboardType: TextInputType.number,
-                      prefixIcon: Icon(
-                        Icons.numbers_outlined,
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 24),
+                      PrimaryButton(
+                        text: _loading ? 'Verifying...'.tr : 'Check Code'.tr,
+                        onPressed: _submit,
+                        isLoading: _loading,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    PrimaryButton(
-                      text: _loading ? 'Verifying...'.tr : 'Check Code'.tr,
-                      onPressed: _submit,
-                      isLoading: _loading,
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: (_countdown > 0 || _resending) ? null : _resend,
-                        icon: _resending
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: (_countdown > 0 || _resending) ? null : _resend,
+                          icon: _resending
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.refresh_rounded,
+                                  size: 16,
+                                  color: (_countdown > 0)
+                                      ? theme.colorScheme.onSurfaceVariant.withOpacity(0.5)
+                                      : const Color(0xFFF97316),
                                 ),
-                              )
-                            : Icon(
-                                Icons.refresh_rounded,
-                                size: 16,
-                                color: (_countdown > 0)
-                                    ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                                    : const Color(0xFFF97316),
-                              ),
-                        label: Text(
-                          _countdown > 0
-                              ? '${'Resend Code in'.tr} ($_countdown s)'
-                              : 'Resend Code'.tr,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: (_countdown > 0)
-                                ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                                : const Color(0xFFF97316),
+                          label: Text(
+                            _countdown > 0
+                                ? '${'Resend Code in'.tr} ($_countdown s)'
+                                : 'Resend Code'.tr,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: (_countdown > 0)
+                                  ? theme.colorScheme.onSurfaceVariant.withOpacity(0.5)
+                                  : const Color(0xFFF97316),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -494,7 +536,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       await AuthService.instance.resetPassword(widget.email, widget.token, password, confirmPassword);
       if (!mounted) return;
 
-      // Show success dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -505,8 +546,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dismiss dialog
-                Navigator.of(context).popUntil((route) => route.isFirst); // Pop back to Login screen
+                Navigator.of(context).pop();
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: Text('OK'.tr),
             ),
@@ -529,143 +570,166 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF97316).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.vpn_key_outlined,
-                      color: Color(0xFFF97316),
-                      size: 32,
-                    ),
+            // Premium Header Block
+            Container(
+              width: double.infinity,
+              height: 300,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.vpn_key_outlined,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Reset Password'.tr,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Reset Password Page Description'.tr,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Reset Password'.tr,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Reset Password Page Description'.tr,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Container(
-                padding: const EdgeInsets.all(28.0),
-                decoration: BoxDecoration(
-                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_error.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
+            // Form Card
+            Transform.translate(
+              offset: const Offset(0, -40),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Container(
+                  padding: const EdgeInsets.all(28.0),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_error.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _error.tr,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          _error.tr,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 13,
+                      CustomTextField(
+                        label: 'New Password'.tr,
+                        hint: 'Enter new password'.tr,
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
                           ),
                         ),
                       ),
-                    CustomTextField(
-                      label: 'New Password'.tr,
-                      hint: 'Enter new password'.tr,
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      prefixIcon: Icon(
-                        Icons.lock_outline,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                      const SizedBox(height: 20),
+                      CustomTextField(
+                        label: 'Confirm New Password'.tr,
+                        hint: 'Confirm new password'.tr,
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
-                      label: 'Confirm New Password'.tr,
-                      hint: 'Confirm new password'.tr,
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      prefixIcon: Icon(
-                        Icons.lock_outline,
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 32),
+                      PrimaryButton(
+                        text: _loading ? 'Resetting...'.tr : 'Reset Password'.tr,
+                        onPressed: _submit,
+                        isLoading: _loading,
                       ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        onPressed: () => setState(
-                          () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    PrimaryButton(
-                      text: _loading ? 'Resetting...'.tr : 'Reset Password'.tr,
-                      onPressed: _submit,
-                      isLoading: _loading,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

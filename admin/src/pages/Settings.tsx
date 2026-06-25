@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, Plus, Edit, Trash2, Key, Users, Truck, Share2, Upload, FileText, X, ExternalLink } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import api from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Settings: React.FC = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'delivery' | 'accounts' | 'contact'>('delivery');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
@@ -96,10 +98,10 @@ export const Settings: React.FC = () => {
           { key: 'pdf_document_url', value: socialLinks.pdfUrl },
         ]
       });
-      alert("Settings saved!");
+      alert(t('settings.saveSettingsAlert'));
     } catch (error) {
       console.error('Failed to save settings', error);
-      alert("Failed to save settings");
+      alert(t('settings.saveSettingsFailedAlert'));
     }
   };
 
@@ -108,7 +110,7 @@ export const Settings: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      alert('Please select a valid PDF file.');
+      alert(t('settings.pdfFileValidationError'));
       return;
     }
     setPdfUploading(true);
@@ -122,11 +124,11 @@ export const Settings: React.FC = () => {
       if (url) {
         setSocialLinks(prev => ({ ...prev, pdfUrl: url }));
       } else {
-        alert('Upload succeeded but no URL returned.');
+        alert(t('settings.pdfUploadSuccessNoUrl'));
       }
     } catch (err) {
       console.error('PDF upload failed:', err);
-      alert('Failed to upload PDF. Please try again.');
+      alert(t('settings.pdfUploadFailed'));
     } finally {
       setPdfUploading(false);
       if (pdfInputRef.current) pdfInputRef.current.value = '';
@@ -162,7 +164,7 @@ export const Settings: React.FC = () => {
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (accountForm.password && accountForm.password !== accountForm.passwordConfirmation) {
-      alert("Passwords do not match.");
+      alert(t('settings.passwordMismatchError'));
       return;
     }
     setAccountSaving(true);
@@ -181,7 +183,7 @@ export const Settings: React.FC = () => {
         await api.put(`/admin/users/${selectedAccount.id}`, payload);
       } else {
         if (!accountForm.password) {
-          alert("Password is required for new accounts.");
+          alert(t('settings.passwordRequiredNewAccountError'));
           setAccountSaving(false);
           return;
         }
@@ -189,10 +191,10 @@ export const Settings: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchData();
-      alert("Account saved successfully!");
+      alert(t('settings.accountSaveSuccess'));
     } catch (error: any) {
       console.error('Failed to save account:', error);
-      alert(error.response?.data?.message || Object.values(error.response?.data?.errors ?? {}).flat().join('\n') || "Failed to save account");
+      alert(error.response?.data?.message || Object.values(error.response?.data?.errors ?? {}).flat().join('\n') || t('settings.accountSaveFailed'));
     } finally {
       setAccountSaving(false);
     }
@@ -202,16 +204,16 @@ export const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Platform Settings</h1>
-          <p className="text-sm text-text-muted mt-1">Configure delivery integrations and manage admin accounts.</p>
+          <h1 className="text-2xl font-bold text-text">{t('settings.title')}</h1>
+          <p className="text-sm text-text-muted mt-1">{t('settings.subtitle')}</p>
         </div>
         {activeTab === 'accounts' && (
           <button 
             onClick={() => openModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Add Account
+            {t('settings.addAccount')}
           </button>
         )}
       </div>
@@ -219,24 +221,24 @@ export const Settings: React.FC = () => {
       <div className="flex border-b border-border">
         <button 
           onClick={() => setActiveTab('delivery')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'delivery' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'delivery' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
           <Truck className="w-4 h-4" />
-          Delivery APIs
+          {t('settings.tabDeliveryApis')}
         </button>
         <button 
           onClick={() => setActiveTab('contact')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'contact' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'contact' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
           <Share2 className="w-4 h-4" />
-          Contact & Document Settings
+          {t('settings.tabContactDoc')}
         </button>
         <button 
           onClick={() => setActiveTab('accounts')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'accounts' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'accounts' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
           <Users className="w-4 h-4" />
-          Accounts Management
+          {t('settings.tabAccounts')}
         </button>
       </div>
 
@@ -253,8 +255,8 @@ export const Settings: React.FC = () => {
                   <Truck className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text">ZR Express</h2>
-                  <p className="text-sm text-text-muted">Configure ZR Express API credentials for automated shipping, tracking, wilayas, and rates.</p>
+                  <h2 className="text-lg font-bold text-text">{t('settings.zrExpressSectionTitle')}</h2>
+                  <p className="text-sm text-text-muted mt-1">{t('settings.zrExpressSectionSub')}</p>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -265,38 +267,38 @@ export const Settings: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Tenant ID</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.tenantId')}</label>
                 <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="text" value={zrCredentials.tenantId} onChange={(e) => setZrCredentials({...zrCredentials, tenantId: e.target.value})} placeholder="e10b8c86-54ab-4d46-ace7-62b4590e733b" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <Key className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input type="text" value={zrCredentials.tenantId} onChange={(e) => setZrCredentials({...zrCredentials, tenantId: e.target.value})} placeholder="e10b8c86-54ab-4d46-ace7-62b4590e733b" className="w-full ps-10 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Secret Key</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.secretKey')}</label>
                 <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="password" value={zrCredentials.secretKey} onChange={(e) => setZrCredentials({...zrCredentials, secretKey: e.target.value})} placeholder="************************" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <Key className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input type="password" value={zrCredentials.secretKey} onChange={(e) => setZrCredentials({...zrCredentials, secretKey: e.target.value})} placeholder="************************" className="w-full ps-10 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Base URL</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.baseUrl')}</label>
                 <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="text" value={zrCredentials.baseUrl} onChange={(e) => setZrCredentials({...zrCredentials, baseUrl: e.target.value})} placeholder="https://app.zrexpress.fr/api" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <Key className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input type="text" value={zrCredentials.baseUrl} onChange={(e) => setZrCredentials({...zrCredentials, baseUrl: e.target.value})} placeholder="https://app.zrexpress.fr/api" className="w-full ps-10 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">API Version</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.apiVersion')}</label>
                 <div className="relative">
-                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input type="text" value={zrCredentials.version} onChange={(e) => setZrCredentials({...zrCredentials, version: e.target.value})} placeholder="1" className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <Key className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input type="text" value={zrCredentials.version} onChange={(e) => setZrCredentials({...zrCredentials, version: e.target.value})} placeholder="1" className="w-full ps-10 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" />
                 </div>
               </div>
             </div>
             <div className="mt-4 flex justify-end">
-              <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+              <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors cursor-pointer">
                 <Save className="w-4 h-4" />
-                Save Changes
+                {t('common.saveChanges')}
               </button>
             </div>
           </div>
@@ -307,24 +309,24 @@ export const Settings: React.FC = () => {
                 <Truck className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-text">Return Settings</h2>
-                <p className="text-sm text-text-muted">Configure the default penalty fee applied to marketer wallets for returned orders.</p>
+                <h2 className="text-lg font-bold text-text">{t('settings.returnSettingsTitle')}</h2>
+                <p className="text-sm text-text-muted mt-1">{t('settings.returnSettingsSub')}</p>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Return Tariff (DZD)</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.returnTariff')}</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">DZD</span>
-                  <input type="number" value={returnFee} onChange={(e) => setReturnFee(e.target.value)} placeholder="400" className="w-full pl-12 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" />
+                  <span className="absolute start-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-bold">DZD</span>
+                  <input type="number" value={returnFee} onChange={(e) => setReturnFee(e.target.value)} placeholder="400" className="w-full ps-12 pe-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-bold" />
                 </div>
               </div>
             </div>
             <div className="mt-4 flex justify-end">
-              <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">
+              <button onClick={handleSaveSettings} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors cursor-pointer">
                 <Save className="w-4 h-4" />
-                Save Changes
+                {t('common.saveChanges')}
               </button>
             </div>
           </div>
@@ -337,84 +339,84 @@ export const Settings: React.FC = () => {
                 <Share2 className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-text">Contact & Document Settings</h2>
-                <p className="text-sm text-text-muted">Configure the social links, support number, and office numbers PDF URL.</p>
+                <h2 className="text-lg font-bold text-text">{t('settings.contactDocTitle')}</h2>
+                <p className="text-sm text-text-muted mt-1">{t('settings.contactDocSub')}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Facebook Link</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.facebookLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.facebook}
                   onChange={(e) => setSocialLinks({ ...socialLinks, facebook: e.target.value })}
                   placeholder="https://facebook.com/..."
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Telegram Link</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.telegramLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.telegram}
                   onChange={(e) => setSocialLinks({ ...socialLinks, telegram: e.target.value })}
                   placeholder="https://t.me/..."
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">WhatsApp Link / Number</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.whatsappLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.whatsapp}
                   onChange={(e) => setSocialLinks({ ...socialLinks, whatsapp: e.target.value })}
                   placeholder="https://wa.me/... or phone number"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Instagram Link</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.instagramLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.instagram}
                   onChange={(e) => setSocialLinks({ ...socialLinks, instagram: e.target.value })}
                   placeholder="https://instagram.com/..."
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">TikTok Link</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.tiktokLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.tiktok}
                   onChange={(e) => setSocialLinks({ ...socialLinks, tiktok: e.target.value })}
                   placeholder="https://tiktok.com/@..."
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Viber Link / Number</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.viberLink')}</label>
                 <input
                   type="text"
                   value={socialLinks.viber}
                   onChange={(e) => setSocialLinks({ ...socialLinks, viber: e.target.value })}
                   placeholder="viber://chat?... or phone number"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Support Phone Number</label>
+                <label className="block text-sm font-medium text-text mb-1">{t('settings.supportPhone')}</label>
                 <input
                   type="text"
                   value={socialLinks.phone}
                   onChange={(e) => setSocialLinks({ ...socialLinks, phone: e.target.value })}
                   placeholder="+213..."
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text mb-2">Office Numbers PDF (أرقام المكاتب)</label>
+                <label className="block text-sm font-medium text-text mb-2">{t('settings.officeNumbersPdf')}</label>
 
                 {/* Current PDF preview */}
                 {socialLinks.pdfUrl && (
@@ -424,7 +426,7 @@ export const Settings: React.FC = () => {
                       href={socialLinks.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline truncate flex-1"
+                      className="text-sm text-primary hover:underline truncate flex-1 font-semibold"
                     >
                       {socialLinks.pdfUrl}
                     </a>
@@ -432,8 +434,8 @@ export const Settings: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSocialLinks(prev => ({ ...prev, pdfUrl: '' }))}
-                      className="p-1 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"
-                      title="Remove PDF"
+                      className="p-1 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors cursor-pointer"
+                      title={t('settings.removePdf')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -452,23 +454,23 @@ export const Settings: React.FC = () => {
                   type="button"
                   onClick={() => pdfInputRef.current?.click()}
                   disabled={pdfUploading}
-                  className="flex items-center gap-2 w-full px-4 py-3 border-2 border-dashed border-border rounded-lg text-text-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 w-full px-4 py-3 border-2 border-dashed border-border rounded-lg text-text-muted hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {pdfUploading ? (
-                    <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm">Uploading…</span></>
+                    <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm">{t('settings.uploading')}</span></>
                   ) : (
-                    <><Upload className="w-4 h-4" /><span className="text-sm">{socialLinks.pdfUrl ? 'Replace PDF file' : 'Click to upload PDF file'}</span></>
+                    <><Upload className="w-4 h-4" /><span className="text-sm">{socialLinks.pdfUrl ? t('settings.uploadPdfReplace') : t('settings.uploadPdfInstructions')}</span></>
                   )}
                 </button>
 
                 {/* Manual URL fallback */}
-                <p className="text-xs text-text-muted mt-2 mb-1">Or paste a direct URL:</p>
+                <p className="text-xs text-text-muted mt-2 mb-1">{t('settings.pasteDirectUrl')}</p>
                 <input
                   type="text"
                   value={socialLinks.pdfUrl}
                   onChange={(e) => setSocialLinks({ ...socialLinks, pdfUrl: e.target.value })}
                   placeholder="https://example.com/office-numbers.pdf"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium"
                 />
               </div>
             </div>
@@ -476,10 +478,10 @@ export const Settings: React.FC = () => {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={handleSaveSettings}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                Save Changes
+                {t('common.saveChanges')}
               </button>
             </div>
           </div>
@@ -487,19 +489,19 @@ export const Settings: React.FC = () => {
       ) : (
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-start border-collapse">
               <thead>
                 <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">User</th>
-                  <th className="p-4 font-medium">Role</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
+                  <th className="p-4 font-medium text-start">{t('settings.userTableHeader')}</th>
+                  <th className="p-4 font-medium text-start">{t('settings.roleTableHeader')}</th>
+                  <th className="p-4 font-medium text-start">{t('settings.statusTableHeader')}</th>
+                  <th className="p-4 font-medium text-end">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {visibleAccounts.map((account) => (
                   <tr key={account.id} className="hover:bg-background/50 transition-colors group">
-                    <td className="p-4">
+                    <td className="p-4 text-start">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                           {account.name.charAt(0)}
@@ -510,26 +512,26 @@ export const Settings: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-start">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         account.role === 'admin' ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'
                       }`}>
                         {account.role}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-start">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         account.status === 'Active' || account.status === 'active' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                       }`}>
                         {account.status || 'Active'}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(account)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors" title="Edit">
+                    <td className="p-4 text-end">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openModal(account)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title={t('common.edit')}>
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors" title="Delete">
+                        <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title={t('common.delete')}>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -538,7 +540,7 @@ export const Settings: React.FC = () => {
                 ))}
                 {visibleAccounts.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="p-4 text-center text-text-muted">No accounts found.</td>
+                    <td colSpan={4} className="p-4 text-center text-text-muted">{t('settings.noAccountsFound')}</td>
                   </tr>
                 )}
               </tbody>
@@ -551,68 +553,68 @@ export const Settings: React.FC = () => {
                 onClick={() => setLimit(prev => prev + 20)}
                 className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102"
               >
-                Load More
+                {t('common.loadMore')}
               </button>
             </div>
           )}
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedAccount ? "Edit Account" : "Add New Account"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedAccount ? t('settings.editAccountModalTitle') : t('settings.addAccountModalTitle')}>
         <form onSubmit={handleSaveAccount} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-text mb-1">{t('settings.fullNameLabel')}</label>
             <input 
               type="text" 
               value={accountForm.name} 
               onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })} 
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" 
               placeholder="John Doe" 
               required 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-text mb-1">{t('settings.emailLabel')}</label>
             <input 
               type="email" 
               value={accountForm.email} 
               onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })} 
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" 
               placeholder="john@example.com" 
               required 
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text mb-1">{selectedAccount ? "New Password (Optional)" : "Password"}</label>
+              <label className="block text-sm font-medium text-text mb-1">{selectedAccount ? t('settings.newPasswordOptionalLabel') : t('settings.passwordLabel')}</label>
               <input 
                 type="password" 
                 value={accountForm.password} 
                 onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })} 
                 placeholder="••••••••" 
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" 
                 required={!selectedAccount}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Confirm Password</label>
+              <label className="block text-sm font-medium text-text mb-1">{t('settings.confirmPasswordLabel')}</label>
               <input 
                 type="password" 
                 value={accountForm.passwordConfirmation} 
                 onChange={(e) => setAccountForm({ ...accountForm, passwordConfirmation: e.target.value })} 
                 placeholder="••••••••" 
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary" 
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium" 
                 required={!!accountForm.password}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Role</label>
+              <label className="block text-sm font-medium text-text mb-1">{t('settings.roleLabel')}</label>
               <select 
                 value={accountForm.role} 
                 onChange={(e) => setAccountForm({ ...accountForm, role: e.target.value })} 
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium outline-none cursor-pointer"
               >
                 <option value="admin">Admin</option>
                 <option value="confirmatrice">Confirmatrice</option>
@@ -620,11 +622,11 @@ export const Settings: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Status</label>
+              <label className="block text-sm font-medium text-text mb-1">{t('settings.statusLabel')}</label>
               <select 
                 value={accountForm.status} 
                 onChange={(e) => setAccountForm({ ...accountForm, status: e.target.value })} 
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary font-medium outline-none cursor-pointer"
               >
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
@@ -632,12 +634,12 @@ export const Settings: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors">
-              Cancel
+            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors cursor-pointer">
+              {t('common.cancel')}
             </button>
-            <button type="submit" disabled={accountSaving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2">
+            <button type="submit" disabled={accountSaving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 cursor-pointer">
               {accountSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-              {selectedAccount ? "Save Changes" : "Create Account"}
+              {selectedAccount ? t('common.saveChanges') : t('settings.createAccountBtn')}
             </button>
           </div>
         </form>

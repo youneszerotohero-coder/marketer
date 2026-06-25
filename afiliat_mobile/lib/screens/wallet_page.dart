@@ -250,7 +250,7 @@ class _WalletPageState extends State<WalletPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withOpacity(0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -273,7 +273,7 @@ class _WalletPageState extends State<WalletPage> {
                       'Total Earned'.tr,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withOpacity(0.7),
                       ),
                     ),
                     Text(
@@ -295,7 +295,7 @@ class _WalletPageState extends State<WalletPage> {
                       'Pending'.tr,
                       style: TextStyle(
                         fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withOpacity(0.7),
                       ),
                     ),
                     Text(
@@ -327,7 +327,7 @@ class _WalletPageState extends State<WalletPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -378,7 +378,7 @@ class _WalletPageState extends State<WalletPage> {
                     ),
                     decoration: BoxDecoration(
                       color: _selectedMethod == 'bank'
-                          ? primaryColor.withValues(alpha: 0.1)
+                          ? primaryColor.withOpacity(0.1)
                           : theme.colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -425,7 +425,7 @@ class _WalletPageState extends State<WalletPage> {
                     ),
                     decoration: BoxDecoration(
                       color: _selectedMethod == 'flexy'
-                          ? primaryColor.withValues(alpha: 0.1)
+                          ? primaryColor.withOpacity(0.1)
                           : theme.colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -487,7 +487,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: ChoiceChip(
                     label: Text(op),
                     selected: isSelected,
-                    selectedColor: opColor.withValues(alpha: 0.2),
+                    selectedColor: opColor.withOpacity(0.2),
                     checkmarkColor: opColor,
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -611,7 +611,7 @@ class _WalletPageState extends State<WalletPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -623,8 +623,8 @@ class _WalletPageState extends State<WalletPage> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: isCommission
-                  ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.4)
-                  : theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  ? theme.colorScheme.tertiaryContainer.withOpacity(0.4)
+                  : theme.colorScheme.primaryContainer.withOpacity(0.4),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -676,7 +676,7 @@ class _WalletPageState extends State<WalletPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

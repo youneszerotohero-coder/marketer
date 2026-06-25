@@ -12,19 +12,11 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
-
-const navItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'confirmatrice'] },
-  { name: 'Marketers', path: '/marketers', icon: Users, roles: ['admin'] },
-  { name: 'Products', path: '/products', icon: Package, roles: ['admin'] },
-  { name: 'Orders', path: '/orders', icon: ShoppingCart, roles: ['admin', 'confirmatrice'] },
-  { name: 'Wallet', path: '/wallet', icon: Wallet, roles: ['admin'] },
-  { name: 'Shipping Rates', path: '/shipping-rates', icon: Truck, roles: ['admin'] },
-];
 
 type SidebarProps = {
   isMobileMenuOpen?: boolean;
@@ -39,13 +31,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : {};
   const userRole = user?.role || 'admin';
+  const { t } = useLanguage();
+
+  const navItems = [
+    { name: t('nav.dashboard'), path: '/', icon: LayoutDashboard, roles: ['admin', 'confirmatrice'] },
+    { name: t('nav.marketers'), path: '/marketers', icon: Users, roles: ['admin'] },
+    { name: t('nav.products'), path: '/products', icon: Package, roles: ['admin'] },
+    { name: t('nav.orders'), path: '/orders', icon: ShoppingCart, roles: ['admin', 'confirmatrice'] },
+    { name: t('nav.wallet'), path: '/wallet', icon: Wallet, roles: ['admin'] },
+    { name: t('nav.shippingRates'), path: '/shipping-rates', icon: Truck, roles: ['admin'] },
+  ];
 
   return (
     <aside
       className={cn(
-        "w-64 bg-surface border-r border-border h-screen flex flex-col justify-between",
-        "fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out md:sticky md:top-0 md:z-auto md:translate-x-0 md:flex",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+        "w-64 bg-surface border-e border-border h-screen flex flex-col justify-between",
+        "fixed inset-y-0 start-0 z-50 transform transition-transform duration-200 ease-out md:sticky md:top-0 md:z-auto md:flex",
+        isMobileMenuOpen ? "translate-x-0" : "max-md:-translate-x-full max-md:rtl:translate-x-full",
         "md:translate-x-0"
       )}
     >
@@ -55,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-white font-bold text-xl">A</span>
             </div>
-            <span className="text-xl font-bold text-text">Afiliat Admin</span>
+            <span className="text-xl font-bold text-text">{t('nav.title')}</span>
           </div>
         </div>
         <nav className="p-4 space-y-1">
@@ -95,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           >
             <Settings className="w-5 h-5" />
-            Settings
+            {t('nav.settings')}
           </NavLink>
         )}
         <button 
@@ -114,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-danger hover:bg-danger/10 mt-1"
         >
           <LogOut className="w-5 h-5" />
-          Logout
+          {t('common.logout')}
         </button>
       </div>
     </aside>

@@ -4,13 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Notifications\ResetPasswordNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -62,12 +61,47 @@ class ForgotPasswordController extends Controller
             ]
         );
 
-        // Send the notification using the default mailer
+        // Send the code via Brevo HTTP API (avoids SMTP port restrictions)
         try {
-            Notification::route('mail', $request->email)->notify(new ResetPasswordNotification($token));
+            $brevoApiKey = env('BREVO_KEY', '');
+            $fromEmail   = env('MAIL_FROM_ADDRESS', 'noreply@example.com');
+            $fromName    = env('MAIL_FROM_NAME', 'Arbahi');
+
+            $response = Http::withHeaders([
+                'api-key'      => $brevoApiKey,
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ])->post('https://api.brevo.com/v3/smtp/email', [
+                'sender'     => ['name' => $fromName, 'email' => $fromEmail],
+                'to'         => [['email' => $request->email]],
+                'subject'    => 'Code de réinitialisation de mot de passe - Arbahi',
+                'htmlContent' => '
+                    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#fff;border-radius:12px">
+                        <h2 style="color:#EA580C;margin-bottom:8px">Réinitialisation de mot de passe</h2>
+                        <p>Bonjour,</p>
+                        <p>Vous avez demandé la réinitialisation de votre mot de passe Arbahi.</p>
+                        <p>Voici votre code de validation :</p>
+                        <div style="background:#FFF7ED;border:2px solid #EA580C;border-radius:8px;padding:16px;text-align:center;margin:16px 0">
+                            <span style="font-size:32px;font-weight:bold;color:#EA580C;letter-spacing:8px">' . $token . '</span>
+                        </div>
+                        <p style="color:#666;font-size:13px">Ce code est valide pendant <strong>15 minutes</strong>.</p>
+                        <p style="color:#666;font-size:13px">Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet e-mail.</p>
+                        <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
+                        <p style="color:#aaa;font-size:12px;text-align:center">Arbahi &copy; ' . date('Y') . '</p>
+                    </div>',
+            ]);
+
+            if ($response->failed()) {
+                $errBody = $response->json();
+                $errMsg  = $errBody['message'] ?? $response->body();
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Erreur lors de l\'envoi de l\'e-mail : ' . $errMsg
+                ], 500);
+            }
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Erreur lors de l\'envoi de l\'e-mail : ' . $e->getMessage()
             ], 500);
         }
