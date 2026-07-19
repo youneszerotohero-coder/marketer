@@ -57,9 +57,11 @@ Route::middleware('auth:api')->group(function () {
 
     // ─── Marketer routes ─────────────────────────────────────────────────────
     Route::middleware('role:marketer')->group(function () {
+        Route::get('orders/statuses', [OrderController::class, 'statuses']);
         Route::apiResource('orders', OrderController::class)->only(['index', 'store', 'show', 'update']);
         Route::get('wallet', [WalletController::class, 'summary']);
         Route::get('wallet/transactions', [WalletController::class, 'transactions']);
+        Route::post('wallet/withdrawals/status', [WalletController::class, 'withdrawalsStatus']);
         Route::post('wallet/withdraw', [WalletController::class, 'withdraw']);
         Route::get('marketer/stats', MarketerStatsController::class);
     });
@@ -100,6 +102,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('categories', [CategoryAdminController::class, 'index']);
         Route::post('categories', [CategoryAdminController::class, 'store']);
         Route::patch('categories/{category}', [CategoryAdminController::class, 'update']);
+        Route::delete('categories/{category}', [CategoryAdminController::class, 'destroy']);
 
         // Wallet / Withdrawals
         Route::get('wallet/withdrawals', [WithdrawalController::class, 'index']);

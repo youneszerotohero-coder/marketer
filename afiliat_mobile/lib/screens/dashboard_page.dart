@@ -3,6 +3,8 @@ import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_header.dart';
 
+import '../services/cache_service.dart';
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -28,15 +30,69 @@ class _DashboardPageState extends State<DashboardPage> {
       _error = '';
     });
     try {
+      final cache = CacheService.instance;
+      
+      // 1. Try to load and calculate from cache first
+      var cachedStats = await cache.calculateStats();
+      final cachedOrders = await cache.getCachedOrders();
+
+      if (mounted && cachedOrders.isNotEmpty) {
+        setState(() {
+          _stats = cachedStats;
+          _loading = false;
+        });
+      }
+
+      // 2. Perform background sync
       final api = ApiService.instance;
-      final stats = await api.get('/marketer/stats');
+      
+      if (cachedOrders.isEmpty) {
+        // Bootstrap cache: fetch full list of orders and transactions
+        final results = await Future.wait([
+          api.get('/orders', query: {'per_page': '100'}),
+          api.get('/wallet/transactions', query: {'per_page': '100'}),
+        ]);
+        
+        final ordersData = results[0]['data'] as List? ?? [];
+        final txData = results[1]['data'] as List? ?? [];
+        
+        await cache.cacheOrders(ordersData);
+        await cache.cacheTransactions(txData);
+      } else {
+        // Dynamic sync: only fetch order statuses
+        final statuses = await api.get('/orders/statuses');
+        await cache.syncOrderStatuses(statuses as List);
+
+        // Also fetch pending withdrawal statuses
+        final transactions = await cache.getCachedTransactions();
+        final pendingIds = transactions
+            .where((tx) => tx['type'] == 'withdrawal' && tx['status'] == 'pending')
+            .map((tx) => tx['id'])
+            .toList();
+
+        if (pendingIds.isNotEmpty) {
+          final updatedStatusList = await api.post(
+            '/wallet/withdrawals/status',
+            body: {'ids': pendingIds},
+          );
+          await cache.syncWithdrawalStatuses(updatedStatusList as List);
+        }
+      }
+
+      // Recalculate stats with the latest synced data
+      cachedStats = await cache.calculateStats();
+
       if (mounted) {
         setState(() {
-          _stats = stats as Map<String, dynamic>;
+          _stats = cachedStats;
           _loading = false;
         });
       }
     } on ApiException catch (e) {
+      if (_stats != null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
       if (mounted) {
         setState(() {
           _error = e.message;
@@ -44,6 +100,10 @@ class _DashboardPageState extends State<DashboardPage> {
         });
       }
     } catch (_) {
+      if (_stats != null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
       if (mounted) {
         setState(() {
           _error = 'Failed to load dashboard data.'.tr;

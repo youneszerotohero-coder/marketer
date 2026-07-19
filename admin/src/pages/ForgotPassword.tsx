@@ -19,7 +19,11 @@ export const ForgotPassword: React.FC = () => {
       await authApi.forgotPassword(email);
       navigate(`/verify-code?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue. Veuillez réessayer.');
+      const data = err.response?.data;
+      const errMsg = data?.errors
+        ? Object.values(data.errors).flat().join('\n')
+        : (data?.message || 'Une erreur est survenue. Veuillez réessayer.');
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

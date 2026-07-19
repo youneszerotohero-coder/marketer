@@ -42,7 +42,11 @@ export const ResetPassword: React.FC = () => {
       });
       setSuccess(t('auth.resetSuccess'));
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue lors de la réinitialisation.');
+      const data = err.response?.data;
+      const errMsg = data?.errors
+        ? Object.values(data.errors).flat().join('\n')
+        : (data?.message || 'Une erreur est survenue lors de la réinitialisation.');
+      setError(errMsg);
     } finally {
       setLoading(false);
     }

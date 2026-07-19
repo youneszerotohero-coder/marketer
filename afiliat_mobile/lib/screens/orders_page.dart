@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_header.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -140,31 +141,66 @@ class _OrdersPageState extends State<OrdersPage> {
       setState(() {
         _currentPage = 1;
         _hasMore = true;
-        _orders = [];
-        _loading = true;
+        if (refresh) {
+          // Keep current list to avoid blank screens during quick refresh
+        } else {
+          _orders = [];
+          _loading = true;
+        }
         _error = '';
       });
     }
+
     try {
-      final params = <String, dynamic>{
-        'page': _currentPage.toString(),
-        'per_page': '15',
-      };
+      final cache = CacheService.instance;
+      
+      // 1. Get cached orders
+      var allCached = await cache.getCachedOrders();
+
+      // 2. If cache is empty, bootstrap it from server
+      if (allCached.isEmpty) {
+        final data = await ApiService.instance.get('/orders', query: {'per_page': '100'});
+        allCached = List<Map<String, dynamic>>.from(data['data'] as List? ?? []);
+        await cache.cacheOrders(allCached);
+      }
+
+      // 3. Filter and search cached orders locally
       final statusKey = _statusKeys[_selectedFilterIndex];
-      if (statusKey != null) params['status'] = statusKey;
-      if (_searchQuery.isNotEmpty) params['search'] = _searchQuery;
-      final data = await ApiService.instance.get('/orders', query: params);
-      if (mounted) {
-        final newOrders = data['data'] as List? ?? [];
-        final lastPage = data['last_page'] ?? 1;
+      var filtered = allCached;
+      if (statusKey != null) {
+        filtered = filtered.where((o) => o['status'] == statusKey).toList();
+      }
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        filtered = filtered.where((o) =>
+          (o['reference'] ?? '').toString().toLowerCase().contains(query) ||
+          (o['client_name'] ?? '').toString().toLowerCase().contains(query) ||
+          (o['client_phone'] ?? '').toString().toLowerCase().contains(query)
+        ).toList();
+      }
+
+      // 4. Paginate locally
+      const int perPage = 15;
+      final int startIndex = (_currentPage - 1) * perPage;
+      if (startIndex >= filtered.length) {
+        setState(() {
+          _hasMore = false;
+          _loading = false;
+          _isLoadingMore = false;
+        });
+      } else {
+        final int endIndex = (startIndex + perPage < filtered.length)
+            ? startIndex + perPage
+            : filtered.length;
+        final pageOrders = filtered.sublist(startIndex, endIndex);
 
         setState(() {
           if (_currentPage == 1) {
-            _orders = newOrders;
+            _orders = pageOrders;
           } else {
-            _orders.addAll(newOrders);
+            _orders.addAll(pageOrders);
           }
-          _hasMore = _currentPage < lastPage;
+          _hasMore = endIndex < filtered.length;
           if (_hasMore) {
             _currentPage++;
           }
@@ -172,10 +208,44 @@ class _OrdersPageState extends State<OrdersPage> {
           _isLoadingMore = false;
         });
       }
+
+      // 5. Background dynamic sync (on first page load or manual refresh)
+      if (_currentPage == 2 || refresh) {
+        final statuses = await ApiService.instance.get('/orders/statuses');
+        await cache.syncOrderStatuses(statuses as List);
+
+        // Reload locally with updated statuses
+        final updatedCached = await cache.getCachedOrders();
+        var updatedFiltered = updatedCached;
+        if (statusKey != null) {
+          updatedFiltered = updatedFiltered.where((o) => o['status'] == statusKey).toList();
+        }
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          updatedFiltered = updatedFiltered.where((o) =>
+            (o['reference'] ?? '').toString().toLowerCase().contains(query) ||
+            (o['client_name'] ?? '').toString().toLowerCase().contains(query) ||
+            (o['client_phone'] ?? '').toString().toLowerCase().contains(query)
+          ).toList();
+        }
+
+        // Apply updated page slice to _orders without disrupting list scroll
+        final int currentLimit = _orders.isNotEmpty ? _orders.length : perPage;
+        final int finalEnd = currentLimit < updatedFiltered.length ? currentLimit : updatedFiltered.length;
+        
+        if (mounted) {
+          setState(() {
+            _orders = updatedFiltered.sublist(0, finalEnd);
+            _hasMore = finalEnd < updatedFiltered.length;
+          });
+        }
+      }
     } on ApiException catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.message;
+          if (_orders.isEmpty) {
+            _error = e.message;
+          }
           _loading = false;
           _isLoadingMore = false;
         });
@@ -183,7 +253,9 @@ class _OrdersPageState extends State<OrdersPage> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load orders.';
+          if (_orders.isEmpty) {
+            _error = 'Failed to load orders.'.tr;
+          }
           _loading = false;
           _isLoadingMore = false;
         });
@@ -213,7 +285,28 @@ class _OrdersPageState extends State<OrdersPage> {
 
     try {
       await ApiService.instance.post('/orders/$orderId/cancel');
-      _loadOrders();
+      
+      // Update cache locally
+      final cache = CacheService.instance;
+      final cached = await cache.getCachedOrders();
+      for (final order in cached) {
+        if (order['id'] == orderId) {
+          order['status'] = 'cancelled';
+          break;
+        }
+      }
+      await cache.cacheOrders(cached);
+      
+      // Also update commission transaction status to cancelled
+      final cachedTx = await cache.getCachedTransactions();
+      for (final tx in cachedTx) {
+        if (tx['order_id'] == orderId && tx['type'] == 'commission') {
+          tx['status'] = 'cancelled';
+        }
+      }
+      await cache.cacheTransactions(cachedTx);
+
+      _loadOrders(refresh: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Order cancelled successfully'.tr)),
@@ -983,27 +1076,29 @@ class _OrdersPageState extends State<OrdersPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showEditOrderSheet(order);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                  if (status == 'pending') ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showEditOrderSheet(order);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Edit Order'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      child: Text(
-                        'Edit Order'.tr,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
                     ),
-                  ),
+                  ],
                   if (status == 'pending') ...[
                     const SizedBox(width: 12),
                     Expanded(

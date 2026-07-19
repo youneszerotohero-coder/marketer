@@ -48,6 +48,12 @@ class AppTranslations {
       'Signing in...': 'Connexion...',
       'Signing up...': 'Inscription...',
       'Please fill in all fields.': 'Veuillez remplir tous les champs.',
+      'I agree to the Privacy Policy': "J'accepte la politique de confidentialité",
+      'You must agree to the privacy policy to sign up.': "Vous devez accepter la politique de confidentialité pour vous inscrire.",
+      'Read Privacy Policy': "Lire la politique de confidentialité",
+      'Accept': "Accepter",
+      'I agree to the ': "J'accepte la ",
+      'Privacy Policy': "Politique de confidentialité",
       'Connection error. Is the backend running?':
           'Erreur de connexion. Le serveur est-il démarré ?',
       'Please sign in with a marketer account.':
@@ -390,6 +396,12 @@ class AppTranslations {
       'Signing in...': 'جاري تسجيل الدخول...',
       'Signing up...': 'جاري إنشاء الحساب...',
       'Please fill in all fields.': 'يرجى ملء جميع الحقول.',
+      'I agree to the Privacy Policy': 'أوافق على سياسة الخصوصية',
+      'You must agree to the privacy policy to sign up.': 'يجب عليك الموافقة على سياسة الخصوصية للتسجيل.',
+      'Read Privacy Policy': 'قراءة سياسة الخصوصية',
+      'Accept': 'موافق',
+      'I agree to the ': 'أوافق على ',
+      'Privacy Policy': 'سياسة الخصوصية',
       'Connection error. Is the backend running?':
           'تعذر الاتصال. تأكد أن الخادم يعمل.',
       'Please sign in with a marketer account.':

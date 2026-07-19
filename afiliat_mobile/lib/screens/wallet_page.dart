@@ -3,6 +3,7 @@ import '../widgets/custom_header.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/cache_service.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -24,7 +25,6 @@ class _WalletPageState extends State<WalletPage> {
   final _bankController = TextEditingController();
 
   String _selectedMethod = 'bank'; // 'bank' or 'flexy'
-  String _selectedOperator = 'Mobilis'; // Mobilis, Djezzy, Ooredoo
   bool _submitting = false;
 
   @override
@@ -48,59 +48,101 @@ class _WalletPageState extends State<WalletPage> {
         _error = '';
       });
     }
+
     try {
-      final cached = await AuthService.instance.cachedUser();
-      if (cached != null && mounted) {
+      final cache = CacheService.instance;
+      
+      // 1. Load cached user profile
+      final cachedUser = await AuthService.instance.cachedUser();
+      if (cachedUser != null && mounted) {
         setState(() {
-          _user = cached;
+          _user = cachedUser;
           _phoneController.text = _user?['phone'] ?? '';
           final profile = _user?['profile'];
           _bankController.text =
               (profile is Map ? profile['bank_number'] : null)?.toString() ?? '';
         });
       }
-    } catch (_) {}
 
-    try {
-      final results = await Future.wait([
-        ApiService.instance.get('/wallet'),
-        ApiService.instance.get(
-          '/wallet/transactions',
-          query: {'per_page': '20'},
-        ),
-        ApiService.instance.get('/me'),
-      ]);
+      // 2. Load cached transactions and calculate balance locally
+      final cachedTx = await cache.getCachedTransactions();
+      final stats = await cache.calculateStats();
+      
+      if (mounted && cachedTx.isNotEmpty) {
+        setState(() {
+          _transactions = cachedTx;
+          _balance = stats['wallet'] as Map<String, dynamic>;
+          _loading = false;
+        });
+      }
+
+      // 3. Dynamic background updates
+      final api = ApiService.instance;
+      
+      // Fetch fresh user profile
+      final freshUser = await api.get('/me');
       if (mounted) {
         setState(() {
-          _balance = results[0] as Map<String, dynamic>;
-          final txData = results[1] as Map<String, dynamic>;
-          _transactions = txData['data'] ?? [];
-          _user = results[2] as Map<String, dynamic>;
-
+          _user = freshUser as Map<String, dynamic>;
           _phoneController.text = _user?['phone'] ?? '';
           final profile = _user?['profile'];
           _bankController.text =
               (profile is Map ? profile['bank_number'] : null)?.toString() ?? '';
-
-          _loading = false;
         });
         await AuthService.instance.cacheUser(_user!);
       }
-    } on ApiException catch (e) {
+
+      // If transactions are empty, bootstrap from server
+      if (cachedTx.isEmpty) {
+        final txResult = await api.get('/wallet/transactions', query: {'per_page': '100'});
+        final txList = txResult['data'] as List? ?? [];
+        await cache.cacheTransactions(txList);
+      } else {
+        // Fetch only status of pending requests
+        final pendingIds = cachedTx
+            .where((tx) => tx['type'] == 'withdrawal' && tx['status'] == 'pending')
+            .map((tx) => tx['id'])
+            .toList();
+
+        if (pendingIds.isNotEmpty) {
+          final updatedStatusList = await api.post(
+            '/wallet/withdrawals/status',
+            body: {'ids': pendingIds},
+          );
+          await cache.syncWithdrawalStatuses(updatedStatusList as List);
+        }
+      }
+
+      // Recalculate with final synced data
+      final finalTx = await cache.getCachedTransactions();
+      final finalStats = await cache.calculateStats();
+
       if (mounted) {
         setState(() {
-          if (_balance == null) {
-            _error = e.message;
-          }
+          _transactions = finalTx;
+          _balance = finalStats['wallet'] as Map<String, dynamic>;
+          _loading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (_balance != null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _error = e.message;
           _loading = false;
         });
       }
     } catch (_) {
+      if (_balance != null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
       if (mounted) {
         setState(() {
-          if (_balance == null) {
-            _error = 'Failed to load wallet data.'.tr;
-          }
+          _error = 'Failed to load wallet data.'.tr;
           _loading = false;
         });
       }
@@ -130,7 +172,17 @@ class _WalletPageState extends State<WalletPage> {
       paymentMethodName = 'Flexy';
       payoutDetails['method'] = 'Flexy';
       payoutDetails['phone'] = phone;
-      payoutDetails['operator'] = _selectedOperator;
+      
+      // Auto-detect operator based on Algerian prefix
+      String detectedOperator = 'Mobilis'; // fallback default
+      if (phone.startsWith('05') || phone.startsWith('5') || phone.startsWith('+2135')) {
+        detectedOperator = 'Ooredoo';
+      } else if (phone.startsWith('07') || phone.startsWith('7') || phone.startsWith('+2137')) {
+        detectedOperator = 'Djezzy';
+      } else if (phone.startsWith('06') || phone.startsWith('6') || phone.startsWith('+2136')) {
+        detectedOperator = 'Mobilis';
+      }
+      payoutDetails['operator'] = detectedOperator;
     } else {
       final bankNumber = _bankController.text.trim();
       if (bankNumber.isEmpty) {
@@ -146,7 +198,7 @@ class _WalletPageState extends State<WalletPage> {
 
     setState(() => _submitting = true);
     try {
-      await ApiService.instance.post(
+      final response = await ApiService.instance.post(
         '/wallet/withdraw',
         body: {
           'amount': amount,
@@ -154,6 +206,15 @@ class _WalletPageState extends State<WalletPage> {
           'payout_details': payoutDetails,
         },
       );
+
+      // Save the returned new transaction to local cache immediately
+      if (response is Map<String, dynamic>) {
+        final cache = CacheService.instance;
+        final cachedTx = await cache.getCachedTransactions();
+        cachedTx.insert(0, response);
+        await cache.cacheTransactions(cachedTx);
+      }
+
       _amountController.clear();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -465,44 +526,6 @@ class _WalletPageState extends State<WalletPage> {
           ),
           const SizedBox(height: 20),
           if (_selectedMethod == 'flexy') ...[
-            Text(
-              'Select Operator'.tr,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: ['Mobilis', 'Djezzy', 'Ooredoo'].map((op) {
-                final isSelected = _selectedOperator == op;
-                final opColor = op == 'Mobilis'
-                    ? const Color(0xFF006D36)
-                    : op == 'Djezzy'
-                    ? const Color(0xFFEA580C)
-                    : const Color(0xFFBA1A1A);
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(op),
-                    selected: isSelected,
-                    selectedColor: opColor.withOpacity(0.2),
-                    checkmarkColor: opColor,
-                    labelStyle: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? opColor : theme.colorScheme.onSurface,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _selectedOperator = op);
-                      }
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
             TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,

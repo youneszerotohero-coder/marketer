@@ -17,6 +17,7 @@ class ProductAdminController extends Controller
         $products = Product::with(['category', 'brand', 'variants', 'images'])
             ->when($request->query('search'), fn ($q, $search) => $q->where('name', 'like', "%{$search}%"))
             ->when($request->query('category_id'), fn ($q, $id) => $q->where('category_id', $id))
+            ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
             ->latest()
             ->paginate((int) $request->query('per_page', 20));
 
@@ -32,10 +33,10 @@ class ProductAdminController extends Controller
             'description' => ['nullable', 'string'],
             'in_stock' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array'],
-            'images.*' => ['image', 'max:5120'],
+            'images.*' => ['image'],
             'main_image_index' => ['nullable', 'integer'],
             'variants' => ['required', 'array', 'min:1'],
-            'variants.*.sku' => ['required', 'string', 'distinct', 'unique:product_variants,sku'],
+            'variants.*.sku' => ['required', 'string', 'distinct'],
             'variants.*.purchase_price' => ['required', 'numeric', 'min:0'],
             'variants.*.sale_price' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_value' => ['required', 'numeric', 'min:0'],
@@ -82,12 +83,16 @@ class ProductAdminController extends Controller
             'status' => ['sometimes', 'in:active,archived'],
             'in_stock' => ['sometimes', 'boolean'],
             'images' => ['nullable', 'array'],
-            'images.*' => ['image', 'max:5120'],
+            'images.*' => ['image'],
             'deleted_images' => ['nullable', 'array'],
             'main_image_id' => ['nullable', 'integer'],
             'main_image_index' => ['nullable', 'integer'],
             'variants' => ['sometimes', 'array', 'min:1'],
-            'variants.*.sku' => ['required', 'string', 'distinct'],
+            'variants.*.sku' => [
+                'required',
+                'string',
+                'distinct',
+            ],
             'variants.*.purchase_price' => ['required', 'numeric', 'min:0'],
             'variants.*.sale_price' => ['required', 'numeric', 'min:0'],
             'variants.*.commission_value' => ['required', 'numeric', 'min:0'],
@@ -156,7 +161,8 @@ class ProductAdminController extends Controller
 
     public function archive(Product $product): JsonResponse
     {
-        $product->update(['status' => 'archived']);
+        $newStatus = $product->status === 'archived' ? 'active' : 'archived';
+        $product->update(['status' => $newStatus]);
 
         return response()->json($product);
     }

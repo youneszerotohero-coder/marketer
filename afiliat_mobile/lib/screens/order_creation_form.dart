@@ -4,6 +4,7 @@ import '../models/cart_item_model.dart';
 import '../services/cart_service.dart';
 import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 
 class OrderCreationForm extends StatefulWidget {
   final List<CartItemModel> cartItems;
@@ -196,7 +197,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           )
           .toList();
 
-      await ApiService.instance.post(
+      final response = await ApiService.instance.post(
         '/orders',
         body: {
           'client_name': _nameController.text.trim(),
@@ -209,6 +210,15 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           'shipping_fee': _computedShippingCost,
         },
       );
+
+      // Save order to cache immediately
+      if (response is Map<String, dynamic> && response['order'] != null) {
+        final orderMap = Map<String, dynamic>.from(response['order']);
+        final cache = CacheService.instance;
+        final cachedOrders = await cache.getCachedOrders();
+        cachedOrders.insert(0, orderMap);
+        await cache.cacheOrders(cachedOrders);
+      }
 
       _showSuccessDialog();
     } catch (e) {

@@ -4,6 +4,8 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import 'main_shell.dart';
 import '../l10n/app_translations.dart';
+import '../l10n/privacy_policy_text.dart';
+import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 
@@ -19,6 +21,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscureConfirmPassword = true;
   bool _loading = false;
   String _error = '';
+  bool _agreeToPrivacy = false;
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -36,6 +39,142 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
+  void _showPrivacyPolicyDialog() {
+    final lang = localeNotifier.value.languageCode;
+    final policy = PrivacyPolicyText.getData(lang);
+    final sections = policy['sections'] as List;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isRtl = lang == 'ar';
+
+        return Directionality(
+          textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+          child: AlertDialog(
+            backgroundColor: theme.cardTheme.color ?? theme.colorScheme.surface,
+            title: Row(
+              children: [
+                Icon(Icons.privacy_tip_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    policy['title'] ?? 'Privacy Policy',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      policy['last_updated'] ?? '',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      policy['intro'] ?? '',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...sections.map((section) {
+                      final title = section['title'] ?? '';
+                      final content = section['content'] ?? '';
+                      final bullets = section['bullets'] as List? ?? [];
+
+                      return Padding(
+                         padding: const EdgeInsets.only(bottom: 16.0),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(
+                               title,
+                               style: TextStyle(
+                                 color: theme.colorScheme.onSurface,
+                                 fontWeight: FontWeight.bold,
+                                 fontSize: 16,
+                               ),
+                             ),
+                             const SizedBox(height: 6),
+                             Text(
+                               content,
+                               style: TextStyle(
+                                 color: theme.colorScheme.onSurfaceVariant,
+                                 fontSize: 14,
+                               ),
+                             ),
+                             if (bullets.isNotEmpty) ...[
+                               const SizedBox(height: 8),
+                               ...bullets.map((bullet) {
+                                 return Padding(
+                                   padding: const EdgeInsets.only(bottom: 6.0),
+                                   child: Row(
+                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                     children: [
+                                       Text(
+                                         '✓  ',
+                                         style: TextStyle(
+                                           color: theme.colorScheme.primary,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                                       Expanded(
+                                         child: Text(
+                                           bullet,
+                                           style: TextStyle(
+                                             color: theme.colorScheme.onSurfaceVariant,
+                                             fontSize: 13,
+                                           ),
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 );
+                               }),
+                             ],
+                           ],
+                         ),
+                       );
+                    }),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      policy['footer'] ?? '',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Accept'.tr),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _register() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -45,6 +184,10 @@ class _SignupPageState extends State<SignupPage> {
 
     if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       setState(() => _error = 'Please fill in all fields.');
+      return;
+    }
+    if (!_agreeToPrivacy) {
+      setState(() => _error = 'You must agree to the privacy policy to sign up.');
       return;
     }
     if (password.length < 8) {
@@ -265,7 +408,47 @@ class _SignupPageState extends State<SignupPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreeToPrivacy,
+                            activeColor: theme.colorScheme.primary,
+                            onChanged: (val) {
+                              setState(() {
+                                _agreeToPrivacy = val ?? false;
+                              });
+                            },
+                          ),
+                          Expanded(
+                            child: Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  "I agree to the ".tr,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _showPrivacyPolicyDialog,
+                                  child: Text(
+                                    "Privacy Policy".tr,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
                       PrimaryButton(
                         text: _loading ? 'Signing up...'.tr : 'Sign Up'.tr,
                         onPressed: _register,

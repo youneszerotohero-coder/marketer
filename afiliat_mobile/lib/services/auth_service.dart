@@ -102,19 +102,29 @@ class AuthService {
   // ─── Token helpers ────────────────────────────────────────────────────────
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getString('access_token') == null) return false;
+    final token = prefs.getString('access_token');
+    if (token == null) return false;
 
     try {
       final user = await me();
       if (user['role'] == 'marketer') {
         await prefs.setString('user', jsonEncode(user));
         return true;
+      } else {
+        await prefs.remove('access_token');
+        await prefs.remove('user');
+        return false;
       }
-    } catch (_) {}
-
-    await prefs.remove('access_token');
-    await prefs.remove('user');
-    return false;
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await prefs.remove('access_token');
+        await prefs.remove('user');
+        return false;
+      }
+      return true;
+    } catch (_) {
+      return true;
+    }
   }
 
   Future<Map<String, dynamic>?> cachedUser() async {

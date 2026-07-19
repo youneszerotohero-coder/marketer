@@ -26,7 +26,7 @@ class CategoryAdminController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
             'parent_id' => ['nullable', 'exists:categories,id'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image'],
             'status' => ['sometimes', 'in:active,inactive'],
         ]);
 
@@ -45,7 +45,7 @@ class CategoryAdminController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255', 'unique:categories,name,' . $category->id],
             'parent_id' => ['sometimes', 'nullable', 'exists:categories,id'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'image'],
             'status' => ['sometimes', 'in:active,inactive'],
             'delete_image' => ['nullable', 'boolean'],
         ]);
@@ -68,5 +68,31 @@ class CategoryAdminController extends Controller
         $category->update($data);
 
         return response()->json($category);
+    }
+
+    public function destroy(Category $category): JsonResponse
+    {
+        // Check if there are associated products
+        if ($category->products()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete category because it has associated products.'
+            ], 422);
+        }
+
+        // Check if there are subcategories
+        if (Category::where('parent_id', $category->id)->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete category because it has subcategories.'
+            ], 422);
+        }
+
+        // Delete the category image if exists
+        if ($category->image_path) {
+            Storage::disk('public')->delete($category->image_path);
+        }
+
+        $category->delete();
+
+        return response()->json(['message' => 'Category deleted successfully']);
     }
 }

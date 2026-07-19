@@ -166,6 +166,10 @@ class OrderController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if ($order->status !== Order::STATUS_PENDING) {
+            return response()->json(['message' => 'Only pending orders can be modified.'], 422);
+        }
+
         $data = $request->validate([
             'client_name' => ['required', 'string', 'max:255'],
             'client_phone' => ['required', 'string', 'max:20'],
@@ -249,5 +253,24 @@ class OrderController extends Controller
         $order->update(['status' => Order::STATUS_CANCELLED]);
 
         return response()->json(['message' => 'Order cancelled successfully', 'order' => $order]);
+    }
+
+    public function statuses(Request $request): JsonResponse
+    {
+        $orders = $request->user()->marketerOrders()
+            ->with(['returnFeeTransaction'])
+            ->select(['id', 'status', 'marketer_commission'])
+            ->latest()
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'status' => $order->status,
+                    'marketer_commission' => (float) $order->marketer_commission,
+                    'return_fee' => $order->returnFeeTransaction ? (float) $order->returnFeeTransaction->amount : null,
+                ];
+            });
+
+        return response()->json($orders);
     }
 }

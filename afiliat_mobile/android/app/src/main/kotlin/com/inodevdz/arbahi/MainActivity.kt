@@ -1,4 +1,4 @@
-package com.example.afiliat_mobile
+package com.inodevdz.arbahi
 
 import io.flutter.embedding.android.FlutterActivity
 

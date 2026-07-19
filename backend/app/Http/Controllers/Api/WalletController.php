@@ -31,4 +31,20 @@ class WalletController extends Controller
 
         return response()->json($wallet->requestWithdrawal($request->user(), $data), 201);
     }
+
+    public function withdrawalsStatus(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['required', 'integer'],
+        ]);
+
+        $statuses = $request->user()->walletTransactions()
+            ->where('type', 'withdrawal')
+            ->whereIn('id', $data['ids'])
+            ->select(['id', 'status'])
+            ->get();
+
+        return response()->json($statuses);
+    }
 }

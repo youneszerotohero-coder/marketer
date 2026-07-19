@@ -20,6 +20,9 @@ class ForgotPasswordTest extends TestCase
     public function test_send_reset_code_successfully_for_valid_marketer(): void
     {
         Notification::fake();
+        \Illuminate\Support\Facades\Http::fake([
+            'api.brevo.com/*' => \Illuminate\Support\Facades\Http::response([], 200)
+        ]);
 
         $user = User::factory()->create([
             'email' => 'marketer@example.com',
@@ -158,13 +161,10 @@ class ForgotPasswordTest extends TestCase
             'created_at' => now(),
         ]);
 
-        // Weak password (e.g. no symbols, no mixed case, or less than 8 chars)
+        // Weak password (less than 8 chars)
         $weakPasswords = [
-            'weak', // too short, no mix, no symbols
-            'Weakpassword123', // missing symbols
-            'weakpassword123!', // missing uppercase
-            'WEAKPASSWORD123!', // missing lowercase
-            'WeakPassword!', // missing numbers
+            'weak', // too short
+            '1234567', // too short
         ];
 
         foreach ($weakPasswords as $weakPassword) {

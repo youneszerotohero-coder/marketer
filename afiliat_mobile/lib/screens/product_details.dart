@@ -8,6 +8,7 @@ import '../l10n/app_translations.dart';
 import '../services/api_service.dart';
 import '../models/cart_item_model.dart';
 import '../services/cart_service.dart';
+import '../services/cache_service.dart';
 
 class ProductDetails extends StatefulWidget {
   final int? productId;
@@ -19,6 +20,7 @@ class ProductDetails extends StatefulWidget {
 }
 
 class _ProductDetailsState extends State<ProductDetails> {
+  final GlobalKey _formKey = GlobalKey();
   int quantity = 1;
   int currentImageIndex = 0;
 
@@ -164,6 +166,14 @@ class _ProductDetailsState extends State<ProductDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill all required fields.'.tr)),
       );
+      final formContext = _formKey.currentContext;
+      if (formContext != null) {
+        Scrollable.ensureVisible(
+          formContext,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
       return;
     }
 
@@ -178,7 +188,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         },
       ];
 
-      await ApiService.instance.post(
+      final response = await ApiService.instance.post(
         '/orders',
         body: {
           'client_name': _nameController.text.trim(),
@@ -191,6 +201,15 @@ class _ProductDetailsState extends State<ProductDetails> {
           'shipping_fee': _computedShippingCost,
         },
       );
+
+      // Save order to cache immediately
+      if (response is Map<String, dynamic> && response['order'] != null) {
+        final orderMap = Map<String, dynamic>.from(response['order']);
+        final cache = CacheService.instance;
+        final cachedOrders = await cache.getCachedOrders();
+        cachedOrders.insert(0, orderMap);
+        await cache.cacheOrders(cachedOrders);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -695,18 +714,18 @@ class _ProductDetailsState extends State<ProductDetails> {
 
             // 7. Bottom Bar
             Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLowest,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
+                    blurRadius: 15,
+                    offset: const Offset(0, -4),
                   ),
                 ],
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+                  top: Radius.circular(24),
                 ),
               ),
               child: Column(
@@ -715,180 +734,134 @@ class _ProductDetailsState extends State<ProductDetails> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Product Price'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        _productTotalPrice,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+                      _buildCompactInfo(theme, 'Product'.tr, _productTotalPrice),
+                      _buildCompactInfo(theme, 'Delivery'.tr, 'DZD ${_computedShippingCost.toStringAsFixed(0)}'),
+                      _buildCompactInfo(theme, 'Commission'.tr, 'DZD ${(_commissionNum * quantity).toStringAsFixed(0)}'),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Shipping Cost'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'DZD ${_computedShippingCost.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Commission'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'DZD ${(_commissionNum * quantity).toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total Price'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        _finalTotalPrice,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _stock > 0
-                              ? () {
-                                  if (_defaultVariant == null) return;
-                                  final item = CartItemModel(
-                                    id: _defaultVariant!['id'].toString(),
-                                    brand: _product!['brand']?['name'] ?? '',
-                                    title: _product!['name'] ?? '',
-                                    variantSku: _defaultVariant!['sku'] ?? '',
-                                    price:
-                                        double.tryParse(
-                                          _defaultVariant!['sale_price']
-                                              .toString(),
-                                        ) ??
-                                        0.0,
-                                    commission:
-                                        double.tryParse(
-                                          _defaultVariant!['commission_value']
-                                              .toString(),
-                                        ) ??
-                                        0.0,
-                                    imageUrl:
-                                        _product!['main_image_path'] != null
-                                        ? ApiService.getImageUrl(
-                                            _product!['main_image_path'],
-                                          )
-                                        : 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb',
-                                    quantity: quantity,
-                                    availableVariants:
-                                        _product!['variants'] as List?,
-                                  );
-                                  CartService.instance.addToCart(item);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Added to cart'.tr)),
-                                  );
-                                }
-                              : null,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: primaryColor,
-                            side: BorderSide(color: primaryColor, width: 2),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Total Price'.tr,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          child: Text(
-                            'Add to Cart'.tr,
-                            style: const TextStyle(
-                              fontSize: 16,
+                          Text(
+                            _finalTotalPrice,
+                            style: TextStyle(
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
-                          onPressed: _stock > 0 && !_submitting
-                              ? _submitOrder
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 8,
-                            shadowColor: primaryColor.withOpacity(0.4),
-                          ),
-                          child: _submitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  _inStock ? 'Buy Now'.tr : 'Rupture de stock'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _stock > 0
+                                    ? () {
+                                        if (_defaultVariant == null) return;
+                                        final item = CartItemModel(
+                                          id: _defaultVariant!['id'].toString(),
+                                          brand: _product!['brand']?['name'] ?? '',
+                                          title: _product!['name'] ?? '',
+                                          variantSku: _defaultVariant!['sku'] ?? '',
+                                          price:
+                                              double.tryParse(
+                                                _defaultVariant!['sale_price']
+                                                    .toString(),
+                                              ) ??
+                                              0.0,
+                                          commission:
+                                              double.tryParse(
+                                                _defaultVariant!['commission_value']
+                                                    .toString(),
+                                              ) ??
+                                              0.0,
+                                          imageUrl:
+                                              _product!['main_image_path'] != null
+                                              ? ApiService.getImageUrl(
+                                                  _product!['main_image_path'],
+                                                )
+                                              : 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb',
+                                          quantity: quantity,
+                                          availableVariants:
+                                              _product!['variants'] as List?,
+                                        );
+                                        CartService.instance.addToCart(item);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Added to cart'.tr)),
+                                        );
+                                      }
+                                    : null,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: primaryColor,
+                                  side: BorderSide(color: primaryColor, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: Text(
+                                  'Add to Cart'.tr,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _stock > 0 && !_submitting
+                                    ? _submitOrder
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                  shadowColor: primaryColor.withOpacity(0.2),
+                                ),
+                                child: _submitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        _inStock ? 'Buy Now'.tr : 'Rupture'.tr,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -899,6 +872,29 @@ class _ProductDetailsState extends State<ProductDetails> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCompactInfo(ThemeData theme, String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 11,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 
@@ -937,6 +933,7 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   Widget _buildClientInformationCard(ThemeData theme) {
     return Container(
+      key: _formKey,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color:

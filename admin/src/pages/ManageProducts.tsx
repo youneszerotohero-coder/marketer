@@ -1,11 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Archive, LayoutGrid, Upload, X, Star } from 'lucide-react';
+import { Search, Plus, Edit, Archive, LayoutGrid, Upload, X, Star, RotateCcw } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import api, { STORAGE_URL } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
+const compressImage = async (file: File, quality = 0.7, maxWidth = 1024, maxHeight = 1024): Promise<File> => {
+  // Convert HEIC/HEIF to JPEG first
+  if (
+    file.name.toLowerCase().endsWith('.heic') ||
+    file.name.toLowerCase().endsWith('.heif') ||
+    file.type === 'image/heic' ||
+    file.type === 'image/heif'
+  ) {
+    try {
+      const heic2anyModule = await import('heic2any');
+      const heic2any = heic2anyModule.default;
+      const converted = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.8
+      });
+      const blob = Array.isArray(converted) ? converted[0] : converted;
+      file = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
+    } catch (err) {
+      console.error('Failed to convert HEIC image:', err);
+    }
+  }
+
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export const ManageProducts: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'archived' | 'categories'>('products');
   const [actionModal, setActionModal] = useState<'add' | 'edit' | 'archive' | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [productsPage, setProductsPage] = useState(1);
@@ -39,10 +126,11 @@ export const ManageProducts: React.FC = () => {
   const fetchData = async (p = 1, append = false) => {
     setLoading(true);
     try {
-      if (activeTab === 'products') {
+      if (activeTab === 'products' || activeTab === 'archived') {
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (categoryFilter) params.append('category_id', categoryFilter);
+        params.append('status', activeTab === 'products' ? 'active' : 'archived');
         params.append('page', p.toString());
         params.append('per_page', '20');
         const response = await api.get(`/admin/products?${params.toString()}`);
@@ -78,7 +166,7 @@ export const ManageProducts: React.FC = () => {
     setActionModal(type);
     
     if (type === 'edit' && item) {
-      if (activeTab === 'products') {
+      if (activeTab === 'products' || activeTab === 'archived') {
         const existingImages = (item.images || []).map((img: any) => ({
           id: img.id,
           path: img.path,
@@ -118,9 +206,13 @@ export const ManageProducts: React.FC = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map((file, idx) => ({
+      const filesArray = Array.from(e.target.files);
+      const compressedFiles = await Promise.all(
+        filesArray.map(file => compressImage(file, 0.7, 1024, 1024))
+      );
+      const newFiles = compressedFiles.map((file, idx) => ({
         file,
         isMain: productImages.filter(i => !i.isDeleted).length === 0 && idx === 0,
         preview: URL.createObjectURL(file)
@@ -146,10 +238,12 @@ export const ManageProducts: React.FC = () => {
     setProductImages(prev => prev.map((img, i) => ({ ...img, isMain: i === idx })));
   };
 
-  const handleCategoryImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCategoryImgChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setCategoryImageFile(e.target.files[0]);
-      setCategoryImagePreview(URL.createObjectURL(e.target.files[0]));
+      const file = e.target.files[0];
+      const compressed = await compressImage(file, 0.7, 1024, 1024);
+      setCategoryImageFile(compressed);
+      setCategoryImagePreview(URL.createObjectURL(compressed));
       setCategoryImageDeleted(false);
     }
   };
@@ -157,15 +251,17 @@ export const ManageProducts: React.FC = () => {
   const handleArchive = async () => {
     if (!selectedItem) return;
     try {
-      if (activeTab === 'products') {
+      if (activeTab === 'products' || activeTab === 'archived') {
         await api.patch(`/admin/products/${selectedItem.id}/archive`);
       } else {
         await api.delete(`/admin/categories/${selectedItem.id}`);
       }
       setActionModal(null);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to archive:', error);
+      const msg = error.response?.data?.message || 'Action failed';
+      alert(msg);
     }
   };
 
@@ -173,7 +269,30 @@ export const ManageProducts: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    if (activeTab === 'products') {
+    if (activeTab === 'products' || activeTab === 'archived') {
+      // Validate unique SKUs within the variants form
+      const skus: string[] = [];
+      let duplicateSku: string | null = null;
+      
+      for (let i = 0; i < productVariants.length; i++) {
+        const input = e.currentTarget.querySelector(`[name="variants[${i}][sku]"]`) as HTMLInputElement | null;
+        if (input) {
+          const skuVal = input.value.trim().toLowerCase();
+          if (skuVal) {
+            if (skus.includes(skuVal)) {
+              duplicateSku = input.value.trim();
+              break;
+            }
+            skus.push(skuVal);
+          }
+        }
+      }
+      
+      if (duplicateSku) {
+        alert(t('products.duplicateSkuError') || `Duplicate SKU detected: "${duplicateSku}". Each variant must have a unique SKU.`);
+        return;
+      }
+
       formData.delete('images[]'); // Remove any native file inputs as we manage them manually
       
       deletedImages.forEach(id => formData.append('deleted_images[]', id.toString()));
@@ -206,7 +325,7 @@ export const ManageProducts: React.FC = () => {
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       let url = '';
 
-      if (activeTab === 'products') {
+      if (activeTab === 'products' || activeTab === 'archived') {
         url = actionModal === 'add' ? `${baseUrl}/admin/products` : `${baseUrl}/admin/products/${selectedItem.id}?_method=PATCH`;
       } else {
         url = actionModal === 'add' ? `${baseUrl}/admin/categories` : `${baseUrl}/admin/categories/${selectedItem.id}?_method=PATCH`;
@@ -254,13 +373,16 @@ export const ManageProducts: React.FC = () => {
 
   const getModalTitle = () => {
     if (actionModal === 'edit') {
-      return activeTab === 'products' ? t('products.editProductTitle') : t('products.editCategoryTitle');
+      return (activeTab === 'products' || activeTab === 'archived') ? t('products.editProductTitle') : t('products.editCategoryTitle');
     }
-    return activeTab === 'products' ? t('products.addProductTitle') : t('products.addCategoryTitle');
+    return (activeTab === 'products' || activeTab === 'archived') ? t('products.addProductTitle') : t('products.addCategoryTitle');
   };
 
   const getArchiveModalTitle = () => {
-    return activeTab === 'products' ? t('products.archiveProductTitle') : t('products.archiveCategoryTitle');
+    if ((activeTab === 'products' || activeTab === 'archived') && selectedItem?.status === 'archived') {
+      return t('products.restoreProductTitle');
+    }
+    return (activeTab === 'products' || activeTab === 'archived') ? t('products.archiveProductTitle') : t('products.archiveCategoryTitle');
   };
 
   return (
@@ -275,7 +397,7 @@ export const ManageProducts: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          {activeTab === 'products' ? t('products.addProduct') : t('products.addCategory')}
+          {(activeTab === 'products' || activeTab === 'archived') ? t('products.addProduct') : t('products.addCategory')}
         </button>
       </div>
 
@@ -287,6 +409,12 @@ export const ManageProducts: React.FC = () => {
           {t('products.tabProductsList')}
         </button>
         <button 
+          onClick={() => setActiveTab('archived')}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'archived' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
+        >
+          {t('products.tabArchivedProducts')}
+        </button>
+        <button 
           onClick={() => setActiveTab('categories')}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'categories' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
@@ -294,7 +422,7 @@ export const ManageProducts: React.FC = () => {
         </button>
       </div>
 
-      {activeTab === 'products' ? (
+      {activeTab === 'products' || activeTab === 'archived' ? (
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
             <div className="relative flex-1 min-w-[250px]">
@@ -338,7 +466,7 @@ export const ManageProducts: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-border">
                 {visibleProducts.map((product) => (
-                  <tr key={product.id} className="group hover:bg-surface-hover transition-colors">
+                  <tr key={product.id} className={`group hover:bg-surface-hover transition-colors ${product.status === 'archived' ? 'opacity-60 bg-text-muted/5' : ''}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         {product.main_image_path ? (
@@ -373,8 +501,8 @@ export const ManageProducts: React.FC = () => {
                         <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openModal('archive', product)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title="Archive">
-                          <Archive className="w-4 h-4" />
+                        <button onClick={() => openModal('archive', product)} className={`p-1.5 rounded-md transition-colors cursor-pointer ${product.status === 'archived' ? 'text-success hover:bg-success/10' : 'text-text-muted hover:text-danger hover:bg-danger/10'}`} title={product.status === 'archived' ? 'Restore' : 'Archive'}>
+                          {product.status === 'archived' ? <RotateCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                         </button>
                       </div>
                     </td>
@@ -644,14 +772,18 @@ export const ManageProducts: React.FC = () => {
       <Modal isOpen={actionModal === 'archive'} onClose={() => setActionModal(null)} title={getArchiveModalTitle()}>
         <div className="space-y-4">
           <p className="text-sm text-text">
-            {t('products.archiveConfirm', { name: selectedItem?.name })}
+            {activeTab === 'products' && selectedItem?.status === 'archived'
+              ? t('products.restoreConfirm', { name: selectedItem?.name })
+              : t('products.archiveConfirm', { name: selectedItem?.name })}
           </p>
           <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
             <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 border border-border text-text-muted rounded-lg text-sm font-medium hover:bg-background transition-colors cursor-pointer">
               {t('common.cancel')}
             </button>
-            <button type="button" onClick={handleArchive} className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium hover:bg-danger/90 transition-colors cursor-pointer">
-              {t('products.archiveBtn')}
+            <button type="button" onClick={handleArchive} className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer ${activeTab === 'products' && selectedItem?.status === 'archived' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'}`}>
+              {activeTab === 'products' && selectedItem?.status === 'archived'
+                ? t('products.restoreBtn')
+                : t('products.archiveBtn')}
             </button>
           </div>
         </div>

@@ -14,15 +14,23 @@ class ApiService {
     if (envUrl.isNotEmpty) {
       return envUrl;
     }
-    if (kIsWeb) {
-      return 'http://164.92.178.58/api';
-    }
-    try {
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        return 'http://164.92.178.58/api';
+    
+    // In debug mode, automatically connect to the local backend
+    if (kDebugMode) {
+      if (kIsWeb) {
+        return 'http://localhost:8000/api';
       }
-    } catch (_) {}
-    return 'http://164.92.178.58/api';
+      try {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          // Android Emulator maps host machine's localhost to 10.0.2.2
+          return 'http://10.0.2.2:8000/api';
+        }
+      } catch (_) {}
+      return 'http://localhost:8000/api';
+    }
+
+    // In production/release mode, use the secure domain
+    return 'https://marketeradmin.me/api';
   }
 
   static ApiService? _instance;
@@ -189,10 +197,10 @@ class ApiService {
 
     if (res.statusCode >= 200 && res.statusCode < 300) return body;
     final message =
-        body['message'] ??
         (body['errors'] != null
             ? (body['errors'] as Map).values.expand((e) => e as List).join('\n')
-            : 'Request failed (${res.statusCode})');
+            : body['message']) ??
+        'Request failed (${res.statusCode})';
     throw ApiException(_translateMessage(message.toString()), res.statusCode);
   }
 

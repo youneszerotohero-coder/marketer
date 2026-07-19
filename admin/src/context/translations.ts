@@ -169,6 +169,7 @@ export const translations = {
       addProduct: "Ajouter un produit",
       addCategory: "Ajouter une catégorie",
       tabProductsList: "Liste des produits",
+      tabArchivedProducts: "Produits archivés",
       tabCategories: "Catégories",
       searchProducts: "Rechercher par nom, SKU ou marque...",
       searchCategories: "Rechercher des catégories...",
@@ -208,8 +209,12 @@ export const translations = {
       archiveProductTitle: "Archiver le produit",
       archiveConfirm: "Êtes-vous sûr de vouloir archiver {name} ? Cela le masquera de l'application des marketeurs.",
       archiveBtn: "Archiver",
+      restoreProductTitle: "Activer le produit",
+      restoreConfirm: "Êtes-vous sûr de vouloir réactiver {name} ? Il sera de nouveau visible dans l'application des marketeurs.",
+      restoreBtn: "Activer",
       validationError: "Erreur de validation",
-      saveError: "Une erreur est survenue lors de l'enregistrement. Vérifiez la console."
+      saveError: "Une erreur est survenue lors de l'enregistrement. Vérifiez la console.",
+      duplicateSkuError: "Chaque variante doit avoir un SKU unique."
     },
     orders: {
       failedToLoad: "Échec du chargement des commandes.",
@@ -601,6 +606,7 @@ export const translations = {
       addProduct: "إضافة منتج",
       addCategory: "إضافة فئة",
       tabProductsList: "قائمة المنتجات",
+      tabArchivedProducts: "المنتجات المؤرشفة",
       tabCategories: "الفئات",
       searchProducts: "بحث باسم المنتج، SKU أو العلامة التجارية...",
       searchCategories: "البحث في الفئات...",
@@ -640,8 +646,12 @@ export const translations = {
       archiveProductTitle: "أرشفة المنتج",
       archiveConfirm: "هل أنت متأكد من أرشفة المنتج {name}؟ سيتم إخفاؤه من تطبيق المسوقين.",
       archiveBtn: "أرشفة",
+      restoreProductTitle: "تنشيط المنتج",
+      restoreConfirm: "هل أنت متأكد من إعادة تنشيط المنتج {name}؟ سيعود للظهور في تطبيق المسوقين.",
+      restoreBtn: "تنشيط",
       validationError: "خطأ في التحقق من البيانات",
-      saveError: "حدث خطأ أثناء الحفظ. يرجى مراجعة وحدة التحكم (console)."
+      saveError: "حدث خطأ أثناء الحفظ. يرجى مراجعة وحدة التحكم (console).",
+      duplicateSkuError: "يجب أن يكون لكل خيار رمز SKU فريد."
     },
     orders: {
       failedToLoad: "فشل في تحميل الطلبات.",
