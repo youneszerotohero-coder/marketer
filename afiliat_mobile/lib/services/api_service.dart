@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../l10n/app_translations.dart';
 import '../screens/login_page.dart';
+import 'cache_service.dart';
+import 'cart_service.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -29,8 +31,8 @@ class ApiService {
       return 'http://localhost:8000/api';
     }
 
-    // In production/release mode, use the secure domain
-    return 'https://marketeradmin.me/api';
+    // In production/release mode, use the new server URL
+    return 'http://72.62.186.12/api';
   }
 
   static ApiService? _instance;
@@ -167,6 +169,8 @@ class ApiService {
 
       if (!isAuthRoute) {
         clearCache();
+        CacheService.instance.clearCache();
+        CartService.instance.clearCart();
         SharedPreferences.getInstance().then((prefs) {
           prefs.remove('access_token');
           prefs.remove('user');

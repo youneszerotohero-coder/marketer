@@ -31,6 +31,8 @@ class CacheService {
       final f2 = await _getTransactionsFile();
       if (await f2.exists()) await f2.delete();
     } catch (_) {}
+    _ordersFile = null;
+    _transactionsFile = null;
   }
 
   Future<List<Map<String, dynamic>>> getCachedOrders() async {

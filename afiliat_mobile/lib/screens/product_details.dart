@@ -26,6 +26,7 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _customTotalController = TextEditingController();
   bool _submitting = false;
 
   String? selectedWilaya = '16 - Alger';
@@ -177,6 +178,19 @@ class _ProductDetailsState extends State<ProductDetails> {
       return;
     }
 
+    if (_customTotalController.text.trim().isNotEmpty &&
+        (double.tryParse(_customTotalController.text.trim()) ?? 0) < _baseTotal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${'Total price cannot be lower than calculated minimum'.tr}: DZD ${_baseTotal.toStringAsFixed(0)}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _submitting = true);
 
     try {
@@ -199,6 +213,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           'items': items,
           'status': 'pending',
           'shipping_fee': _computedShippingCost,
+          'custom_total': _effectiveTotal,
         },
       );
 
@@ -308,9 +323,20 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
   }
 
+  double get _baseTotal => (_priceNum * quantity) + _computedShippingCost + (_commissionNum * quantity);
+
+  double get _enteredTotal {
+    final text = _customTotalController.text.trim();
+    if (text.isEmpty) return _baseTotal;
+    return double.tryParse(text) ?? _baseTotal;
+  }
+
+  double get _effectiveTotal => _enteredTotal < _baseTotal ? _baseTotal : _enteredTotal;
+  double get _extraCommission => _effectiveTotal - _baseTotal > 0 ? _effectiveTotal - _baseTotal : 0.0;
+  double get _effectiveCommission => (_commissionNum * quantity) + _extraCommission;
+
   String get _finalTotalPrice {
-    final total = (_priceNum * quantity) + _computedShippingCost + (_commissionNum * quantity);
-    return 'DZD ${total.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'; 
+    return 'DZD ${_effectiveTotal.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'; 
   }
 
   @override
@@ -474,24 +500,13 @@ class _ProductDetailsState extends State<ProductDetails> {
                                         color: primaryColor.withOpacity(0.2),
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.monetization_on_rounded,
-                                          size: 14,
-                                          color: primaryColor,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '+ DZD $_commissionNum (x$quantity)',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: primaryColor,
-                                          ),
-                                        ),
-                                      ],
+                                    child: Text(
+                                      '+ DZD ${_commissionNum.toInt()}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryColor,
+                                      ),
                                     ),
                                   ),
                                   Container(
@@ -736,7 +751,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                     children: [
                       _buildCompactInfo(theme, 'Product'.tr, _productTotalPrice),
                       _buildCompactInfo(theme, 'Delivery'.tr, 'DZD ${_computedShippingCost.toStringAsFixed(0)}'),
-                      _buildCompactInfo(theme, 'Commission'.tr, 'DZD ${(_commissionNum * quantity).toStringAsFixed(0)}'),
+                      _buildCompactInfo(theme, 'Commission'.tr, 'DZD ${_effectiveCommission.toStringAsFixed(0)}'),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -1092,6 +1107,34 @@ class _ProductDetailsState extends State<ProductDetails> {
               ],
             ),
           ),
+
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'TOTAL PRICE (DZD)'.tr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTextField(
+                  hint: _baseTotal.toStringAsFixed(0),
+                  controller: _customTotalController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) => setState(() {}),
+                ),
+                const SizedBox(height: 4),
+                if (_customTotalController.text.trim().isNotEmpty &&
+                    (double.tryParse(_customTotalController.text.trim()) ?? 0) < _baseTotal)
+                  Text(
+                    '${'Minimum total required'.tr}: DZD ${_baseTotal.toStringAsFixed(0)}',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  )
+                else if (_extraCommission > 0)
+                  Text(
+                    '+ DZD ${_extraCommission.toStringAsFixed(0)} ${'added to your commission!'.tr}',
+                    style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1122,11 +1165,13 @@ class _ProductDetailsState extends State<ProductDetails> {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     BorderRadius? borderRadius,
+    ValueChanged<String>? onChanged,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       style: TextStyle(
         fontSize: 14,
         color: Theme.of(context).colorScheme.onSurface,

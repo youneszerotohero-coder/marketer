@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
+import 'cache_service.dart';
+import 'cart_service.dart';
 
 class AuthService {
   static AuthService? _instance;
@@ -12,6 +14,10 @@ class AuthService {
 
   // ─── Login ────────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> login(String email, String password) async {
+    await CacheService.instance.clearCache();
+    CartService.instance.clearCart();
+    _api.clearCache();
+
     final data =
         await _api.post(
               '/auth/login',
@@ -38,6 +44,10 @@ class AuthService {
     String password, {
     String? phone,
   }) async {
+    await CacheService.instance.clearCache();
+    CartService.instance.clearCart();
+    _api.clearCache();
+
     final data =
         await _api.post(
               '/auth/register',
@@ -89,6 +99,8 @@ class AuthService {
       await _api.post('/auth/logout');
     } catch (_) {}
     _api.clearCache();
+    await CacheService.instance.clearCache();
+    CartService.instance.clearCart();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
     await prefs.remove('user');
@@ -113,12 +125,16 @@ class AuthService {
       } else {
         await prefs.remove('access_token');
         await prefs.remove('user');
+        await CacheService.instance.clearCache();
+        CartService.instance.clearCart();
         return false;
       }
     } on ApiException catch (e) {
       if (e.statusCode == 401 || e.statusCode == 403) {
         await prefs.remove('access_token');
         await prefs.remove('user');
+        await CacheService.instance.clearCache();
+        CartService.instance.clearCart();
         return false;
       }
       return true;

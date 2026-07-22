@@ -44,6 +44,8 @@ class OrderController extends Controller
             'items.*.product_variant_id' => ['required', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
+            'custom_total' => ['nullable', 'numeric'],
+            'total' => ['nullable', 'numeric'],
         ]);
 
         $order = DB::transaction(function () use ($request, $data, $delivery) {
@@ -127,6 +129,22 @@ class OrderController extends Controller
                 ->whereIn('status', [Order::STATUS_PENDING, Order::STATUS_CONFIRMED, Order::STATUS_SHIPPED])
                 ->exists();
 
+            $baseTotal = $subtotal + $shippingFee + $commission;
+            $providedTotal = isset($data['custom_total']) 
+                ? (float) $data['custom_total'] 
+                : (isset($data['total']) ? (float) $data['total'] : null);
+
+            if ($providedTotal !== null) {
+                if ($providedTotal < $baseTotal - 0.01) {
+                    abort(422, "Le total ne peut pas être inférieur au montant minimum calculé (" . number_format($baseTotal, 0, '.', '') . " DZD).");
+                }
+                $extraCommission = $providedTotal - $baseTotal;
+                $commission += $extraCommission;
+                $finalTotal = $providedTotal;
+            } else {
+                $finalTotal = $baseTotal;
+            }
+
             $order = Order::create([
                 'reference' => 'ORD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
                 'marketer_id' => $request->user()->id,
@@ -138,7 +156,7 @@ class OrderController extends Controller
                 'delivery_type' => $data['delivery_type'],
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
-                'total' => $subtotal + $shippingFee,
+                'total' => $finalTotal,
                 'marketer_commission' => $commission,
                 'status' => Order::STATUS_PENDING,
                 'is_duplicate' => $duplicate,

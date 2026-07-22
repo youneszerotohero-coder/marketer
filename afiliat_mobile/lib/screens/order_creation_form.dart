@@ -24,6 +24,7 @@ class OrderCreationForm extends StatefulWidget {
 class _OrderCreationFormState extends State<OrderCreationForm> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _customTotalController = TextEditingController();
 
   String? selectedWilaya;
   String? selectedCommune;
@@ -154,7 +155,17 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     0,
     (total, item) => total + (item.commission * item.quantity),
   );
-  double get total => subtotal + _computedShippingCost + totalCommission;
+  double get _baseTotal => subtotal + _computedShippingCost + totalCommission;
+
+  double get _enteredTotal {
+    final text = _customTotalController.text.trim();
+    if (text.isEmpty) return _baseTotal;
+    return double.tryParse(text) ?? _baseTotal;
+  }
+
+  double get total => _enteredTotal < _baseTotal ? _baseTotal : _enteredTotal;
+  double get _extraCommission => total - _baseTotal > 0 ? total - _baseTotal : 0.0;
+  double get effectiveCommission => totalCommission + _extraCommission;
 
 
   Future<void> _submitOrder() async {
@@ -184,6 +195,19 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
       return;
     }
 
+    if (_customTotalController.text.trim().isNotEmpty &&
+        (double.tryParse(_customTotalController.text.trim()) ?? 0) < _baseTotal) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${'Total price cannot be lower than calculated minimum'.tr}: DZD ${_baseTotal.toStringAsFixed(0)}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -208,6 +232,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           'items': items,
           'status': 'pending',
           'shipping_fee': _computedShippingCost,
+          'custom_total': total,
         },
       );
 
@@ -602,6 +627,34 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
               ],
             ),
           ),
+
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'TOTAL PRICE (DZD)'.tr,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTextField(
+                  hint: _baseTotal.toStringAsFixed(0),
+                  controller: _customTotalController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) => setState(() {}),
+                ),
+                const SizedBox(height: 4),
+                if (_customTotalController.text.trim().isNotEmpty &&
+                    (double.tryParse(_customTotalController.text.trim()) ?? 0) < _baseTotal)
+                  Text(
+                    '${'Minimum total required'.tr}: DZD ${_baseTotal.toStringAsFixed(0)}',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  )
+                else if (_extraCommission > 0)
+                  Text(
+                    '+ DZD ${_extraCommission.toStringAsFixed(0)} ${'added to your commission!'.tr}',
+                    style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -666,7 +719,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           const SizedBox(height: 12),
           _buildSummaryRow(
             'Commission'.tr,
-            'DZD ${totalCommission.toStringAsFixed(0)}',
+            'DZD ${effectiveCommission.toStringAsFixed(0)}',
           ),
           const SizedBox(height: 16),
 
@@ -734,7 +787,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                   ],
                 ),
                 Text(
-                  '+ DZD ${totalCommission.toStringAsFixed(0)}',
+                  '+ DZD ${effectiveCommission.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -930,11 +983,13 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
     TextInputType keyboardType = TextInputType.text,
     BorderRadius? borderRadius,
     TextEditingController? controller,
+    ValueChanged<String>? onChanged,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       style: TextStyle(
         fontSize: 14,
         color: Theme.of(context).colorScheme.onSurface,

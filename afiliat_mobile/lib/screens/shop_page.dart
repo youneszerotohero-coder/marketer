@@ -417,10 +417,10 @@ class _ShopPageState extends State<ShopPage> {
           brand: brandName,
           rating: '4.5', // Placeholder, API might not have it
           title: title,
-          price: 'DZD $price',
+          price: 'DZD ${price.toInt()}',
           stockText: inStock ? 'En stock'.tr : 'Rupture de stock'.tr,
           inStock: inStock,
-          commission: '+ DZD $commission',
+          commission: 'DZD ${commission.toInt()}',
           imageUrl: imageUrl,
           onTap: () {
             // We pass the full product object via ProductDetails arguments, or fetch it by ID.
