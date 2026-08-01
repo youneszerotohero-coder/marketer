@@ -8,31 +8,84 @@ class CacheService {
 
   File? _ordersFile;
   File? _transactionsFile;
+  String? _currentUserId;
+  int _sessionEpoch = 0;
+
+  int get sessionEpoch => _sessionEpoch;
+
+  void setUserId(dynamic userId) {
+    final idStr = userId?.toString();
+    if (_currentUserId != idStr) {
+      _currentUserId = idStr;
+      _ordersFile = null;
+      _transactionsFile = null;
+    }
+  }
 
   Future<File> _getOrdersFile() async {
     if (_ordersFile != null) return _ordersFile!;
-    final dir = await getApplicationDocumentsDirectory();
-    _ordersFile = File('${dir.path}/orders_cache.json');
+    Directory dir;
+    try {
+      dir = await getTemporaryDirectory();
+    } catch (_) {
+      dir = await getApplicationDocumentsDirectory();
+    }
+    final userKey = (_currentUserId != null && _currentUserId!.isNotEmpty) ? _currentUserId : 'guest';
+    _ordersFile = File('${dir.path}/orders_cache_$userKey.json');
     return _ordersFile!;
   }
 
   Future<File> _getTransactionsFile() async {
     if (_transactionsFile != null) return _transactionsFile!;
-    final dir = await getApplicationDocumentsDirectory();
-    _transactionsFile = File('${dir.path}/transactions_cache.json');
+    Directory dir;
+    try {
+      dir = await getTemporaryDirectory();
+    } catch (_) {
+      dir = await getApplicationDocumentsDirectory();
+    }
+    final userKey = (_currentUserId != null && _currentUserId!.isNotEmpty) ? _currentUserId : 'guest';
+    _transactionsFile = File('${dir.path}/transactions_cache_$userKey.json');
     return _transactionsFile!;
   }
 
-  // Clear cache on logout
+  // Clear cache on logout or account switch
   Future<void> clearCache() async {
+    _sessionEpoch++;
     try {
-      final f1 = await _getOrdersFile();
-      if (await f1.exists()) await f1.delete();
-      final f2 = await _getTransactionsFile();
-      if (await f2.exists()) await f2.delete();
+      // Clean up temporary directory
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        final entities = tempDir.listSync();
+        for (final entity in entities) {
+          if (entity is File &&
+              (entity.path.contains('orders_cache') || entity.path.contains('transactions_cache'))) {
+            try {
+              await entity.delete();
+            } catch (_) {}
+          }
+        }
+      }
     } catch (_) {}
+
+    try {
+      // Clean up legacy documents directory
+      final docDir = await getApplicationDocumentsDirectory();
+      if (await docDir.exists()) {
+        final entities = docDir.listSync();
+        for (final entity in entities) {
+          if (entity is File &&
+              (entity.path.contains('orders_cache') || entity.path.contains('transactions_cache'))) {
+            try {
+              await entity.delete();
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (_) {}
+
     _ordersFile = null;
     _transactionsFile = null;
+    _currentUserId = null;
   }
 
   Future<List<Map<String, dynamic>>> getCachedOrders() async {
@@ -48,7 +101,8 @@ class CacheService {
     return [];
   }
 
-  Future<void> cacheOrders(List<dynamic> orders) async {
+  Future<void> cacheOrders(List<dynamic> orders, {int? epoch}) async {
+    if (epoch != null && epoch != _sessionEpoch) return;
     try {
       final file = await _getOrdersFile();
       await file.writeAsString(jsonEncode(orders));
@@ -68,7 +122,8 @@ class CacheService {
     return [];
   }
 
-  Future<void> cacheTransactions(List<dynamic> transactions) async {
+  Future<void> cacheTransactions(List<dynamic> transactions, {int? epoch}) async {
+    if (epoch != null && epoch != _sessionEpoch) return;
     try {
       final file = await _getTransactionsFile();
       await file.writeAsString(jsonEncode(transactions));

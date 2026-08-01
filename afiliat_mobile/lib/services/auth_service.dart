@@ -30,6 +30,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('access_token');
       await prefs.remove('user');
+      CacheService.instance.setUserId(null);
       throw ApiException('Please sign in with a marketer account.', 403);
     }
 
@@ -100,6 +101,7 @@ class AuthService {
     } catch (_) {}
     _api.clearCache();
     await CacheService.instance.clearCache();
+    CacheService.instance.setUserId(null);
     CartService.instance.clearCart();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
@@ -108,24 +110,43 @@ class AuthService {
 
   // ─── Me ───────────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> me() async {
-    return (await _api.get('/me')) as Map<String, dynamic>;
+    final user = (await _api.get('/me')) as Map<String, dynamic>;
+    if (user.containsKey('id')) {
+      CacheService.instance.setUserId(user['id']);
+    }
+    return user;
   }
 
   // ─── Token helpers ────────────────────────────────────────────────────────
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
-    if (token == null) return false;
+    if (token == null) {
+      CacheService.instance.setUserId(null);
+      return false;
+    }
+
+    final rawUser = prefs.getString('user');
+    if (rawUser != null) {
+      try {
+        final cached = jsonDecode(rawUser);
+        if (cached is Map && cached.containsKey('id')) {
+          CacheService.instance.setUserId(cached['id']);
+        }
+      } catch (_) {}
+    }
 
     try {
       final user = await me();
       if (user['role'] == 'marketer') {
         await prefs.setString('user', jsonEncode(user));
+        CacheService.instance.setUserId(user['id']);
         return true;
       } else {
         await prefs.remove('access_token');
         await prefs.remove('user');
         await CacheService.instance.clearCache();
+        CacheService.instance.setUserId(null);
         CartService.instance.clearCart();
         return false;
       }
@@ -134,6 +155,7 @@ class AuthService {
         await prefs.remove('access_token');
         await prefs.remove('user');
         await CacheService.instance.clearCache();
+        CacheService.instance.setUserId(null);
         CartService.instance.clearCart();
         return false;
       }
@@ -148,13 +170,20 @@ class AuthService {
     final raw = prefs.getString('user');
     if (raw == null) return null;
     try {
-      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      if (map.containsKey('id')) {
+        CacheService.instance.setUserId(map['id']);
+      }
+      return map;
     } catch (_) {
       return null;
     }
   }
 
   Future<void> cacheUser(Map<String, dynamic> user) async {
+    if (user.containsKey('id')) {
+      CacheService.instance.setUserId(user['id']);
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user', jsonEncode(user));
   }
@@ -163,6 +192,10 @@ class AuthService {
   Future<void> _persist(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('access_token', data['access_token'] as String);
-    await prefs.setString('user', jsonEncode(data['user']));
+    final user = data['user'];
+    if (user is Map && user.containsKey('id')) {
+      CacheService.instance.setUserId(user['id']);
+    }
+    await prefs.setString('user', jsonEncode(user));
   }
 }

@@ -45,6 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       // 2. Perform background sync
       final api = ApiService.instance;
+      final currentEpoch = cache.sessionEpoch;
       
       if (cachedOrders.isEmpty) {
         // Bootstrap cache: fetch full list of orders and transactions
@@ -56,8 +57,8 @@ class _DashboardPageState extends State<DashboardPage> {
         final ordersData = results[0]['data'] as List? ?? [];
         final txData = results[1]['data'] as List? ?? [];
         
-        await cache.cacheOrders(ordersData);
-        await cache.cacheTransactions(txData);
+        await cache.cacheOrders(ordersData, epoch: currentEpoch);
+        await cache.cacheTransactions(txData, epoch: currentEpoch);
       } else {
         // Dynamic sync: only fetch order statuses
         final statuses = await api.get('/orders/statuses');

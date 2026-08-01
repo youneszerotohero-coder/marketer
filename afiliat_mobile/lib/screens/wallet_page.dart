@@ -78,6 +78,7 @@ class _WalletPageState extends State<WalletPage> {
 
       // 3. Dynamic background updates
       final api = ApiService.instance;
+      final currentEpoch = cache.sessionEpoch;
       
       // Fetch fresh user profile
       final freshUser = await api.get('/me');
@@ -96,7 +97,7 @@ class _WalletPageState extends State<WalletPage> {
       if (cachedTx.isEmpty) {
         final txResult = await api.get('/wallet/transactions', query: {'per_page': '100'});
         final txList = txResult['data'] as List? ?? [];
-        await cache.cacheTransactions(txList);
+        await cache.cacheTransactions(txList, epoch: currentEpoch);
       } else {
         // Fetch only status of pending requests
         final pendingIds = cachedTx

@@ -31,8 +31,8 @@ class ApiService {
       return 'http://localhost:8000/api';
     }
 
-    // In production/release mode, use the new server URL
-    return 'http://72.62.186.12/api';
+    // In production/release mode, use the new secure HTTPS server URL
+    return 'https://72-62-186-12.sslip.io/api';
   }
 
   static ApiService? _instance;
@@ -170,6 +170,7 @@ class ApiService {
       if (!isAuthRoute) {
         clearCache();
         CacheService.instance.clearCache();
+        CacheService.instance.setUserId(null);
         CartService.instance.clearCart();
         SharedPreferences.getInstance().then((prefs) {
           prefs.remove('access_token');

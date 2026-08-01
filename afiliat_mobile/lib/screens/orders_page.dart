@@ -153,6 +153,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
     try {
       final cache = CacheService.instance;
+      final currentEpoch = cache.sessionEpoch;
       
       // 1. Get cached orders
       var allCached = await cache.getCachedOrders();
@@ -161,7 +162,7 @@ class _OrdersPageState extends State<OrdersPage> {
       if (allCached.isEmpty) {
         final data = await ApiService.instance.get('/orders', query: {'per_page': '100'});
         allCached = List<Map<String, dynamic>>.from(data['data'] as List? ?? []);
-        await cache.cacheOrders(allCached);
+        await cache.cacheOrders(allCached, epoch: currentEpoch);
       }
 
       // 3. Filter and search cached orders locally
