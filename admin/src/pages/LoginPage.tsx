@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogIn, Eye, EyeOff, TrendingUp, Globe } from 'lucide-react';
 import { authApi } from '../services/api';
 import { Link } from 'react-router-dom';
@@ -11,6 +11,14 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { t, language, setLanguage } = useLanguage();
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    const userStr = localStorage.getItem('user');
+    if (token && token !== 'undefined' && token !== 'null' && userStr) {
+      window.location.href = '/';
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

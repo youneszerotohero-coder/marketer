@@ -485,7 +485,15 @@ export const OrdersManagement: React.FC = () => {
                           })}
                         </div>
                       </td>
-                      <td className="p-4 text-sm font-medium text-text">{order.client_name}</td>
+                      <td className="p-4 text-sm font-medium text-text">
+                        <div>{order.client_name}</div>
+                        <div className="text-xs text-text-muted">{order.client_phone}</div>
+                        {order.notes && (
+                          <div className="text-xs text-amber-600 dark:text-amber-400 font-normal italic mt-0.5 max-w-[180px] truncate" title={order.notes}>
+                            📝 {order.notes}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-4 text-sm text-text-muted">{order.marketer?.name ?? '—'}</td>
                       <td className="p-4 text-sm font-bold text-text">{fmt(order.total)}</td>
                       <td className="p-4" onClick={(e) => e.stopPropagation()}>

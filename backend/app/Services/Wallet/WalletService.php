@@ -117,6 +117,7 @@ class WalletService
                 'status' => 'pending',
                 'payment_method' => $data['payment_method'] ?? null,
                 'payout_details' => $data['payout_details'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]);
         });
     }

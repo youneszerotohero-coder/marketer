@@ -25,6 +25,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _customTotalController = TextEditingController();
+  final _notesController = TextEditingController();
 
   String? selectedWilaya;
   String? selectedCommune;
@@ -233,6 +234,7 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
           'status': 'pending',
           'shipping_fee': _computedShippingCost,
           'custom_total': total,
+          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         },
       );
 
@@ -653,6 +655,16 @@ class _OrderCreationFormState extends State<OrderCreationForm> {
                     style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'ORDER NOTE (OPTIONAL)'.tr,
+            child: _buildTextField(
+              hint: 'e.g. Call before delivery, specific packaging...'.tr,
+              controller: _notesController,
+              maxLines: 3,
             ),
           ),
         ],

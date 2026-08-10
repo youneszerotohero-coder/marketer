@@ -35,7 +35,7 @@ const compressImage = async (file: File, quality = 0.7, maxWidth = 1024, maxHeig
       resolve(file);
       return;
     }
-    
+
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -106,7 +106,7 @@ export const ManageProducts: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  
+
   const [productImages, setProductImages] = useState<any[]>([]);
   const [deletedImages, setDeletedImages] = useState<number[]>([]);
   const [productVariants, setProductVariants] = useState<any[]>([]);
@@ -164,7 +164,7 @@ export const ManageProducts: React.FC = () => {
   const openModal = (type: any, item?: any) => {
     setSelectedItem(item || null);
     setActionModal(type);
-    
+
     if (type === 'edit' && item) {
       if (activeTab === 'products' || activeTab === 'archived') {
         const existingImages = (item.images || []).map((img: any) => ({
@@ -268,12 +268,12 @@ export const ManageProducts: React.FC = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     if (activeTab === 'products' || activeTab === 'archived') {
       // Validate unique SKUs within the variants form
       const skus: string[] = [];
       let duplicateSku: string | null = null;
-      
+
       for (let i = 0; i < productVariants.length; i++) {
         const input = e.currentTarget.querySelector(`[name="variants[${i}][sku]"]`) as HTMLInputElement | null;
         if (input) {
@@ -287,26 +287,26 @@ export const ManageProducts: React.FC = () => {
           }
         }
       }
-      
+
       if (duplicateSku) {
         alert(t('products.duplicateSkuError') || `Duplicate SKU detected: "${duplicateSku}". Each variant must have a unique SKU.`);
         return;
       }
 
       formData.delete('images[]'); // Remove any native file inputs as we manage them manually
-      
+
       deletedImages.forEach(id => formData.append('deleted_images[]', id.toString()));
-      
+
       const newImages = productImages.filter(img => !img.isDeleted && img.file);
       newImages.forEach(img => formData.append('images[]', img.file!));
-      
+
       const mainImg = productImages.find(img => !img.isDeleted && img.isMain);
       if (mainImg) {
         if (mainImg.id) {
           formData.append('main_image_id', mainImg.id.toString());
         } else if (mainImg.file) {
-           const idx = newImages.indexOf(mainImg);
-           if (idx !== -1) formData.append('main_image_index', idx.toString());
+          const idx = newImages.indexOf(mainImg);
+          if (idx !== -1) formData.append('main_image_index', idx.toString());
         }
       }
 
@@ -392,7 +392,7 @@ export const ManageProducts: React.FC = () => {
           <h1 className="text-2xl font-bold text-text">{t('products.title')}</h1>
           <p className="text-sm text-text-muted mt-1">{t('products.subtitle')}</p>
         </div>
-        <button 
+        <button
           onClick={() => openModal('add')}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-md shadow-primary/20 cursor-pointer"
         >
@@ -402,19 +402,19 @@ export const ManageProducts: React.FC = () => {
       </div>
 
       <div className="flex border-b border-border">
-        <button 
+        <button
           onClick={() => setActiveTab('products')}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'products' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
           {t('products.tabProductsList')}
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('archived')}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'archived' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
           {t('products.tabArchivedProducts')}
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('categories')}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${activeTab === 'categories' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text'}`}
         >
@@ -427,15 +427,15 @@ export const ManageProducts: React.FC = () => {
           <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
             <div className="relative flex-1 min-w-[250px]">
               <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('products.searchProducts')} 
+                placeholder={t('products.searchProducts')}
                 className="w-full ps-10 pe-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
               />
             </div>
-            <select 
+            <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm font-medium focus:outline-none focus:border-primary transition-colors outline-none cursor-pointer"
@@ -446,81 +446,80 @@ export const ManageProducts: React.FC = () => {
               ))}
             </select>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary border-r-2 border-transparent"></div>
             </div>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-start border-collapse">
-              <thead>
-                <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium text-start">{t('products.tableProduct')}</th>
-                  <th className="p-4 font-medium text-start">{t('products.tableCategoryBrand')}</th>
-                  <th className="p-4 font-medium text-start">{t('products.tablePrice')}</th>
-                  <th className="p-4 font-medium text-start">{t('products.tableCommission')}</th>
-                  <th className="p-4 font-medium text-start">{t('products.tableStock')}</th>
-                  <th className="p-4 font-medium text-end">{t('common.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {visibleProducts.map((product) => (
-                  <tr key={product.id} className={`group hover:bg-surface-hover transition-colors ${product.status === 'archived' ? 'opacity-60 bg-text-muted/5' : ''}`}>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        {product.main_image_path ? (
-                          <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `${STORAGE_URL}/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center border border-border">
-                            <LayoutGrid className="w-5 h-5 text-text-muted" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-start border-collapse">
+                <thead>
+                  <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
+                    <th className="p-4 font-medium text-start">{t('products.tableProduct')}</th>
+                    <th className="p-4 font-medium text-start">{t('products.tableCategoryBrand')}</th>
+                    <th className="p-4 font-medium text-start">{t('products.tablePrice')}</th>
+                    <th className="p-4 font-medium text-start">{t('products.tableCommission')}</th>
+                    <th className="p-4 font-medium text-start">{t('products.tableStock')}</th>
+                    <th className="p-4 font-medium text-end">{t('common.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {visibleProducts.map((product) => (
+                    <tr key={product.id} className={`group hover:bg-surface-hover transition-colors ${product.status === 'archived' ? 'opacity-60 bg-text-muted/5' : ''}`}>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {product.main_image_path ? (
+                            <img src={product.main_image_path.startsWith('http') ? product.main_image_path : `${STORAGE_URL}/${product.main_image_path}`} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-border" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center border border-border">
+                              <LayoutGrid className="w-5 h-5 text-text-muted" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-semibold text-text line-clamp-1">{product.name}</p>
                           </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-semibold text-text line-clamp-1">{product.name}</p>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <p className="text-sm text-text">{product.category?.name || 'N/A'}</p>
-                      <p className="text-xs text-text-muted">{product.brand?.name || 'N/A'}</p>
-                    </td>
-                    <td className="p-4 text-sm font-bold text-text">{getProductPrice(product)}</td>
-                    <td className="p-4 text-sm font-medium text-success">{getProductCommission(product)}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${
-                        product.in_stock !== false
-                          ? 'bg-success/10 text-success border-success/20'
-                          : 'bg-danger/10 text-danger border-danger/20'
-                      }`}>
-                        {product.in_stock !== false ? t('products.inStock') : t('products.outOfStock')}
-                      </span>
-                    </td>
-                    <td className="p-4 text-end">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openModal('archive', product)} className={`p-1.5 rounded-md transition-colors cursor-pointer ${product.status === 'archived' ? 'text-success hover:bg-success/10' : 'text-text-muted hover:text-danger hover:bg-danger/10'}`} title={product.status === 'archived' ? 'Restore' : 'Archive'}>
-                          {product.status === 'archived' ? <RotateCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {visibleProducts.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-4 text-center text-text-muted">{t('products.noProducts')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-text">{product.category?.name || 'N/A'}</p>
+                        <p className="text-xs text-text-muted">{product.brand?.name || 'N/A'}</p>
+                      </td>
+                      <td className="p-4 text-sm font-bold text-text">{getProductPrice(product)}</td>
+                      <td className="p-4 text-sm font-medium text-success">{getProductCommission(product)}</td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${product.in_stock !== false
+                            ? 'bg-success/10 text-success border-success/20'
+                            : 'bg-danger/10 text-danger border-danger/20'
+                          }`}>
+                          {product.in_stock !== false ? t('products.inStock') : t('products.outOfStock')}
+                        </span>
+                      </td>
+                      <td className="p-4 text-end">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openModal('edit', product)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => openModal('archive', product)} className={`p-1.5 rounded-md transition-colors cursor-pointer ${product.status === 'archived' ? 'text-success hover:bg-success/10' : 'text-text-muted hover:text-danger hover:bg-danger/10'}`} title={product.status === 'archived' ? 'Restore' : 'Archive'}>
+                            {product.status === 'archived' ? <RotateCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {visibleProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center text-text-muted">{t('products.noProducts')}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {productsMeta && productsMeta.last_page > productsPage && (
             <div className="p-4 border-t border-border flex justify-center bg-background/20">
-              <button 
+              <button
                 onClick={() => fetchData(productsPage + 1, true)}
                 className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
@@ -535,69 +534,69 @@ export const ManageProducts: React.FC = () => {
           <div className="p-4 border-b border-border flex flex-wrap items-center gap-4 bg-background/50">
             <div className="relative flex-1 min-w-[250px]">
               <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('products.searchCategories')} 
+                placeholder={t('products.searchCategories')}
                 className="w-full ps-10 pe-4 py-2 bg-surface border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary border-r-2 border-transparent"></div>
             </div>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-start border-collapse">
-              <thead>
-                <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium text-start">{t('products.categoryName')}</th>
-                  <th className="p-4 font-medium text-end">{t('common.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {visibleCategories.map((category) => (
-                  <tr key={category.id} className="hover:bg-background/50 transition-colors group">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        {category.image_path ? (
-                          <img src={category.image_path.startsWith('http') ? category.image_path : `${STORAGE_URL}/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-border">
-                            <LayoutGrid className="w-5 h-5" />
-                          </div>
-                        )}
-                        <p className="text-sm font-semibold text-text">{category.name}</p>
-                      </div>
-                    </td>
-                    <td className="p-4 text-end">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openModal('edit', category)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openModal('archive', category)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title="Delete">
-                          <Archive className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-start border-collapse">
+                <thead>
+                  <tr className="bg-background/50 text-text-muted text-xs uppercase tracking-wider">
+                    <th className="p-4 font-medium text-start">{t('products.categoryName')}</th>
+                    <th className="p-4 font-medium text-end">{t('common.actions')}</th>
                   </tr>
-                ))}
-                {visibleCategories.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="p-4 text-center text-text-muted">{t('products.noCategories')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {visibleCategories.map((category) => (
+                    <tr key={category.id} className="hover:bg-background/50 transition-colors group">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {category.image_path ? (
+                            <img src={category.image_path.startsWith('http') ? category.image_path : `${STORAGE_URL}/${category.image_path}`} alt={category.name} className="w-10 h-10 rounded-xl object-cover border border-border" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-border">
+                              <LayoutGrid className="w-5 h-5" />
+                            </div>
+                          )}
+                          <p className="text-sm font-semibold text-text">{category.name}</p>
+                        </div>
+                      </td>
+                      <td className="p-4 text-end">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openModal('edit', category)} className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors cursor-pointer" title="Edit">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => openModal('archive', category)} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors cursor-pointer" title="Delete">
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {visibleCategories.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="p-4 text-center text-text-muted">{t('products.noCategories')}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {categoriesMeta && categoriesMeta.last_page > categoriesPage && (
             <div className="p-4 border-t border-border flex justify-center bg-background/20">
-              <button 
+              <button
                 onClick={() => fetchData(categoriesPage + 1, true)}
                 className="px-5 py-2 border border-border bg-surface text-text hover:bg-background text-sm font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-sm hover:scale-102 flex items-center gap-2"
               >
@@ -609,9 +608,9 @@ export const ManageProducts: React.FC = () => {
         </div>
       )}
 
-      <Modal 
-        isOpen={actionModal === 'add' || actionModal === 'edit'} 
-        onClose={() => setActionModal(null)} 
+      <Modal
+        isOpen={actionModal === 'add' || actionModal === 'edit'}
+        onClose={() => setActionModal(null)}
         title={getModalTitle()}
       >
         <form className="space-y-4" onSubmit={handleSave}>
@@ -619,24 +618,24 @@ export const ManageProducts: React.FC = () => {
             <>
               <div>
                 <label className="block text-sm font-medium text-text mb-1">{t('products.productImages')}</label>
-                <div className="grid grid-cols-4 gap-4 mb-2">
+                <div className="grid grid-cols-4 gap-3 mb-2">
                   {productImages.map((img, idx) => {
                     if (img.isDeleted) return null;
                     return (
-                      <div key={idx} className={`relative rounded-xl border-2 overflow-hidden group ${img.isMain ? 'border-primary' : 'border-border'}`}>
-                        <img src={img.preview} className="w-full h-24 object-cover" />
-                        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-1 rounded-lg">
-                          <button type="button" onClick={() => setMainImage(idx)} className={`p-1 rounded-md ${img.isMain ? 'text-yellow-400' : 'text-white hover:text-yellow-400'}`}>
-                            <Star className="w-4 h-4" fill={img.isMain ? 'currentColor' : 'none'} />
+                      <div key={idx} className={`relative rounded-xl border-2 overflow-hidden aspect-square ${img.isMain ? 'border-primary' : 'border-border'}`}>
+                        <img src={img.preview} className="w-full h-full object-cover" />
+                        <div className="absolute top-1 end-1 flex items-center gap-0.5 bg-black/70 backdrop-blur-sm p-1 rounded-lg z-10">
+                          <button type="button" onClick={() => setMainImage(idx)} className={`p-1 rounded-md transition-colors ${img.isMain ? 'text-yellow-400' : 'text-white/80 hover:text-yellow-400'}`} title="Main Image">
+                            <Star className="w-3.5 h-3.5" fill={img.isMain ? 'currentColor' : 'none'} />
                           </button>
-                          <button type="button" onClick={() => deleteImage(idx)} className="p-1 rounded-md text-white hover:text-red-500">
-                            <X className="w-4 h-4" />
+                          <button type="button" onClick={() => deleteImage(idx)} className="p-1 rounded-md text-white/80 hover:text-red-500 transition-colors" title="Delete">
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
                     );
                   })}
-                  <div className="border-2 border-dashed border-border rounded-xl h-24 flex flex-col items-center justify-center text-center hover:bg-background/50 transition-colors cursor-pointer relative">
+                  <div className="border-2 border-dashed border-border rounded-xl aspect-square flex flex-col items-center justify-center text-center hover:bg-background/50 transition-colors cursor-pointer relative">
                     <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                     <Plus className="w-6 h-6 text-text-muted" />
                   </div>
@@ -670,11 +669,11 @@ export const ManageProducts: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-text">{t('products.variantsTitle')}</h3>
-                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random()*1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }])} className="text-xs text-primary hover:underline font-medium cursor-pointer">
+                  <button type="button" onClick={() => setProductVariants([...productVariants, { sku: `P-${Date.now()}-${Math.floor(Math.random() * 1000)}`, purchase_price: '', sale_price: '', commission_value: '', commission_type: 'fixed' }])} className="text-xs text-primary hover:underline font-medium cursor-pointer">
                     {t('products.addVariant')}
                   </button>
                 </div>
-                
+
                 {productVariants.map((v, i) => (
                   <div key={v.sku || i} className="p-4 border border-border rounded-xl bg-background/30 relative">
                     {productVariants.length > 1 && (
@@ -719,11 +718,11 @@ export const ManageProducts: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-text mb-1">{t('products.categoryImage')}</label>
                 {categoryImagePreview && !categoryImageDeleted ? (
-                  <div className="relative inline-block border-2 border-border rounded-xl overflow-hidden group">
-                     <img src={categoryImagePreview} className="w-24 h-24 object-cover" />
-                     <button type="button" onClick={() => setCategoryImageDeleted(true)} className="absolute top-1 right-1 p-1 bg-black/50 rounded-md text-white hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <X className="w-4 h-4" />
-                     </button>
+                  <div className="relative inline-block border-2 border-border rounded-xl overflow-hidden aspect-square">
+                    <img src={categoryImagePreview} className="w-24 h-24 object-cover" />
+                    <button type="button" onClick={() => setCategoryImageDeleted(true)} className="absolute top-1 end-1 p-1 bg-black/70 backdrop-blur-sm rounded-md text-white/90 hover:text-red-500 transition-colors cursor-pointer z-10">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-background/50 transition-colors cursor-pointer group relative">

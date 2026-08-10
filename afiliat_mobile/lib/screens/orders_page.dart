@@ -875,6 +875,14 @@ class _OrdersPageState extends State<OrdersPage> {
                   icon: Icons.local_shipping_outlined,
                   theme: theme,
                 ),
+                if (order['notes'] != null &&
+                    order['notes'].toString().trim().isNotEmpty)
+                  _buildDetailRow(
+                    label: 'Order Note'.tr,
+                    value: order['notes'].toString(),
+                    icon: Icons.note_outlined,
+                    theme: theme,
+                  ),
               ]),
               const SizedBox(height: 24),
 

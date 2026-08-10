@@ -10,6 +10,13 @@ class Category extends Model
 {
     protected $fillable = ['parent_id', 'name', 'image_path', 'status'];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');

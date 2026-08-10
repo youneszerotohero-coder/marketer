@@ -65,10 +65,16 @@ class _ShopPageState extends State<ShopPage> {
           final List<dynamic> catList = data is List ? data : (data['data'] ?? []);
           _categories = [
             {'id': null, 'name': 'All'.tr, 'image_url': 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=200&q=80'},
-            ...catList.map((c) => {
-              'id': c['id'],
-              'name': c['name'],
-              'image_url': c['image_url'] ?? 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=200&q=80'
+            ...catList.map((c) {
+              final rawImage = (c['image_path'] ?? c['image_url'])?.toString();
+              final imageUrl = (rawImage != null && rawImage.isNotEmpty)
+                  ? ApiService.getImageUrl(rawImage)
+                  : 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=200&q=80';
+              return {
+                'id': c['id'],
+                'name': c['name'],
+                'image_url': imageUrl,
+              };
             })
           ];
           _loadingCategories = false;
@@ -415,7 +421,6 @@ class _ShopPageState extends State<ShopPage> {
 
         return ProductCard(
           brand: brandName,
-          rating: '4.5', // Placeholder, API might not have it
           title: title,
           price: 'DZD ${price.toInt()}',
           stockText: inStock ? 'En stock'.tr : 'Rupture de stock'.tr,

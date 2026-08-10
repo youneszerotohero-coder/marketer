@@ -27,6 +27,7 @@ class WalletController extends Controller
             'amount' => ['required', 'numeric', 'min:1'],
             'payment_method' => ['required', 'string', 'max:80'],
             'payout_details' => ['required', 'array'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         return response()->json($wallet->requestWithdrawal($request->user(), $data), 201);

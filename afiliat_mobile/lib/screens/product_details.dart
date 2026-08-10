@@ -27,6 +27,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _customTotalController = TextEditingController();
+  final _notesController = TextEditingController();
   bool _submitting = false;
 
   String? selectedWilaya = '16 - Alger';
@@ -214,6 +215,7 @@ class _ProductDetailsState extends State<ProductDetails> {
           'status': 'pending',
           'shipping_fee': _computedShippingCost,
           'custom_total': _effectiveTotal,
+          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         },
       );
 
@@ -1133,6 +1135,16 @@ class _ProductDetailsState extends State<ProductDetails> {
                     style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _buildInputField(
+            label: 'ORDER NOTE (OPTIONAL)'.tr,
+            child: _buildTextField(
+              hint: 'e.g. Call before delivery, specific packaging...'.tr,
+              controller: _notesController,
+              maxLines: 3,
             ),
           ),
         ],

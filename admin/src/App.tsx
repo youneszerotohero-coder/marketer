@@ -20,6 +20,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+// Guard: redirect to / if already logged in
+const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('access_token');
+  const userStr = localStorage.getItem('user');
+  const isAuthenticated = token && token !== 'undefined' && token !== 'null' && userStr;
+  return isAuthenticated ? <Navigate to="/" replace /> : <>{children}</>;
+};
+
 // Guard: allow only admins
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const userStr = localStorage.getItem('user');
@@ -37,10 +45,10 @@ function App() {
     <LanguageProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verify-code" element={<VerifyCode />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+          <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+          <Route path="/verify-code" element={<PublicOnlyRoute><VerifyCode /></PublicOnlyRoute>} />
+          <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
           <Route
             path="/"
             element={

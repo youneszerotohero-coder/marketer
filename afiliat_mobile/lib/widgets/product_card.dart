@@ -3,7 +3,7 @@ import '../l10n/app_translations.dart';
 
 class ProductCard extends StatelessWidget {
   final String brand;
-  final String rating;
+  final String? rating;
   final String title;
   final String price;
   final String stockText;
@@ -16,7 +16,7 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.brand,
-    required this.rating,
+    this.rating,
     required this.title,
     required this.price,
     required this.stockText,
@@ -59,7 +59,7 @@ class ProductCard extends StatelessWidget {
             children: [
               // Image Section
               Expanded(
-                flex: 5,
+                flex: 7,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -175,45 +175,22 @@ class ProductCard extends StatelessWidget {
               ),
               // Details Section
               Expanded(
-                flex: 6,
+                flex: 5,
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Brand & Rating
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            brand.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: Color(0xFFF97316),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                rating,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      // Brand
+                      Text(
+                        brand.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
                       ),
                       // Title
                       Text(

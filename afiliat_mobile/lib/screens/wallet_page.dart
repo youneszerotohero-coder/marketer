@@ -23,6 +23,7 @@ class _WalletPageState extends State<WalletPage> {
   final _amountController = TextEditingController();
   final _phoneController = TextEditingController();
   final _bankController = TextEditingController();
+  final _noteController = TextEditingController();
 
   String _selectedMethod = 'bank'; // 'bank' or 'flexy'
   bool _submitting = false;
@@ -38,6 +39,7 @@ class _WalletPageState extends State<WalletPage> {
     _amountController.dispose();
     _phoneController.dispose();
     _bankController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -205,6 +207,7 @@ class _WalletPageState extends State<WalletPage> {
           'amount': amount,
           'payment_method': paymentMethodName,
           'payout_details': payoutDetails,
+          'notes': _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         },
       );
 
@@ -217,6 +220,7 @@ class _WalletPageState extends State<WalletPage> {
       }
 
       _amountController.clear();
+      _noteController.clear();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -550,6 +554,19 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ],
+          const SizedBox(height: 16),
+          TextField(
+            controller: _noteController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: 'Payment Note (Optional)'.tr,
+              hintText: 'e.g. Preferred time, additional payment details...'.tr,
+              prefixIcon: const Icon(Icons.note_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -682,6 +699,21 @@ class _WalletPageState extends State<WalletPage> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (tx['notes'] != null &&
+                    tx['notes'].toString().trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      '${'Note'.tr}: ${tx['notes']}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
             ),
           ),

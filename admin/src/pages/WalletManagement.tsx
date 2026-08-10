@@ -266,7 +266,14 @@ export const WalletManagement: React.FC = () => {
                     <td className="p-4 text-sm font-mono text-text-muted">#{w.id}</td>
                     <td className="p-4 text-sm font-semibold text-text">{w.marketer?.name ?? '—'}</td>
                     <td className="p-4 text-sm font-bold text-primary">{fmt(w.amount)}</td>
-                    <td className="p-4 text-sm text-text-muted">{w.payment_method ?? '—'}</td>
+                    <td className="p-4 text-sm text-text-muted">
+                      <div>{w.payment_method ?? '—'}</div>
+                      {w.notes && (
+                        <div className="text-xs text-amber-600 dark:text-amber-400 font-normal italic mt-0.5 max-w-[200px] truncate" title={w.notes}>
+                          📝 {w.notes}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 text-sm text-text-muted">{new Date(w.created_at).toLocaleDateString()}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusStyle[w.status] ?? ''}`}>
