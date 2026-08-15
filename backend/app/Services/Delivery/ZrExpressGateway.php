@@ -216,7 +216,7 @@ class ZrExpressGateway implements DeliveryGateway
         $url = "{$baseUrl}/v{$version}" . '/' . ltrim($path, '/');
 
         $tenantId = $this->setting('zr_express_tenant_id', 'e10b8c86-54ab-4d46-ace7-62b4590e733b');
-        $apiKey = $this->setting('zr_express_secret_key', 'BFHlEPVGMQuEbbqUisjmqVVYDmoIGDg7AUA3YcJHekDpb4n20EJIjEZKfDZUBHSL');
+        $apiKey = $this->setting('zr_express_secret_key', 'AnhIA1FVdF2Q2Bzamiavuib4QnkC9k82f5PE79He1uBg8CxgCaKEl9ZVyFUt2jJG');
 
         $headers = [
             'X-Tenant' => $tenantId,
