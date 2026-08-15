@@ -200,7 +200,7 @@ class _ShopPageState extends State<ShopPage> {
                       const SizedBox(height: 20),
                       if (_loadingCategories)
                         const SizedBox(
-                          height: 200,
+                          height: 96,
                           child: Center(child: CircularProgressIndicator()),
                         )
                       else
@@ -239,7 +239,7 @@ class _ShopPageState extends State<ShopPage> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: 0.55,
+                      childAspectRatio: 0.58,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => _buildProductItem(context, index),
@@ -368,82 +368,80 @@ class _ShopPageState extends State<ShopPage> {
     if (_categories.isEmpty) return const SizedBox();
 
     return SizedBox(
-      height: 200,
-      child: GridView.builder(
+      height: 96,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.25,
-        ),
         itemCount: _categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           final isSelected = index == _selectedCategoryIndex;
           final category = _categories[index];
           return GestureDetector(
             onTap: () => _onCategorySelected(index),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? Border.all(color: const Color(0xFFF97316), width: 3)
-                        : Border.all(color: Colors.transparent, width: 3),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFFF97316).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage(category['image_url'] ?? ''),
-                          fit: BoxFit.cover,
+            child: SizedBox(
+              width: 68,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(color: const Color(0xFFF97316), width: 2.5)
+                          : Border.all(color: Colors.transparent, width: 2.5),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFF97316).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                            image: NetworkImage(category['image_url'] ?? ''),
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                        child: isSelected
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.black.withOpacity(0.15),
+                                ),
+                              )
+                            : null,
                       ),
-                      child: isSelected
-                          ? Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.2),
-                              ),
-                            )
-                          : null,
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  category['name'] ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontSize: 12,
+                  const SizedBox(height: 6),
+                  Text(
+                    category['name'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
