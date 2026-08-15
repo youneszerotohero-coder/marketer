@@ -208,34 +208,32 @@ class ZrExpressGateway implements DeliveryGateway
 
     private function request(string $method, string $path, array $payload = []): array
     {
-        $baseUrl = rtrim($this->setting('zr_express_base_url', 'https://app.zrexpress.fr/api'), '/');
+        $baseUrl = rtrim($this->setting('zr_express_base_url', 'https://api.zrexpress.app/api'), '/');
         if (!str_ends_with($baseUrl, '/api') && (str_contains($baseUrl, 'zrexpress') || str_contains($baseUrl, 'procolis'))) {
             $baseUrl .= '/api';
         }
         $version = trim($this->setting('zr_express_api_version', '1'), '/');
         $url = "{$baseUrl}/v{$version}" . '/' . ltrim($path, '/');
 
+        $tenantId = $this->setting('zr_express_tenant_id', 'e10b8c86-54ab-4d46-ace7-62b4590e733b');
+        $apiKey = $this->setting('zr_express_secret_key', 'BFHlEPVGMQuEbbqUisjmqVVYDmoIGDg7AUA3YcJHekDpb4n20EJIjEZKfDZUBHSL');
+
+        $headers = [
+            'X-Tenant' => $tenantId,
+            'X-Api-Key' => $apiKey,
+            'User-Agent' => 'Marketer/1.0',
+        ];
+
         Log::info('ZR Express API Request', [
             'method' => $method,
             'url' => $url,
-            'headers' => [
-                'X-Tenant-ID' => $this->setting('zr_express_tenant_id'),
-                'X-Tenant' => $this->setting('zr_express_tenant_id'),
-                'X-Secret-Key' => $this->setting('zr_express_secret_key'),
-                'X-Api-Key' => $this->setting('zr_express_secret_key'),
-            ],
+            'headers' => $headers,
             'payload' => $payload,
         ]);
 
         $response = Http::acceptJson()
-                    ->withToken($this->setting('zr_express_secret_key'))
-                    ->withHeaders([
-                        'X-Tenant-ID' => $this->setting('zr_express_tenant_id'),
-                        'X-Tenant' => $this->setting('zr_express_tenant_id'),
-                        'X-Secret-Key' => $this->setting('zr_express_secret_key'),
-                        'X-Api-Key' => $this->setting('zr_express_secret_key'),
-                    ])
-                    ->timeout(12)
+            ->withHeaders($headers)
+            ->timeout(15)
             ->{$method}($url, $payload);
 
         if (!$response->successful()) {
