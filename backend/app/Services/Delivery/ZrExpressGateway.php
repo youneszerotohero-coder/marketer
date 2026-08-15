@@ -94,7 +94,7 @@ class ZrExpressGateway implements DeliveryGateway
                 'street' => $order->address ?: 'Non specifiee',
             ],
             'amount' => (float) $order->total,
-            'description' => $order->notes ?: 'Commande ' . $order->reference,
+            'description' => $this->resolveOrderDescription($order),
             'orderedProducts' => $order->items->map(fn($item) => [
                 'productName' => $item->product_name,
                 'quantity' => (int) $item->quantity,
@@ -459,5 +459,17 @@ class ZrExpressGateway implements DeliveryGateway
             return [];
         }
     }
-}
 
+    private function resolveOrderDescription(Order $order): string
+    {
+        if ($order->items->count() === 1) {
+            $orderName = $order->items->first()->product_name;
+        } else {
+            $orderName = $order->items->map(fn($it) => $it->product_name)->filter()->implode(' + ');
+        }
+        if (empty($orderName)) {
+            $orderName = 'Commande ' . $order->reference;
+        }
+        return !empty($order->notes) ? ($orderName . ' (' . $order->notes . ')') : $orderName;
+    }
+}

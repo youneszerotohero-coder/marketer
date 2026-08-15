@@ -44,4 +44,26 @@ class ProductVariant extends Model
 
         return round($unit * $quantity, 2);
     }
+
+    public function getSpecificationAttribute(): string
+    {
+        if ($this->relationLoaded('values') && $this->values->isNotEmpty()) {
+            return $this->values->pluck('value')->filter()->implode(' ');
+        }
+        $sku = trim((string) $this->sku);
+        if (!empty($sku) && !preg_match('/^P-\d+(-\d+)?$/i', $sku)) {
+            return $sku;
+        }
+        return '';
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        $productName = $this->product?->name ?? '';
+        $spec = $this->specification;
+        if (!empty($spec) && !str_contains($productName, $spec)) {
+            return trim("{$productName} {$spec}");
+        }
+        return $productName;
+    }
 }

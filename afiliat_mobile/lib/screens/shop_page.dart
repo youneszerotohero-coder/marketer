@@ -177,58 +177,108 @@ class _ShopPageState extends State<ShopPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CustomHeader(),
-              const SizedBox(height: 24),
-              _buildSearchAndFilter(context, theme),
-              const SizedBox(height: 20),
-              if (_loadingCategories)
-                const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()))
-              else
-                _buildCategories(theme),
-              const SizedBox(height: 20),
-              Expanded(
-                child: _loadingProducts
-                    ? const Center(child: CircularProgressIndicator())
-                    : _products.isEmpty
-                        ? Center(child: Text('No products found.'.tr))
-                        : Stack(
-                            children: [
-                              _buildProductGrid(context),
-                              if (_isLoadingMore)
-                                Positioned(
-                                  bottom: 16,
-                                  left: 0,
-                                  right: 0,
-                                  child: Center(
-                                    child: Card(
-                                      elevation: 4,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              _loadCategories(),
+              _loadProducts(refresh: true),
+            ]);
+          },
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const CustomHeader(),
+                      const SizedBox(height: 24),
+                      _buildSearchAndFilter(context, theme),
+                      const SizedBox(height: 20),
+                      if (_loadingCategories)
+                        const SizedBox(
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        _buildCategories(theme),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
               ),
+              if (_loadingProducts)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_products.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text(
+                        'No products found.'.tr,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else ...[
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.55,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildProductItem(context, index),
+                      childCount: _products.length,
+                    ),
+                  ),
+                ),
+                if (_isLoadingMore)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                      child: Center(
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 24),
+                  ),
+              ],
             ],
           ),
         ),
@@ -318,11 +368,16 @@ class _ShopPageState extends State<ShopPage> {
     if (_categories.isEmpty) return const SizedBox();
 
     return SizedBox(
-      height: 100,
-      child: ListView.separated(
+      height: 200,
+      child: GridView.builder(
         scrollDirection: Axis.horizontal,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.25,
+        ),
         itemCount: _categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final isSelected = index == _selectedCategoryIndex;
           final category = _categories[index];
@@ -332,8 +387,8 @@ class _ShopPageState extends State<ShopPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 68,
-                  height: 68,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: isSelected
@@ -376,13 +431,16 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   category['name'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -393,75 +451,65 @@ class _ShopPageState extends State<ShopPage> {
     );
   }
 
-  Widget _buildProductGrid(BuildContext context) {
-    return GridView.builder(
-      controller: _scrollController,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.55,
-      ),
-      itemCount: _products.length,
-      itemBuilder: (context, index) {
-        final product = _products[index];
-        // The structure of product from backend:
-        // id, name, description, brand, category, variants, main_image_path
-        final brandName = product['brand'] != null ? product['brand']['name'] : '';
-        final title = product['name'] ?? '';
-        final imageUrl = product['main_image_path'] != null ? ApiService.getImageUrl(product['main_image_path']) : 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=300&q=80';
-        
-        // Find a default variant
-        final variants = product['variants'] as List? ?? [];
-        final defaultVariant = variants.isNotEmpty ? variants.first : null;
-        
-        final price = defaultVariant != null ? double.tryParse(defaultVariant['sale_price'].toString()) ?? 0.0 : 0.0;
-        final commission = defaultVariant != null ? double.tryParse(defaultVariant['commission_value'].toString()) ?? 0.0 : 0.0;
-        final inStock = product['in_stock'] != false; // defaults true if null
+  Widget _buildProductItem(BuildContext context, int index) {
+    final product = _products[index];
+    // The structure of product from backend:
+    // id, name, description, brand, category, variants, main_image_path
+    final brandName = product['brand'] != null ? product['brand']['name'] : '';
+    final title = product['name'] ?? '';
+    final imageUrl = product['main_image_path'] != null
+        ? ApiService.getImageUrl(product['main_image_path'])
+        : 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=300&q=80';
+    
+    // Find a default variant
+    final variants = product['variants'] as List? ?? [];
+    final defaultVariant = variants.isNotEmpty ? variants.first : null;
+    
+    final price = defaultVariant != null ? double.tryParse(defaultVariant['sale_price'].toString()) ?? 0.0 : 0.0;
+    final commission = defaultVariant != null ? double.tryParse(defaultVariant['commission_value'].toString()) ?? 0.0 : 0.0;
+    final inStock = product['in_stock'] != false; // defaults true if null
 
-        return ProductCard(
+    return ProductCard(
+      brand: brandName,
+      title: title,
+      price: 'DZD ${price.toInt()}',
+      stockText: inStock ? 'En stock'.tr : 'Rupture de stock'.tr,
+      inStock: inStock,
+      commission: 'DZD ${commission.toInt()}',
+      imageUrl: imageUrl,
+      onTap: () {
+        // We pass the full product object via ProductDetails arguments, or fetch it by ID.
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetails(
+          productId: product['id'],
+        )));
+      },
+      onAddToCart: () {
+        if (defaultVariant == null) {
+          return;
+        }
+        if (!inStock) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Product is out of stock'.tr),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        final item = CartItemModel(
+          id: defaultVariant['id'].toString(),
           brand: brandName,
           title: title,
-          price: 'DZD ${price.toInt()}',
-          stockText: inStock ? 'En stock'.tr : 'Rupture de stock'.tr,
-          inStock: inStock,
-          commission: 'DZD ${commission.toInt()}',
+          variantSku: defaultVariant['sku'] ?? '',
+          price: price,
+          commission: commission,
           imageUrl: imageUrl,
-          onTap: () {
-            // We pass the full product object via ProductDetails arguments, or fetch it by ID.
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetails(
-              productId: product['id'],
-            )));
-          },
-          onAddToCart: () {
-            if (defaultVariant == null) {
-              return;
-            }
-            if (!inStock) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Product is out of stock'.tr),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-            final item = CartItemModel(
-              id: defaultVariant['id'].toString(),
-              brand: brandName,
-              title: title,
-              variantSku: defaultVariant['sku'] ?? '',
-              price: price,
-              commission: commission,
-              imageUrl: imageUrl,
-              quantity: 1,
-              availableVariants: variants,
-            );
-            CartService.instance.addToCart(item);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${'Added to cart'.tr}: $title')),
-            );
-          },
+          quantity: 1,
+          availableVariants: variants,
+        );
+        CartService.instance.addToCart(item);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'Added to cart'.tr}: $title')),
         );
       },
     );

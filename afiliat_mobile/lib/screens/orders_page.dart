@@ -574,9 +574,11 @@ class _OrdersPageState extends State<OrdersPage> {
                         ),
                       ),
                       Text(
-                        items.isNotEmpty
-                            ? '${items.length} item(s)'
-                            : 'No items',
+                        items.length == 1
+                            ? (items.first['product_name'] ?? '1 item')
+                            : (items.isNotEmpty
+                                ? '${items.length} item(s)'
+                                : 'No items'),
                         style: TextStyle(
                           fontSize: 12,
                           color: theme.colorScheme.onSurfaceVariant,

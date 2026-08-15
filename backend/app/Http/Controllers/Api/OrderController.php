@@ -54,7 +54,7 @@ class OrderController extends Controller
             $preparedItems = [];
 
             foreach ($data['items'] as $item) {
-                $variant = ProductVariant::with('product')->findOrFail($item['product_variant_id']);
+                $variant = ProductVariant::with(['product', 'values.attribute'])->findOrFail($item['product_variant_id']);
 
                 if ($variant->status !== 'active') {
                     abort(422, "Variant SKU {$variant->sku} is not active.");
@@ -69,9 +69,15 @@ class OrderController extends Controller
                 $subtotal += $lineTotal;
                 $commission += $lineCommission;
 
+                $spec = $variant->specification;
+                $baseProductName = trim((string) $variant->product->name);
+                $fullProductName = (!empty($spec) && !str_contains($baseProductName, $spec))
+                    ? "{$baseProductName} {$spec}"
+                    : $baseProductName;
+
                 $preparedItems[] = [
                     'product_variant_id' => $variant->id,
-                    'product_name' => $variant->product->name,
+                    'product_name' => $fullProductName,
                     'sku' => $variant->sku,
                     'quantity' => $item['quantity'],
                     'unit_price' => $variant->sale_price,

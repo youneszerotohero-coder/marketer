@@ -31,6 +31,16 @@ const getLocalTodayString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const getFullItemName = (item: any) => {
+  if (!item) return '';
+  const baseName = item.product_name || item.variant?.product?.name || '';
+  const spec = item.variant?.sku && !item.variant.sku.startsWith('P-') ? item.variant.sku : '';
+  if (spec && !baseName.includes(spec)) {
+    return `${baseName} ${spec}`;
+  }
+  return baseName;
+};
+
 export const OrdersManagement: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -477,8 +487,8 @@ export const OrdersManagement: React.FC = () => {
                                     <LayoutGrid className="w-4 h-4 text-text-muted" />
                                   </div>
                                 )}
-                                <span className="text-xs font-medium text-text line-clamp-1" title={item.product_name}>
-                                  {item.product_name}
+                                <span className="text-xs font-medium text-text line-clamp-1" title={getFullItemName(item)}>
+                                  {getFullItemName(item)}
                                 </span>
                               </div>
                             );
@@ -883,7 +893,7 @@ export const OrdersManagement: React.FC = () => {
                         </div>
                       )}
                       <div>
-                        <p className="font-semibold text-text">{item.product_name}</p>
+                        <p className="font-semibold text-text">{getFullItemName(item)}</p>
                         <p className="text-xs text-text-muted">SKU: {item.sku} • {t('orders.qty')}: {item.quantity}</p>
                       </div>
                     </div>
