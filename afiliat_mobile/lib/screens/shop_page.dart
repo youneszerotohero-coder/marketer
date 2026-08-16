@@ -177,110 +177,127 @@ class _ShopPageState extends State<ShopPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await Future.wait([
-              _loadCategories(),
-              _loadProducts(refresh: true),
-            ]);
-          },
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const CustomHeader(),
-                      const SizedBox(height: 24),
-                      _buildSearchAndFilter(context, theme),
-                      const SizedBox(height: 20),
-                      if (_loadingCategories)
-                        const SizedBox(
-                          height: 96,
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        _buildCategories(theme),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+        child: Column(
+          children: [
+            // Fixed header + search/filter at top
+            Container(
+              color: theme.scaffoldBackgroundColor,
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const CustomHeader(),
+                  const SizedBox(height: 16),
+                  _buildSearchAndFilter(context, theme),
+                ],
               ),
-              if (_loadingProducts)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_products.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Text(
-                        'No products found.'.tr,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 16,
+            ),
+            // Scrollable content: categories + products
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    _loadCategories(),
+                    _loadProducts(refresh: true),
+                  ]);
+                },
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Categories (scrollable, not fixed)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_loadingCategories)
+                              const SizedBox(
+                                height: 200,
+                                child: Center(child: CircularProgressIndicator()),
+                              )
+                            else
+                              _buildCategories(theme),
+                            const SizedBox(height: 20),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                )
-              else ...[
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.58,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildProductItem(context, index),
-                      childCount: _products.length,
-                    ),
-                  ),
-                ),
-                if (_isLoadingMore)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24.0),
-                      child: Center(
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    if (_loadingProducts)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_products.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                const SizedBox(width: 8),
-                                Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
-                              ],
+                            padding: const EdgeInsets.all(32.0),
+                            child: Text(
+                              'No products found.'.tr,
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ),
+                      )
+                    else ...[
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.58,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => _buildProductItem(context, index),
+                            childCount: _products.length,
+                          ),
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 24),
-                  ),
-              ],
-            ],
-          ),
+                      if (_isLoadingMore)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24.0),
+                            child: Center(
+                              child: Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('Loading more...'.tr, style: const TextStyle(fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 24),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -367,84 +384,114 @@ class _ShopPageState extends State<ShopPage> {
   Widget _buildCategories(ThemeData theme) {
     if (_categories.isEmpty) return const SizedBox();
 
+    // Split categories into 2 rows
+    final int totalItems = _categories.length;
+    final int itemsPerRow = (totalItems / 2).ceil();
+    final row1 = _categories.sublist(0, itemsPerRow.clamp(0, totalItems));
+    final row2 = totalItems > itemsPerRow ? _categories.sublist(itemsPerRow) : <dynamic>[];
+
     return SizedBox(
-      height: 96,
-      child: ListView.separated(
+      height: 210, // Height for 2 rows of categories
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final isSelected = index == _selectedCategoryIndex;
-          final category = _categories[index];
-          return GestureDetector(
-            onTap: () => _onCategorySelected(index),
-            child: SizedBox(
-              width: 68,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: const Color(0xFFF97316), width: 2.5)
-                          : Border.all(color: Colors.transparent, width: 2.5),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFFF97316).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              )
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              )
-                            ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Row 1
+            Row(
+              children: List.generate(row1.length, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(right: index < row1.length - 1 ? 14 : 0),
+                  child: _buildCategoryItem(theme, index, row1[index]),
+                );
+              }),
+            ),
+            const SizedBox(height: 12),
+            // Row 2
+            if (row2.isNotEmpty)
+              Row(
+                children: List.generate(row2.length, (index) {
+                  final actualIndex = itemsPerRow + index;
+                  return Padding(
+                    padding: EdgeInsets.only(right: index < row2.length - 1 ? 14 : 0),
+                    child: _buildCategoryItem(theme, actualIndex, row2[index]),
+                  );
+                }),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryItem(ThemeData theme, int index, dynamic category) {
+    final isSelected = index == _selectedCategoryIndex;
+    return GestureDetector(
+      onTap: () => _onCategorySelected(index),
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? Border.all(color: const Color(0xFFF97316), width: 2.5)
+                    : Border.all(color: Colors.transparent, width: 2.5),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFF97316).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      image: NetworkImage(category['image_url'] ?? ''),
+                      fit: BoxFit.cover,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: NetworkImage(category['image_url'] ?? ''),
-                            fit: BoxFit.cover,
+                  ),
+                  child: isSelected
+                      ? Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.15),
                           ),
-                        ),
-                        child: isSelected
-                            ? Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black.withOpacity(0.15),
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    category['name'] ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+                        )
+                      : null,
+                ),
               ),
             ),
-          );
-        },
+            const SizedBox(height: 6),
+            Text(
+              category['name'] ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFFF97316) : theme.colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
